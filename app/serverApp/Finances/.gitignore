@@ -236,6 +236,6 @@ gradle-app.setting
 **/build/
 
 #All db files#
-*.sql
+
 
 # End of https://www.toptal.com/developers/gitignore/api/java,gradle,intellij
