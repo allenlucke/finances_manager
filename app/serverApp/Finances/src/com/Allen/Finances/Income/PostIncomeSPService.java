@@ -59,10 +59,12 @@ public class PostIncomeSPService {
 			PostIncomeSPDAO dao = new PostIncomeSPDAO(); 
 			
 			//Returns resultList from callGetIncome
-			List<IncomeModel> resultList = dao.callPostIncome(requestPojo);
+//			List<IncomeModel> resultList = dao.callPostIncome(requestPojo);
+			int result = dao.callPostIncome(requestPojo);
 			
 
-			responseJSON = mapper.writeValueAsString(resultList);
+//			responseJSON = mapper.writeValueAsString(resultList);
+			responseJSON = mapper.writeValueAsString(result);
 		}
 		catch( Exception e ) {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e).build();

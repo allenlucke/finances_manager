@@ -16,6 +16,8 @@ import javax.sql.DataSource;
 import com.Allen.Finances.Bean.BooleanValidator;
 import com.Allen.Finances.Bean.CatalinaSimpleLog;
 
+import oracle.jdbc.OracleTypes;
+
 public class PostIncomeSPDAO {
 
 	public static final String CLASS_NAME = PostIncomeSPDAO.class.getSimpleName();
@@ -38,17 +40,19 @@ public class PostIncomeSPDAO {
 	
 	public PostIncomeSPDAO() {}
 	
-	public List<IncomeModel> callPostIncome(PostIncomeHttpRequestModel request) throws ServletException {
+	public int callPostIncome(PostIncomeHttpRequestModel request) throws ServletException {
+//	public List<IncomeModel> callPostIncome(PostIncomeHttpRequestModel request) throws ServletException {
 		
 		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In PostIncomeSPDAO");
 		
 		final String methodName = "callPostIncome()";
 		
-		final String query = "{call POSTIncome(?,?,?,?,?,?,?,?,?,?,?,?)}";
-		
+		final String query = "{call POSTIncome(?,?,?,?,?,?,?,?,?,?,?,?,?)}";
+//		final String query = "{call POSTIncome(?,?,?,?,?,?,?,?,?,?,?,?)}";
 		Connection conn = null;
 		CallableStatement cs = null;
 		ResultSet rs = null;
+		int result;
 		
 		try{
 			CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Creating connection");
@@ -67,34 +71,42 @@ public class PostIncomeSPDAO {
 			cs.setBigDecimal(CAT_AMOUNT_DUE_INDEX, request.getCat_amount_due());		
 			cs.setString(PERIOD_INDEX, request.getPeriod());
 			cs.setInt(NEW_CAT_BOOL_INDEX, BooleanValidator.stringToInt(request.getNew_cat_bool()));
+			cs.registerOutParameter(13, OracleTypes.NUMERIC);
 			
 			CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Preparing to execute");
-			cs.execute();
+//			cs.execute();
+			cs.executeUpdate();
 			
-			rs = (ResultSet) cs.getObject(12);
-			List<IncomeModel> incomeResultList = new ArrayList<IncomeModel>();
+//			rs = (ResultSet) cs.getObject(13);
+			
+			result = cs.getInt(13);
+//			List<IncomeModel> incomeResultList = new ArrayList<IncomeModel>();
 			
 			CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Query executed");
 			
-			while(rs.next()) {
-			    
-			    IncomeModel obj = new IncomeModel ();
-			    obj.setId(rs.getInt("id"));
-			    obj.setName(rs.getString("name"));
-			    obj.setRecieved(rs.getBoolean("recieved"));
-			    obj.setDue_on(rs.getString("due_on"));
-			    obj.setRecieved_on(rs.getTimestamp("recieved_on"));
-			    obj.setRecurring(rs.getBoolean("recurring"));
-			    obj.setAmount_expected(rs.getBigDecimal("amount_expected"));
-			    obj.setAmount_actual(rs.getBigDecimal("amount_actual"));
-			    obj.setUsers_id(rs.getInt("users_id"));
-			    obj.setCategory_id(rs.getInt("category_id"));
-			    obj.setAccounts_id(rs.getInt("accounts_id"));
-			    
-            	incomeResultList.add(obj);
-            	CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Returning result set of "+String.valueOf(incomeResultList.size()));
-			}
-			return incomeResultList;
+			
+			
+//			while(rs.next()) {
+//			    
+//			    IncomeModel obj = new IncomeModel ();
+//			    obj.setId(rs.getInt("id"));
+//			    obj.setId(rs.getInt("income_id"));
+//			    obj.setName(rs.getString("name"));
+//			    obj.setRecieved(rs.getBoolean("recieved"));
+//			    obj.setDue_on(rs.getString("due_on"));
+//			    obj.setRecieved_on(rs.getTimestamp("recieved_on"));
+//			    obj.setRecurring(rs.getBoolean("recurring"));
+//			    obj.setAmount_expected(rs.getBigDecimal("amount_expected"));
+//			    obj.setAmount_actual(rs.getBigDecimal("amount_actual"));
+//			    obj.setUsers_id(rs.getInt("users_id"));
+//			    obj.setCategory_id(rs.getInt("category_id"));
+//			    obj.setAccounts_id(rs.getInt("accounts_id"));
+//			    
+//            	incomeResultList.add(obj);
+//            	CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Returning result set of "+String.valueOf(incomeResultList.size()));
+//			}
+//			return incomeResultList;
+			return result;
 		}
 		catch(NamingException | SQLException e) {
         	CatalinaSimpleLog.log("SEVERE", CLASS_NAME, methodName, "Has thrown an exception: " + e.getMessage());
