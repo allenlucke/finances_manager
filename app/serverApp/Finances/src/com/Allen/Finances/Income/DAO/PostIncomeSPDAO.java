@@ -1,4 +1,4 @@
-package com.Allen.Finances.Income;
+package com.Allen.Finances.Income.DAO;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -15,6 +15,7 @@ import javax.sql.DataSource;
 
 import com.Allen.Finances.Bean.BooleanValidator;
 import com.Allen.Finances.Bean.CatalinaSimpleLog;
+import com.Allen.Finances.Income.Models.PostIncomeHttpRequestModel;
 
 import oracle.jdbc.OracleTypes;
 
@@ -34,6 +35,8 @@ public class PostIncomeSPDAO {
 	private static final int CAT_AMOUNT_DUE_INDEX = 10;
 	private static final int PERIOD_INDEX = 11;
 	private static final int NEW_CAT_BOOL_INDEX = 12;
+	
+	private static final int RETURNING_ID_INDEX = 13;
     
 	
 	private static final String DATASOURCE = "java:/comp/env/jdbc/finances";
@@ -48,10 +51,10 @@ public class PostIncomeSPDAO {
 		final String methodName = "callPostIncome()";
 		
 		final String query = "{call POSTIncome(?,?,?,?,?,?,?,?,?,?,?,?,?)}";
-//		final String query = "{call POSTIncome(?,?,?,?,?,?,?,?,?,?,?,?)}";
+
 		Connection conn = null;
 		CallableStatement cs = null;
-		ResultSet rs = null;
+//		ResultSet rs = null;
 		int result;
 		
 		try{
@@ -71,7 +74,7 @@ public class PostIncomeSPDAO {
 			cs.setBigDecimal(CAT_AMOUNT_DUE_INDEX, request.getCat_amount_due());		
 			cs.setString(PERIOD_INDEX, request.getPeriod());
 			cs.setInt(NEW_CAT_BOOL_INDEX, BooleanValidator.stringToInt(request.getNew_cat_bool()));
-			cs.registerOutParameter(13, OracleTypes.NUMERIC);
+			cs.registerOutParameter(RETURNING_ID_INDEX, OracleTypes.NUMERIC);
 			
 			CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Preparing to execute");
 //			cs.execute();

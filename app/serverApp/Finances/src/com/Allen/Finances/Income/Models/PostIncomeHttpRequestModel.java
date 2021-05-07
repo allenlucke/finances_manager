@@ -1,4 +1,4 @@
-package com.Allen.Finances.Income;
+package com.Allen.Finances.Income.Models;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;

@@ -1,4 +1,4 @@
-package com.Allen.Finances.Expenses;
+package com.Allen.Finances.Expenses.DAO;
 
 import java.math.BigDecimal;
 import java.sql.CallableStatement;
@@ -17,7 +17,8 @@ import javax.sql.DataSource;
 
 import com.Allen.Finances.Bean.BooleanValidator;
 import com.Allen.Finances.Bean.CatalinaSimpleLog;
-
+import com.Allen.Finances.Expenses.Models.ExpensesModel;
+import com.Allen.Finances.Expenses.Models.GetExpensesHttpRequestModel;
 
 import oracle.jdbc.OracleTypes;
 

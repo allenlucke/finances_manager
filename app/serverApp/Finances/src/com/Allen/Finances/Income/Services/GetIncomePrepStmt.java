@@ -1,4 +1,5 @@
-//package com.Allen.Finances.Expenses;
+package com.Allen.Finances.Income.Services;
+//package com.Allen.Finances.Income;
 //
 //import java.io.IOException;
 //import java.sql.SQLException;
@@ -8,7 +9,7 @@
 //import javax.servlet.ServletException;
 //import javax.servlet.http.HttpServletRequest;
 //import javax.ws.rs.Consumes;
-//import javax.ws.rs.POST;
+//import javax.ws.rs.GET;
 //import javax.ws.rs.Path;
 //import javax.ws.rs.Produces;
 //import javax.ws.rs.core.Context;
@@ -19,25 +20,25 @@
 //import com.fasterxml.jackson.databind.JsonMappingException;
 //import com.fasterxml.jackson.databind.ObjectMapper;
 //
-//@Path("/AddExpense")
-//public class AddExpense {
-//
-//	public static final String CLASS_NAME = AddExpense.class.getSimpleName();
+//@Path("/PS")
+//public class GetIncomePrepStmt {
 //	
-//	//REST service to add income
-//	@POST
-//	@Path("/services/AddExpense")
+//	public static final String CLASS_NAME = GetIncomePrepStmt.class.getSimpleName();
+//
+//	@GET
+//	@Path("/GetIncomePst")
 //	@Consumes(MediaType.APPLICATION_JSON)
 //	@Produces(MediaType.APPLICATION_JSON)
-//	public Response postExpense(@Context HttpServletRequest request) throws ServletException, IOException, NamingException, 
-//			SQLException, JsonMappingException /*SAXException*/{
-//		
-//		final String methodName = "postExpense()";
+//	public Response getIncomePst(@Context HttpServletRequest request) throws ServletException, IOException, NamingException, 
+//	SQLException, JsonMappingException /*SAXException*/ {
+//
+//	    
+//		final String methodName = "getIncomePst()";
 //		
 //		//Checks to ensure request is valid JSON
-//		if( !request.getContentType().equalsIgnoreCase(MediaType.APPLICATION_JSON)) {
-//			return Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE).build();
-//		}
+////		if( !request.getContentType().equalsIgnoreCase(MediaType.APPLICATION_JSON)) {
+////			return Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE).build();
+////		}
 //		
 //		String requestBdyJson;
 //		
@@ -49,14 +50,14 @@
 //			//Creates request body out of request input stream
 //			requestBdyJson = JsonConverter.toString(request.getInputStream(), "UTF-8");
 //			
-//			//Maps JSON object to java Expenses POJO
+//			//Maps JSON object to java Income POJO
 //			ObjectMapper mapper = new ObjectMapper();
-//			ExpensesModel requestPojo = mapper.readValue(requestBdyJson, ExpensesModel.class);
+//			//Income requestPojo = mapper.readValue(requestBdyJson, Income.class);
 //			
-//			//Calls to POST method sending Expenses POJO
-//			CallPostExpenseDAO dao = new CallPostExpenseDAO(); 
-//			//Returns resultList from callPostExpense
-//			List<ExpensesModel> resultList = dao.callPostExpense(requestPojo);
+//			//Calls to POST method sending Income POJO
+//			GetIncomePSDAO dao = new GetIncomePSDAO(); 
+//			//Returns resultList from callPostIncome
+//			List<IncomeModel> resultList = dao.callGetAllIncomePSt();
 //			
 //
 //			responseJSON = mapper.writeValueAsString(resultList);
@@ -68,6 +69,6 @@
 //		
 //		return Response.status( Response.Status.OK ).entity(responseJSON).build();
 //		
-//	}
-//	
+//    }
 //}
+

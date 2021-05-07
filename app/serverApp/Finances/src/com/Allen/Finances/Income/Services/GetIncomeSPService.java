@@ -1,4 +1,4 @@
-package com.Allen.Finances.Expenses;
+package com.Allen.Finances.Income.Services;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -15,29 +15,36 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import java.util.logging.*;
+
+import org.glassfish.hk2.utilities.reflection.Logger;
+
 import com.Allen.Finances.Bean.CatalinaSimpleLog;
 import com.Allen.Finances.Bean.JsonConverter;
+import com.Allen.Finances.Income.DAO.GetIncomeSPDAO;
+import com.Allen.Finances.Income.Models.GetIncomeHttpRequestModel;
+import com.Allen.Finances.Income.Models.IncomeModel;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Path( "/SP" )
-public class GetExpensesSPService {
+public class GetIncomeSPService {
 	
-	public static final String CLASS_NAME = GetExpensesSPService.class.getSimpleName();
+	public static final String CLASS_NAME = GetIncomeSPService.class.getSimpleName();
 	
-	//REST service to GET expenses
+	//REST service to GET income
 	@GET
-	@Path("/GetExpensesSP")
+	@Path("/GetIncomeSP")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	
 	public Response getIncomeStP(@Context HttpServletRequest request) throws ServletException, IOException, NamingException, 
 	SQLException, JsonMappingException{
 			    
-		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In GetExpensesSp");
+		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In GetIncomeSp");
 
 		
-		final String methodName = "getExpensesStP()";
+		final String methodName = "getIncomeStP()";
 		
 		//Checks to ensure request is valid JSON
 		if( !request.getContentType().equalsIgnoreCase(MediaType.APPLICATION_JSON)) {
@@ -48,20 +55,20 @@ public class GetExpensesSPService {
 		String requestBdyJson;		
 		String responseJSON;
 
-//		List <Expenses> response;
+//		List <Income> response;
 		
 		try {
 			//Creates request body out of request input stream
 			requestBdyJson = JsonConverter.toString(request.getInputStream(), "UTF-8");
 			
-			//Maps JSON object to java Expenses POJO
+			//Maps JSON object to java Income POJO
 			ObjectMapper mapper = new ObjectMapper();
-			GetExpensesHttpRequestModel requestPojo = mapper.readValue(requestBdyJson, GetExpensesHttpRequestModel.class);
+			GetIncomeHttpRequestModel requestPojo = mapper.readValue(requestBdyJson, GetIncomeHttpRequestModel.class);
 			
-			//Calls to GET method sending Expenses POJO
-			GetExpensesSPDAO dao = new GetExpensesSPDAO(); 
-			//Returns resultList from callGetExpenses
-			List<ExpensesModel> resultList = dao.callGetExpenses(requestPojo);
+			//Calls to GET method sending Income POJO
+			GetIncomeSPDAO dao = new GetIncomeSPDAO(); 
+			//Returns resultList from callGetIncome
+			List<IncomeModel> resultList = dao.callGetIncome(requestPojo);
 			
 
 			responseJSON = mapper.writeValueAsString(resultList);

@@ -1,4 +1,4 @@
-package com.Allen.Finances.Income;
+package com.Allen.Finances.Income.DAO;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -12,6 +12,8 @@ import java.util.List;
 
 import javax.naming.NamingException;
 import javax.servlet.ServletException;
+
+import com.Allen.Finances.Income.Models.IncomeModel;
 
 public class PostIncomePSDAO {
 

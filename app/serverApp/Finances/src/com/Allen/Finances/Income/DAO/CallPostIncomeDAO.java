@@ -1,4 +1,4 @@
-package com.Allen.Finances.Income;
+package com.Allen.Finances.Income.DAO;
 
 import java.math.BigDecimal;
 import java.sql.CallableStatement;
@@ -16,6 +16,8 @@ import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
+
+import com.Allen.Finances.Income.Models.IncomeModel;
 
 import oracle.jdbc.OracleTypes;
 

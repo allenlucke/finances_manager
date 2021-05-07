@@ -1,4 +1,4 @@
-package com.Allen.Finances.Income;
+package com.Allen.Finances.Income.Services;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -17,27 +17,28 @@ import javax.ws.rs.core.Response;
 
 import com.Allen.Finances.Bean.CatalinaSimpleLog;
 import com.Allen.Finances.Bean.JsonConverter;
+import com.Allen.Finances.Income.DAO.PostIncomeSPDAO;
+import com.Allen.Finances.Income.Models.PostIncomeHttpRequestModel;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+@Path("SP")
+public class PostIncomeSPService {
 
-@Path( "/PS" )
-public class PostIncomePSService {
-
-
-	public static final String CLASS_NAME = PostIncomePSService.class.getSimpleName();
+	public static final String CLASS_NAME = PostIncomeSPService.class.getSimpleName();
 	
-	//REST service to add income
+	//REST Service to Post Income
 	@POST
-	@Path("/AddIncome")
+	@Path("/PostIncomeSP")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response postIncomePst(@Context HttpServletRequest request) throws ServletException, IOException, NamingException, 
-			SQLException, JsonMappingException {
+	
+	public Response postIncomeStP(@Context HttpServletRequest request)throws ServletException, IOException, NamingException, 
+	SQLException, JsonMappingException{
+			    
+		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In PostIncomeSp");
 		
-		CatalinaSimpleLog.log("INFO", CLASS_NAME, "AddIncomePrepStmt");
-		
-		final String methodName = "postIncomePst()";
+		final String methodName = "postIncomeStP()";
 		
 		//Checks to ensure request is valid JSON
 		if( !request.getContentType().equalsIgnoreCase(MediaType.APPLICATION_JSON)) {
@@ -45,11 +46,8 @@ public class PostIncomePSService {
 			return Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE).build();
 		}
 		
-		String requestBdyJson;
-		
+		String requestBdyJson;		
 		String responseJSON;
-
-//		List <Income> response;
 		
 		try {
 			//Creates request body out of request input stream
@@ -57,17 +55,18 @@ public class PostIncomePSService {
 			
 			//Maps JSON object to java Income POJO
 			ObjectMapper mapper = new ObjectMapper();
-			IncomeModel requestPojo = mapper.readValue(requestBdyJson, IncomeModel.class);
+			PostIncomeHttpRequestModel requestPojo = mapper.readValue(requestBdyJson, PostIncomeHttpRequestModel.class);
 			
-			//Calls to POST method sending Income POJO
-			PostIncomePSDAO dao = new PostIncomePSDAO(); 
-			//Returns resultList from callPostIncome
-			int status = dao.callPostIncomePSt(requestPojo);
-			//List<Income> resultList = dao.callPostIncomePSt(requestPojo);
+			//Calls to GET method sending Income POJO
+			PostIncomeSPDAO dao = new PostIncomeSPDAO(); 
+			
+			//Returns resultList from callGetIncome
+//			List<IncomeModel> resultList = dao.callPostIncome(requestPojo);
+			int result = dao.callPostIncome(requestPojo);
 			
 
 //			responseJSON = mapper.writeValueAsString(resultList);
-			responseJSON = mapper.writeValueAsString(status);
+			responseJSON = mapper.writeValueAsString(result);
 		}
 		catch( Exception e ) {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e).build();
@@ -76,6 +75,4 @@ public class PostIncomePSService {
 		
 		return Response.status( Response.Status.OK ).entity(responseJSON).build();
 	}
-	
 }
-

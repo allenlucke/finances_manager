@@ -1,25 +1,25 @@
-package com.Allen.Finances.Income;
+package com.Allen.Finances.Expenses.Models;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
-public class GetIncomeHttpRequestModel {
+public class GetExpensesHttpRequestModel {
 
-	private String users_id;
+    private String users_id;
     private String category_id;	
     private String accounts_id;
-	private String name;
-    private String recieved;
+    private String name;
+    private String paid;
     private String recurring;
-    private BigDecimal amount_expected;
-    private BigDecimal amount_actual;
+    private BigDecimal amount_due;
+    private BigDecimal amount_paid;
     private String period;
 	private Timestamp startdate;
 	private Timestamp enddate;
     
-	public GetIncomeHttpRequestModel() {}
-	
-	//Getters and Setters
+    public GetExpensesHttpRequestModel() {}
+
+    //Getters and Setters
 	public String getUsers_id() {
 		return users_id;
 	}
@@ -52,12 +52,12 @@ public class GetIncomeHttpRequestModel {
 		this.name = name;
 	}
 
-	public String getRecieved() {
-		return recieved;
+	public String getPaid() {
+		return paid;
 	}
 
-	public void setRecieved(String recieved) {
-		this.recieved = recieved;
+	public void setPaid(String paid) {
+		this.paid = paid;
 	}
 
 	public String getRecurring() {
@@ -68,20 +68,20 @@ public class GetIncomeHttpRequestModel {
 		this.recurring = recurring;
 	}
 
-	public BigDecimal getAmount_expected() {
-		return amount_expected;
+	public BigDecimal getAmount_due() {
+		return amount_due;
 	}
 
-	public void setAmount_expected(BigDecimal amount_expected) {
-		this.amount_expected = amount_expected;
+	public void setAmount_due(BigDecimal amount_due) {
+		this.amount_due = amount_due;
 	}
 
-	public BigDecimal getAmount_actual() {
-		return amount_actual;
+	public BigDecimal getAmount_paid() {
+		return amount_paid;
 	}
 
-	public void setAmount_actual(BigDecimal amount_actual) {
-		this.amount_actual = amount_actual;
+	public void setAmount_paid(BigDecimal amount_paid) {
+		this.amount_paid = amount_paid;
 	}
 
 	public String getPeriod() {
@@ -107,33 +107,30 @@ public class GetIncomeHttpRequestModel {
 	public void setEnddate(Timestamp enddate) {
 		this.enddate = enddate;
 	}
-
-	@Override
-	public String toString() {
-		return "GetIncomeRequestBean [users_id=" + users_id + ", category_id=" + category_id + ", accounts_id="
-				+ accounts_id + ", name=" + name + ", recieved=" + recieved + ", recurring=" + recurring
-				+ ", amount_expected=" + amount_expected + ", amount_actual=" + amount_actual + ", period=" + period
-				+ ", startdate=" + startdate + ", enddate=" + enddate + "]";
-	}	
-	
-	//Constructor
-	public GetIncomeHttpRequestModel(String users_id, String category_id, String accounts_id, String name,
-			String recieved, String recurring, BigDecimal amount_expected, BigDecimal amount_actual, String period,
-			Timestamp startdate, Timestamp enddate) {
+    
+    //Constructor
+	public GetExpensesHttpRequestModel(String users_id, String category_id, String accounts_id, String name,
+			String paid, String recurring, BigDecimal amount_due, BigDecimal amount_paid,
+			String period, Timestamp startdate, Timestamp enddate) {
 		super();
 		this.users_id = users_id;
 		this.category_id = category_id;
 		this.accounts_id = accounts_id;
 		this.name = name;
-		this.recieved = recieved;
+		this.paid = paid;
 		this.recurring = recurring;
-		this.amount_expected = amount_expected;
-		this.amount_actual = amount_actual;
+		this.amount_due = amount_due;
+		this.amount_paid = amount_paid;
 		this.period = period;
 		this.startdate = startdate;
 		this.enddate = enddate;
 	}
-	
-	
-	
+
+	@Override
+	public String toString() {
+		return "GetExpensesHttpRequestModel [users_id=" + users_id + ", category_id=" + category_id + ", accounts_id="
+				+ accounts_id + ", name=" + name + ", paid=" + paid + ", recurring=" + recurring +  ", amount_due=" + amount_due + ", amount_paid=" + amount_paid + ", period="
+				+ period + ", startdate=" + startdate + ", enddate=" + enddate + "]";
+	}
+    
 }

@@ -1,5 +1,10 @@
 package com.Allen.Finances.Bean;
 
+//Class handles issues caused when passing a null boolean value into Oracle DB (pl/sql will parse a null value to false)
+//The methods will only pass 0, 1, or 2 as int's. The stored procedures in the database are written to not insert into a
+//column if a 2 is passed in. 
+
+
 public class BooleanValidator {
 
 	public static int boolValidate(boolean bool) {

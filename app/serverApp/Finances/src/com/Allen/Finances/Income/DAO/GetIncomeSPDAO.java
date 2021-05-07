@@ -1,4 +1,4 @@
-package com.Allen.Finances.Income;
+package com.Allen.Finances.Income.DAO;
 
 import java.math.BigDecimal;
 import java.sql.CallableStatement;
@@ -17,6 +17,8 @@ import javax.sql.DataSource;
 
 import com.Allen.Finances.Bean.BooleanValidator;
 import com.Allen.Finances.Bean.CatalinaSimpleLog;
+import com.Allen.Finances.Income.Models.GetIncomeHttpRequestModel;
+import com.Allen.Finances.Income.Models.IncomeModel;
 
 import oracle.jdbc.OracleTypes;
 
