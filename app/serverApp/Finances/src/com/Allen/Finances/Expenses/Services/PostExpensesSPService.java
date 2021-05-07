@@ -1,8 +1,7 @@
-package com.Allen.Finances.Income.Services;
+package com.Allen.Finances.Expenses.Services;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
 
 import javax.naming.NamingException;
 import javax.servlet.ServletException;
@@ -17,35 +16,35 @@ import javax.ws.rs.core.Response;
 
 import com.Allen.Finances.Bean.CatalinaSimpleLog;
 import com.Allen.Finances.Bean.JsonConverter;
-import com.Allen.Finances.Income.DAO.PostIncomeSPDAO;
-import com.Allen.Finances.Income.Models.PostIncomeHttpRequestModel;
+import com.Allen.Finances.Expenses.DAO.PostExpensesSPDAO;
+import com.Allen.Finances.Expenses.Models.PostExpensesHttpRequestModel;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Path("SP")
-public class PostIncomeSPService {
+public class PostExpensesSPService {
 
-	public static final String CLASS_NAME = PostIncomeSPService.class.getSimpleName();
+
+	public static final String CLASS_NAME = PostExpensesSPService.class.getSimpleName();
 	
 	//REST Service to Post Income
 	@POST
-	@Path("/PostIncomeSP")
+	@Path("/PostExpensesSP")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	
-	public Response postIncomeStP(@Context HttpServletRequest request)throws ServletException, IOException, NamingException, 
+	public Response postExpensesStP(@Context HttpServletRequest request)throws ServletException, IOException, NamingException, 
 	SQLException, JsonMappingException{
 			    
-		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In PostIncomeStP");
+		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In PostExpensesStP");
 		
-		final String methodName = "postIncomeStP()";
+		final String methodName = "postExpensesStP()";
 		
 		//Checks to ensure request is valid JSON
 		if( !request.getContentType().equalsIgnoreCase(MediaType.APPLICATION_JSON)) {
 			CatalinaSimpleLog.log("SEVERE", CLASS_NAME, methodName, "Unsuported request type " + request.getContentType() + "  Expected " + MediaType.APPLICATION_JSON);
 			return Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE).build();
 		}
-		
 		String requestBdyJson;		
 		String responseJSON;
 		
@@ -55,20 +54,19 @@ public class PostIncomeSPService {
 			
 			//Maps JSON object to java Income POJO
 			ObjectMapper mapper = new ObjectMapper();
-			PostIncomeHttpRequestModel requestPojo = mapper.readValue(requestBdyJson, PostIncomeHttpRequestModel.class);
+			PostExpensesHttpRequestModel requestPojo = mapper.readValue(requestBdyJson, PostExpensesHttpRequestModel.class);
 			
-			//Calls to POST method sending Income POJO
-			PostIncomeSPDAO dao = new PostIncomeSPDAO(); 
+			//Calls to POST method sending Expense POJO
+			PostExpensesSPDAO dao = new PostExpensesSPDAO(); 
 			
-			//Returns id of newly created income object from callGetIncome
-			int result = dao.callPostIncome(requestPojo);
+			//Returns id of newly created income item
+			int result = dao.callPostExpenses(requestPojo);
 			
 			responseJSON = mapper.writeValueAsString(result);
-			
 		}
 		catch( Exception e ) {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e).build();
-		}		
+		}	
 		
 		return Response.status( Response.Status.OK ).entity(responseJSON).build();
 	}
