@@ -102,6 +102,11 @@ public class PostExpensesSPDAO {
 		}
 		finally {
 			cleanUpConnection(conn, cs, null);
+			
+			//TODO{ Call to put income i}
+//			if(BooleanValidator.stringToInt(request.getNew_cat_bool()) != 1 && request.getCategory_id() != null) {
+//			putIncomeSPDAO(request.getCategory_id(), request.getAmount_paid());
+//			}
 		}
 	}
 		

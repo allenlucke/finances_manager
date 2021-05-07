@@ -77,38 +77,14 @@ public class PostIncomeSPDAO {
 			cs.registerOutParameter(RETURNING_ID_INDEX, OracleTypes.NUMERIC);
 			
 			CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Preparing to execute");
-//			cs.execute();
+
 			cs.executeUpdate();
 			
-//			rs = (ResultSet) cs.getObject(13);
-			
 			result = cs.getInt(13);
-//			List<IncomeModel> incomeResultList = new ArrayList<IncomeModel>();
+
 			
 			CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Query executed");
 			
-			
-			
-//			while(rs.next()) {
-//			    
-//			    IncomeModel obj = new IncomeModel ();
-//			    obj.setId(rs.getInt("id"));
-//			    obj.setId(rs.getInt("income_id"));
-//			    obj.setName(rs.getString("name"));
-//			    obj.setRecieved(rs.getBoolean("recieved"));
-//			    obj.setDue_on(rs.getString("due_on"));
-//			    obj.setRecieved_on(rs.getTimestamp("recieved_on"));
-//			    obj.setRecurring(rs.getBoolean("recurring"));
-//			    obj.setAmount_expected(rs.getBigDecimal("amount_expected"));
-//			    obj.setAmount_actual(rs.getBigDecimal("amount_actual"));
-//			    obj.setUsers_id(rs.getInt("users_id"));
-//			    obj.setCategory_id(rs.getInt("category_id"));
-//			    obj.setAccounts_id(rs.getInt("accounts_id"));
-//			    
-//            	incomeResultList.add(obj);
-//            	CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Returning result set of "+String.valueOf(incomeResultList.size()));
-//			}
-//			return incomeResultList;
 			return result;
 		}
 		catch(NamingException | SQLException e) {
@@ -117,6 +93,7 @@ public class PostIncomeSPDAO {
 		}
 		finally {
 			cleanUpConnection(conn, cs, null);
+			
 		}
 		
 	}
