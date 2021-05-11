@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Expense } from '../expense'; 
 
+import { EXPENSES } from '../mock-expenses';
+
 @Component({
   selector: 'app-expenses',
   templateUrl: './expenses.component.html',
@@ -9,22 +11,16 @@ import { Expense } from '../expense';
 })
 export class ExpensesComponent implements OnInit {
 
-  expense: Expense = {
-    id: 1, 
-    name: 'marexpense1', 
-    paid: false, 
-    due_by: 'mar-01-2021', 
-    paid_on: '', 
-    recurring: false, 
-    amount_due: 100.6, 
-    amount_paid: 0, 
-    users_id: 1, 
-    category_id: 1, 
-    accounts_id: 0
-  };
+  expenses = EXPENSES;
+
+  selectedExpense?: Expense;
+
   constructor() { }
 
-  ngOnInit(): void {
+  ngOnInit() {
   }
 
+  onSelect(hero: Expense): void {
+    this.selectedExpense = hero;
+  }
 }
