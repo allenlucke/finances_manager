@@ -1,0 +1,18 @@
+<h2>{{expense.name | uppercase}}</h2>
+<div><span>id: </span>{{expense.id}}</div>
+<div><span>name: </span>{{expense.name}}</div>
+<div><span>paid: </span>{{expense.paid}}</div>
+<div><span>due_by: </span>{{expense.due_by}}</div>
+<div><span>paid_on: </span>{{expense.paid_on}}</div>
+<div><span>recurring: </span>{{expense.recurring}}</div>
+<div><span>amount_due: </span>{{expense.amount_due}}</div>
+<div><span>amount_paid: </span>{{expense.amount_paid}}</div>
+<div><span>users_id: </span>{{expense.users_id}}</div>
+<div><span>category_id: </span>{{expense.category_id}}</div>
+<div><span>accounts_id: </span>{{expense.accounts_id}}</div>
+
+
+<div>
+    <label for="name">Expense Name: </label>
+    <input id="name"[(ngModel)]="expense.name" placeholder="name">
+</div>
