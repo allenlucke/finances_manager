@@ -3,7 +3,7 @@
   <li *ngFor="let expense of expenses" 
   [class.selected]="expense === selectedExpense"
   (click)="onSelect(expense)">
-    <span class="badge">{{expense.id}}</span> {{expense.name}}{{expense.paid}}
+    <span class="badge">{{expense.id}}</span> {{expense.name}}{{expense.paid}}{{expense.paid}}{{expense.due_by}}{{expense.paid_on}}{{expense.recurring}}{{expense.amount_due}}{{expense.amount_paid}}{{expense.users_id}}{{expense.category_id}}{{expense.accounts_id}}
   </li>
 </ul>
 
