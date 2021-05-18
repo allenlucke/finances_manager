@@ -9,6 +9,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
@@ -29,7 +30,8 @@ public class GetExpensesSPService {
 	public static final String CLASS_NAME = GetExpensesSPService.class.getSimpleName();
 	
 	//REST service to GET expenses
-	@GET
+	//Is technically considered a POST request due to it's requiring a request body be sent.
+	@POST
 	@Path("/GetExpensesSP")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
@@ -39,7 +41,7 @@ public class GetExpensesSPService {
 			    
 		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In GetExpensesSp");
 
-		
+		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In GetExpensesSp, request: " + request.toString());
 		final String methodName = "getExpensesStP()";
 		
 		//Checks to ensure request is valid JSON
@@ -71,9 +73,10 @@ public class GetExpensesSPService {
 		}
 		catch( Exception e ) {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e).build();
+//			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e).build();
 		}
-		
-		
+			
 		return Response.status( Response.Status.OK ).entity(responseJSON).build();
+//		return Response.status( Response.Status.OK ).entity(responseJSON).build();
 	}
 }

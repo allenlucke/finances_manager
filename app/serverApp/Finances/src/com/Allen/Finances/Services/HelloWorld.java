@@ -24,9 +24,8 @@ public class HelloWorld {
 		String hello = "{\n" + 
 				"    \"hello\": \"Hello from finances server!\"\n" + 
 				"}";
-//		return Response.ok().entity(hello).header("Access-Control-Allow-Origin", "*").build(); 
 		
-		return Response.status( Response.Status.OK ).entity(hello).header("Access-Control-Allow-Origin", "*").build();
+		return Response.status( Response.Status.OK ).entity(hello).build();
 	}
 }
 

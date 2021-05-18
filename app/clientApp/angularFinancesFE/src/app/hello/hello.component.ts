@@ -15,13 +15,13 @@ export class HelloComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    console.log("In ng on inti")
+    console.log("In hello component ng on init")
     this.restApi.getHello().subscribe((data: {}) => {
-      console.log(JSON.stringify(data))
-      this.Hello = JSON.stringify(data);
-      console.log("data stuff " +JSON.stringify(data))
+      // console.log(JSON.stringify(data))
+      // this.Hello = JSON.stringify(data);
+      console.log("hello stuff " +JSON.stringify(data))
     })
-    this.loadHello();
+    // this.loadHello();
     // console.log(this.loadHello)
   }
 
@@ -29,8 +29,8 @@ export class HelloComponent implements OnInit {
   loadHello() {
     console.log("in load hello")
     return this.restApi.getHello().subscribe((data: {}) => {
-      this.Hello = JSON.stringify(data);
-      console.log("data stuff " +JSON.stringify(data))
+      // this.Hello = JSON.stringify(data);
+      console.log("hello stuff " +JSON.stringify(data))
     })
   }
 }

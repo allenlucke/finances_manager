@@ -97,8 +97,9 @@ public class GetExpensesSPDAO {
 				    obj.setAccounts_id(rs.getInt("accounts_id"));
 				    
 	            	expensesResultList.add(obj);
-	            	CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Returning result set of "+String.valueOf(expensesResultList.size()));
+//	            	CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Returning result set of "+String.valueOf(expensesResultList.size()));
 				}
+				CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Returning result set of "+String.valueOf(expensesResultList.size()));
 				return expensesResultList;
 			}
 			catch(NamingException | SQLException e) {
