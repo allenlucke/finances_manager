@@ -25,11 +25,12 @@ export class RestApiService {
   } 
 
   // HttpClient API get() method => SayHello Test Method
-    getEmployees(): Observable<String> {
-    return this.http.get<String>(this.apiURL + '/hello')
+    getHello(): Observable<any> {
+      console.log("stuff")
+    return this.http.get<any>(this.apiURL + '/hello')
     .pipe(
       retry(1),
-      catchError(this.handleError)
+      // catchError(this.handleError)
     )
   }
 
@@ -44,7 +45,7 @@ export class RestApiService {
 
 
   // Error handling 
-  handleError(error) {
+  handleError(error: any) {
     let errorMessage = '';
     if(error.error instanceof ErrorEvent) {
       // Get client-side error
