@@ -34,8 +34,7 @@ public class GetExpensesSPService {
 	@POST
 	@Path("/GetExpensesSP")
 	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	
+	@Produces(MediaType.APPLICATION_JSON)	
 	public Response getIncomeStP(@Context HttpServletRequest request) throws ServletException, IOException, NamingException, 
 	SQLException, JsonMappingException{
 			    

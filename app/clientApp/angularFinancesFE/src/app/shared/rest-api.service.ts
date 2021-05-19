@@ -3,7 +3,6 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { retry, catchError } from 'rxjs/operators';
 import { GetExpensesHttpRequest } from '../shared/getExpensesHttpRequest';
-// import { getIncomeHttpRequest } from '../shared/getIncomeHttpRequest';
 import { Expense } from '../expense';
 
 @Injectable({
@@ -13,6 +12,7 @@ export class RestApiService {
 
    // Define API
    apiURL = 'http://localhost:8080/Finances';
+   
 
   constructor(private http: HttpClient) { }
 
@@ -39,11 +39,12 @@ export class RestApiService {
 
   // HttpClient API get() method => Get Expenses call to stored procedure
   getExpensesSP(data: any): Observable<any> {
-    // const headers = { 'content-type': 'application/json'} 
+    const headers= new HttpHeaders()
+      .set('content-type', 'application/json')
+      .set('Access-Control-Allow-Origin', '*');
     const reqBody = JSON.stringify(data)
     console.log(reqBody);
-    return this.http.post<any>(this.apiURL + '/SP/GetExpensesSP', reqBody)
-    // return this.http.post<any>(this.apiURL + '/SP/GetExpensesSP', reqBody, {'headers' : headers})
+    return this.http.post<any>(this.apiURL + '/SP/GetExpensesSP', reqBody, { 'headers': headers })
     .pipe(
       retry(1),
       catchError(this.handleError)
