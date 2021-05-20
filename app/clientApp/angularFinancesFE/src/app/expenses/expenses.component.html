@@ -1,26 +1,44 @@
 <h2>My Expenses</h2>
-<!-- <ul class="expenses">
-  <li *ngFor="let expense of expenses" 
-  [class.selected]="expense === selectedExpense"
-  (click)="onSelect(expense)">
-    <span class="badge">{{expense.id}}</span> {{expense.name}}{{expense.paid}}{{expense.paid}}{{expense.due_by}}{{expense.paid_on}}{{expense.recurring}}{{expense.amount_due}}{{expense.amount_paid}}{{expense.users_id}}{{expense.category_id}}{{expense.accounts_id}}
-  </li>
-</ul>
+<div class="container">
+  <!-- <div class="card m-5 p-3">
+      <div class="card-body"> -->
+          <table>
+          <!-- <table class="table table-bordered table-striped table-hover"> -->
+              <thead>
+              <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Paid</th>
+                  <th>Due By</th>
+                  <th>Paid On</th>
+                  <th>Recurring</th>
+                  <th>Amount Due</th>
+                  <th>Amount Paid</th>
+                  <th>User ID</th>
+                  <th>Category ID</th>
+                  <th>Accounts ID</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let expense of allExpenses">
+                  <td>{{ expense.id }}</td>
+                  <td>{{ expense.name }}</td>
+                  <td>{{ expense.paid }}</td>
+                  <td>{{ expense.due_by }}</td>
+                  <td>{{ expense.paid_on }}</td>
+                  <td>{{ expense.recurring }}</td>
+                  <td>{{ expense.amount_due }}</td>
+                  <td>{{ expense.amount_paid}}</td>
+                  <td>{{ expense.user_id }}</td>
+                  <td>{{ expense.category_id }}</td>
+                  <td>{{ expense.accounts_id }}</td>
+              </tr>
+              </tbody>
+          </table>
+      <!-- </div>
 
-<div *ngIf='selectedExpense'>
-
-<h2>{{selectedExpense.name | uppercase}}</h2>
-<div><span>id: </span>{{selectedExpense.id}}</div>
-<!-- <div><span>name: </span>{{expense.name}}</div>
-<div><span>paid: </span>{{expense.paid}}</div>
-<div><span>due_by: </span>{{expense.due_by}}</div>
-<div><span>paid_on: </span>{{expense.paid_on}}</div>
-<div><span>recurring: </span>{{expense.recurring}}</div>
-<div><span>amount_due: </span>{{expense.amount_due}}</div>
-<div><span>amount_paid: </span>{{expense.amount_paid}}</div>
-<div><span>users_id: </span>{{expense.users_id}}</div>
-<div><span>category_id: </span>{{expense.category_id}}</div>
-<div><span>accounts_id: </span>{{expense.accounts_id}}</div> -->
+  </div> -->
+</div>
 
 
 <!-- <div>

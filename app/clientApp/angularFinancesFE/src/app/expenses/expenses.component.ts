@@ -12,6 +12,8 @@ import { Expense } from '../expense';
 })
 export class ExpensesComponent implements OnInit {
 
+  allExpenses: any = [];
+
   constructor(
     public restApi: RestApiService
   ) { }
@@ -37,6 +39,8 @@ export class ExpensesComponent implements OnInit {
         "enddate" : null
       }).subscribe((data: {}) => {
         console.log("Expenses: " +JSON.stringify(data))
+        this.allExpenses = data;
+        console.log("Expenses: " +JSON.stringify(this.allExpenses))
       })
     }
 }

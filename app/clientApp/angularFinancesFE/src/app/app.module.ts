@@ -4,8 +4,11 @@ import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
 // Forms module
 import { FormsModule } from '@angular/forms'; 
+// Datatables
+import {DataTablesModule} from 'angular-datatables';
 // Routing module for router service
 import { AppRoutingModule } from './app-routing.module';
+// Components
 import { AppComponent } from './app.component';
 import { ExpensesComponent } from './expenses/expenses.component';
 import { HelloComponent } from './hello/hello.component';
@@ -20,7 +23,8 @@ import { HelloComponent } from './hello/hello.component';
     BrowserModule,
     HttpClientModule,
     FormsModule,
-    AppRoutingModule
+    AppRoutingModule,
+    DataTablesModule,
   ],
   providers: [],
   bootstrap: [AppComponent]
