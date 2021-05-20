@@ -29,21 +29,22 @@ export class RestApiService {
 
   // HttpClient API get() method => SayHello Test Method
     getHello(): Observable<any> {
-      console.log("In get hello API call")
+    console.log("In get hello API call")
     return this.http.get<any>(this.apiURL + '/hello')
     .pipe(
       retry(1),
-      // catchError(this.handleError)
+      catchError(this.handleError)
     )
   }
 
   // HttpClient API get() method => Get Expenses call to stored procedure
   getExpensesSP(data: any): Observable<any> {
+    console.log("In get expenses API call")
     const headers= new HttpHeaders()
       .set('content-type', 'application/json')
       .set('Access-Control-Allow-Origin', '*');
     const reqBody = JSON.stringify(data)
-    console.log(reqBody);
+    console.log("getExpensesSP Request Body: "+ reqBody);
     return this.http.post<any>(this.apiURL + '/SP/GetExpensesSP', reqBody, { 'headers': headers })
     .pipe(
       retry(1),
