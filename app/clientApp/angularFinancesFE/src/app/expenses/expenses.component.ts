@@ -14,6 +14,8 @@ export class ExpensesComponent implements OnInit {
 
   allExpenses: any = [];
 
+  expensesRequest = new GetExpensesHttpRequest();
+
   constructor(
     public restApi: RestApiService
   ) { }
@@ -38,6 +40,14 @@ export class ExpensesComponent implements OnInit {
         "startdate" : null,
         "enddate" : null
       }).subscribe((data: {}) => {
+        console.log("Expenses: " +JSON.stringify(data))
+        this.allExpenses = data;
+        console.log("Expenses: " +JSON.stringify(this.allExpenses))
+      })
+    }
+
+    loadExpensesRequest()  {
+      this.restApi.getExpensesSP(this.expensesRequest).subscribe((data: {}) => {
         console.log("Expenses: " +JSON.stringify(data))
         this.allExpenses = data;
         console.log("Expenses: " +JSON.stringify(this.allExpenses))

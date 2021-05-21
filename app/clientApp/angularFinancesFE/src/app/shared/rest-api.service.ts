@@ -38,7 +38,20 @@ export class RestApiService {
   }
 
   // HttpClient API get() method => Get Expenses call to stored procedure
-  getExpensesSP(data: any): Observable<any> {
+  // getExpensesSP(data: any): Observable<any> {
+  //   console.log("In get expenses API call")
+  //   const headers= new HttpHeaders()
+  //     .set('content-type', 'application/json')
+  //     .set('Access-Control-Allow-Origin', '*');
+  //   const reqBody = JSON.stringify(data)
+  //   console.log("getExpensesSP Request Body: "+ reqBody);
+  //   return this.http.post<any>(this.apiURL + '/SP/GetExpensesSP', reqBody, { 'headers': headers })
+  //   .pipe(
+  //     retry(1),
+  //     catchError(this.handleError)
+  //   )
+  // }
+  getExpensesSP(data: GetExpensesHttpRequest): Observable<any> {
     console.log("In get expenses API call")
     const headers= new HttpHeaders()
       .set('content-type', 'application/json')

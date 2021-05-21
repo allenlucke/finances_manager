@@ -1,5 +1,34 @@
 <h2>My Expenses</h2>
 <div class="container">
+  <div>
+    <div>
+      <label>User ID: </label>
+      <input [(ngModel)] = "expensesRequest.users_id" />
+      <label>Category ID: </label>
+      <input [(ngModel)] = "expensesRequest.category_id" />
+      <label>Accounts ID: </label>
+      <input [(ngModel)] = "expensesRequest.accounts_id" />
+      <label>Name: </label>
+      <input [(ngModel)] = "expensesRequest.name" />
+      <label>Paid: </label>
+      <input [(ngModel)] = "expensesRequest.paid" />
+      <label>Recurring: </label>
+      <input [(ngModel)] = "expensesRequest.recurring" />
+      <label>Amount Due: </label>
+      <input [(ngModel)] = "expensesRequest.amount_due" />
+      <label>Amount Paid: </label>
+      <input [(ngModel)] = "expensesRequest.amount_paid" />
+      <label>Period: </label>
+      <input [(ngModel)] = "expensesRequest.period" />
+      <label>Start Date: </label>
+      <input [(ngModel)] = "expensesRequest.startdate" />
+      <label>End Date: </label>
+      <input [(ngModel)] = "expensesRequest.enddate" />
+      <div>
+        <button (click)="loadExpensesRequest()">Add</button>
+      </div>
+    </div>
+  </div>
   <!-- <div class="card m-5 p-3">
       <div class="card-body"> -->
           <table>
