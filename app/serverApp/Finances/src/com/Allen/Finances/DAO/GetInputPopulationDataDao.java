@@ -14,7 +14,7 @@ import javax.servlet.ServletException;
 import javax.sql.DataSource;
 
 import com.Allen.Finances.Bean.CatalinaSimpleLog;
-import com.Allen.Finances.Period.Models.GetPeriodHttpRequestModel;
+//import com.Allen.Finances.Period.Models.GetPeriodHttpRequestModel;
 import com.Allen.Finances.Period.Models.PeriodModel;
 
 
@@ -26,7 +26,7 @@ public class GetInputPopulationDataDao {
 	
 	private static final String DATASOURCE = "java:/comp/env/jdbc/finances";
 	
-	public List<PeriodModel> getPeriodData(GetPeriodHttpRequestModel request) throws ServletException {
+	public List<PeriodModel> getPeriodData(int users_id) throws ServletException {
 		
 		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In GetInputPopulationDataDao");
 		
@@ -44,7 +44,7 @@ public class GetInputPopulationDataDao {
             
             pstmt = conn.prepareStatement(sqlQueryString); 
             
-            pstmt.setInt(1, request.getUsers_id());
+            pstmt.setInt(1, users_id);
             
             CatalinaSimpleLog.log("INFO", CLASS_NAME, methodName, "Preparing to execute");
             
