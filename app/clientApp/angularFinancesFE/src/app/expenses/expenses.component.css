@@ -3,7 +3,7 @@
     margin: 0 0 2em 0;
     list-style-type: none;
     padding: 0;
-    width: 15em;
+    width: 5em;
   }
   .expenses li {
     cursor: pointer;
@@ -50,3 +50,22 @@
   input {
     padding: .5rem;
   }
+  table{
+    width: 100%;
+  }
+  table, th , td {
+  border: 1px solid grey;
+  border-collapse: collapse;
+  padding: 5px;
+}
+
+table tr:nth-child(odd) {
+  background-color: #f1f1f1;
+}
+
+table tr:nth-child(even) {
+  background-color: #ffffff;
+}
+.container {
+  padding: 4rem;
+}

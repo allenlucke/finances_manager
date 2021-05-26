@@ -72,7 +72,6 @@ public class GetExpensesSPService {
 		}
 		catch( Exception e ) {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e).build();
-//			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e).build();
 		}
 			
 		return Response.status( Response.Status.OK ).entity(responseJSON).build();
