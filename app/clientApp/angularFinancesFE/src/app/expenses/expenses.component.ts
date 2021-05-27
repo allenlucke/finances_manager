@@ -23,6 +23,7 @@ export class ExpensesComponent implements OnInit {
   ngOnInit() {
     console.log("In expenses component ng on init")
     this.loadExpenses();
+    this.loadPeriodInputData();
   }
 
     // Get ExpensesSP
@@ -43,6 +44,14 @@ export class ExpensesComponent implements OnInit {
         console.log("Expenses: " +JSON.stringify(data))
         this.allExpenses = data;
         console.log("Expenses: " +JSON.stringify(this.allExpenses))
+      })
+    }
+
+    loadPeriodInputData(){
+      this.restApi.getPeriodData({
+        id:1
+      }).subscribe((data: {}) => {
+        console.log("Period Info: " +JSON.stringify(data))
       })
     }
 

@@ -66,6 +66,20 @@ export class RestApiService {
   }
 
 
+  //INPUT DATA
+  //The following GET requests are used to supply data for input elements
+  getPeriodData(data: any): Observable<any> {
+      console.log("In get period data API call")
+    const headers= new HttpHeaders()
+      .set('content-type', 'application/json')
+      .set('Access-Control-Allow-Origin', '*');
+    return this.http.get<any>(this.apiURL + '/InputPopData/PeriodData/?id=' + data.id, { 'headers': headers })
+    .pipe(
+      retry(1),
+      catchError(this.handleError)
+    )
+  }
+
   // Error handling 
   handleError(error: any) {
     let errorMessage = '';
