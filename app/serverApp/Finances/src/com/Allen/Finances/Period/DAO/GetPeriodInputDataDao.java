@@ -1,4 +1,4 @@
-package com.Allen.Finances.DAO;
+package com.Allen.Finances.Period.DAO;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,11 +18,11 @@ import com.Allen.Finances.Bean.CatalinaSimpleLog;
 import com.Allen.Finances.Period.Models.PeriodModel;
 
 
-public class GetInputPopulationDataDao {
+public class GetPeriodInputDataDao {
 
-	public static final String CLASS_NAME = GetInputPopulationDataDao.class.getSimpleName();
+	public static final String CLASS_NAME = GetPeriodInputDataDao.class.getSimpleName();
 
-	public GetInputPopulationDataDao () {}
+	public GetPeriodInputDataDao () {}
 	
 	private static final String DATASOURCE = "java:/comp/env/jdbc/finances";
 	

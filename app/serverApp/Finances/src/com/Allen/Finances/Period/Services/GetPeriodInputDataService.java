@@ -1,4 +1,4 @@
-package com.Allen.Finances.Services;
+package com.Allen.Finances.Period.Services;
 
 import java.util.List;
 
@@ -10,14 +10,14 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import com.Allen.Finances.DAO.GetInputPopulationDataDao;
+import com.Allen.Finances.Period.DAO.GetPeriodInputDataDao;
 import com.Allen.Finances.Period.Models.PeriodModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Path("/InputPopData")
-public class GetInputPopulationDataService {
+public class GetPeriodInputDataService {
 
-	public static final String CLASS_NAME = GetInputPopulationDataService.class.getSimpleName();
+	public static final String CLASS_NAME = GetPeriodInputDataService.class.getSimpleName();
 	
 	@GET
 	@Path("/PeriodData")
@@ -33,7 +33,7 @@ public class GetInputPopulationDataService {
 
 			ObjectMapper mapper = new ObjectMapper();
 
-			GetInputPopulationDataDao dao = new GetInputPopulationDataDao(); 
+			GetPeriodInputDataDao dao = new GetPeriodInputDataDao(); 
 			
 			List<PeriodModel> result = dao.getPeriodData(id);
 			
