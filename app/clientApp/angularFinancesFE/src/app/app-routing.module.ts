@@ -6,7 +6,7 @@ import { HelloComponent } from './hello/hello.component';
 const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'hello' },
   { path: 'hello', component: HelloComponent },
-  { path: 'getExpensesSP', component:ExpensesComponent}
+  { path: 'Expenses', component:ExpensesComponent}
 ];
 
 @NgModule({

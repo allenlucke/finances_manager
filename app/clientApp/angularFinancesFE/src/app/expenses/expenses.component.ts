@@ -13,6 +13,7 @@ import { Expense } from '../expense';
 export class ExpensesComponent implements OnInit {
 
   allExpenses: any = [];
+  periodData: any = [];
 
   expensesRequest = new GetExpensesHttpRequest();
 
@@ -26,7 +27,7 @@ export class ExpensesComponent implements OnInit {
     this.loadPeriodInputData();
   }
 
-    // Get ExpensesSP
+    // Calls to Get ExpensesSP supplies initial page load of all expenses
     loadExpenses() {
       this.restApi.getExpensesSP({
         "users_id": 1,
@@ -41,20 +42,22 @@ export class ExpensesComponent implements OnInit {
         "startdate" : null,
         "enddate" : null
       }).subscribe((data: {}) => {
-        console.log("Expenses: " +JSON.stringify(data))
         this.allExpenses = data;
         console.log("Expenses: " +JSON.stringify(this.allExpenses))
       })
     }
 
+    //Loads period data used in period select options
     loadPeriodInputData(){
       this.restApi.getPeriodData({
         id:1
       }).subscribe((data: {}) => {
+        this.periodData = data;
         console.log("Period Info: " +JSON.stringify(data))
       })
     }
 
+    // Calls to Get ExpensesSP 
     loadExpensesRequest()  {
       this.restApi.getExpensesSP(this.expensesRequest).subscribe((data: {}) => {
         console.log("Expenses: " +JSON.stringify(data))

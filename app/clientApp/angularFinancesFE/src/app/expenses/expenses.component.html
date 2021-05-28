@@ -19,7 +19,10 @@
       <label>Amount Paid: </label>
       <input [(ngModel)] = "expensesRequest.amount_paid" />
       <label>Period: </label>
-      <input [(ngModel)] = "expensesRequest.period" />
+      <select [(ngModel)] = "expensesRequest.period" >
+        <option></option>
+        <option *ngFor="let period of periodData" value = "{{ period.id }}">From: {{ period.start_date }} To: {{ period.end_date }}</option>
+      </select>
       <label>Start Date: </label>
       <input [(ngModel)] = "expensesRequest.startdate" />
       <label>End Date: </label>
