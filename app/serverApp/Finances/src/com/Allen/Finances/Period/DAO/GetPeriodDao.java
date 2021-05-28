@@ -18,20 +18,21 @@ import com.Allen.Finances.Bean.CatalinaSimpleLog;
 import com.Allen.Finances.Period.Models.PeriodModel;
 
 
-public class GetPeriodInputDataDao {
+public class GetPeriodDao {
 
-	public static final String CLASS_NAME = GetPeriodInputDataDao.class.getSimpleName();
+	public static final String CLASS_NAME = GetPeriodDao.class.getSimpleName();
 
-	public GetPeriodInputDataDao () {}
+	public GetPeriodDao () {}
 	
 	private static final String DATASOURCE = "java:/comp/env/jdbc/finances";
 	
 	public List<PeriodModel> getPeriodData(int users_id) throws ServletException {
 		
-		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In GetInputPopulationDataDao");
-		
 		final String methodName = "getPeriodData()";
 		
+		CatalinaSimpleLog.log("INFO", CLASS_NAME, " In " + methodName);
+		
+	
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;

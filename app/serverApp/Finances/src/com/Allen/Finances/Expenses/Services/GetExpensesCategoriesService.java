@@ -1,4 +1,4 @@
-package com.Allen.Finances.Period.Services;
+package com.Allen.Finances.Expenses.Services;
 
 import java.util.List;
 
@@ -10,32 +10,36 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import com.Allen.Finances.Period.DAO.GetPeriodInputDataDao;
-import com.Allen.Finances.Period.Models.PeriodModel;
+import com.Allen.Finances.Bean.CatalinaSimpleLog;
+import com.Allen.Finances.Expenses.DAO.GetExpensesCategoriesDao;
+import com.Allen.Finances.Expenses.Models.ExpensesCategoriesModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@Path("/InputPopData")
-public class GetPeriodInputDataService {
 
-	public static final String CLASS_NAME = GetPeriodInputDataService.class.getSimpleName();
+@Path("/InputPopData")
+public class GetExpensesCategoriesService {
+
+	public static final String CLASS_NAME = GetExpensesCategoriesService.class.getSimpleName();
 	
 	@GET
-	@Path("/PeriodData")
+	@Path("/ExpenseCatData")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response getPeriodData(@QueryParam("id") int id) {
+	public Response getExpenseCategoriesData(@QueryParam("id") int users_id) {
 		
-		final String methodName = "getPeriodData()";
-				
+		final String methodName = "GetExpensesCategoriesService()";
+		
+		CatalinaSimpleLog.log("INFO", CLASS_NAME, " In " + methodName);
+		
 		String responseJSON;
 		
 		try {
 
 			ObjectMapper mapper = new ObjectMapper();
 
-			GetPeriodInputDataDao dao = new GetPeriodInputDataDao(); 
+			GetExpensesCategoriesDao dao = new GetExpensesCategoriesDao(); 
 			
-			List<PeriodModel> result = dao.getPeriodData(id);
+			List<ExpensesCategoriesModel> result = dao.getCatData(users_id);
 			
 			responseJSON = mapper.writeValueAsString(result);
 		}

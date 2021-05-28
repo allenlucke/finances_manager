@@ -38,10 +38,10 @@ public class GetExpensesSPService {
 	public Response getIncomeStP(@Context HttpServletRequest request) throws ServletException, IOException, NamingException, 
 	SQLException, JsonMappingException{
 			    
-		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In GetExpensesSp");
 
-		CatalinaSimpleLog.log("INFO", CLASS_NAME, "In GetExpensesSp, request: " + request.toString());
 		final String methodName = "getExpensesStP()";
+		
+		CatalinaSimpleLog.log("INFO", CLASS_NAME, " In " + methodName);
 		
 		//Checks to ensure request is valid JSON
 		if( !request.getContentType().equalsIgnoreCase(MediaType.APPLICATION_JSON)) {
@@ -75,6 +75,5 @@ public class GetExpensesSPService {
 		}
 			
 		return Response.status( Response.Status.OK ).entity(responseJSON).build();
-//		return Response.status( Response.Status.OK ).entity(responseJSON).build();
 	}
 }
