@@ -5,7 +5,10 @@
       <label>User ID: </label>
       <input [(ngModel)] = "expensesRequest.users_id" />
       <label>Category ID: </label>
-      <input [(ngModel)] = "expensesRequest.category_id" />
+      <select [(ngModel)] = "expensesRequest.category_id" >
+        <option></option>
+        <option *ngFor="let category of expCatData" value = "{{category.id}}">{{category.name}}</option>
+      </select>
       <label>Accounts ID: </label>
       <input [(ngModel)] = "expensesRequest.accounts_id" />
       <label>Name: </label>

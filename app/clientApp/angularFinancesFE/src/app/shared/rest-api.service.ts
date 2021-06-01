@@ -79,6 +79,17 @@ export class RestApiService {
       catchError(this.handleError)
     )
   }
+  getExpensesCategoriesData(data: any): Observable<any> {
+    console.log("In get expenses categories api call")
+    const headers= new HttpHeaders()
+      .set('content-type', 'application/json')
+      .set('Access-Control-Allow-Origin', '*');
+      return this.http.get<any>(this.apiURL + '/InputPopData/ExpenseCatData/?id=' + data.id, { 'headers': headers })
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ) 
+  }
 
   // Error handling 
   handleError(error: any) {

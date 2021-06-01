@@ -14,6 +14,7 @@ export class ExpensesComponent implements OnInit {
 
   allExpenses: any = [];
   periodData: any = [];
+  expCatData: any = [];
 
   expensesRequest = new GetExpensesHttpRequest();
 
@@ -25,6 +26,7 @@ export class ExpensesComponent implements OnInit {
     console.log("In expenses component ng on init")
     this.loadExpenses();
     this.loadPeriodInputData();
+    this.loadExpenseCategoriesInputData();
   }
 
     // Calls to Get ExpensesSP supplies initial page load of all expenses
@@ -53,6 +55,16 @@ export class ExpensesComponent implements OnInit {
         id:1
       }).subscribe((data: {}) => {
         this.periodData = data;
+        console.log("Period Info: " +JSON.stringify(data))
+      })
+    }
+
+    //Loads period data used in period select options
+    loadExpenseCategoriesInputData(){
+      this.restApi.getExpensesCategoriesData({
+        id:1
+      }).subscribe((data: {}) => {
+        this.expCatData = data;
         console.log("Period Info: " +JSON.stringify(data))
       })
     }
