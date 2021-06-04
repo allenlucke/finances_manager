@@ -2,9 +2,9 @@
 <div class="container">
   <div>
     <div>
-      <label>User ID: </label>
-      <input [(ngModel)] = "expensesRequest.users_id" />
-      <label>Category ID: </label>
+      <!-- <label>User ID: </label>
+      <input [(ngModel)] = "expensesRequest.users_id" /> -->
+      <label>Category: </label>
       <select [(ngModel)] = "expensesRequest.category_id" >
         <option></option>
         <option *ngFor="let category of expCatData" value = "{{category.id}}">{{category.name}}</option>
@@ -25,7 +25,9 @@
       <select [(ngModel)] = "expensesRequest.period" >
         <option></option>
         <option *ngFor="let period of periodData" value = "{{ period.id }}">From: {{ period.start_date }} To: {{ period.end_date }}</option>
+        <!-- <option >Custom Dates</option> -->
       </select>
+      
       <label>Start Date: </label>
       <input [(ngModel)] = "expensesRequest.startdate" />
       <label>End Date: </label>
