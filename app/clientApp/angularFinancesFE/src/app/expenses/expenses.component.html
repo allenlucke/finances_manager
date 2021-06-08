@@ -33,16 +33,16 @@
       <label>Amount Paid: </label>
       <input [(ngModel)] = "expensesRequest.amount_paid" /> 
       <!-- <select [(ngModel)] = "expensesRequest.period" > -->
-      <div>
+      <!-- <div>
         <input type ="radio" name ="rad1" (click)= "changeSearchBy('last60')"[(ngModel)] = "expensesRequest.startdate" [(ngModel)] = "expensesRequest.period">All Time
         <input type ="radio" name ="rad1" (click)= "changeSearchBy('period')" [(ngModel)] = "expensesRequest.startdate">Period
         <input type ="radio" name ="rad1" (click)= "changeSearchBy('dateRange')" [(ngModel)] = "expensesRequest.period">Date Range
-      </div>
-      <!-- <div>
+      </div> -->
+      <div>
         <input type ="radio" name ="rad1" (click)= "changeSearchBy('last60')">All Time
         <input type ="radio" name ="rad1" (click)= "changeSearchBy('period')" >Period
         <input type ="radio" name ="rad1" (click)= "changeSearchBy('dateRange')" >Date Range
-      </div> -->
+      </div>
 
       <div *ngIf="searchBy === 'period'">
         <label>Period: </label>

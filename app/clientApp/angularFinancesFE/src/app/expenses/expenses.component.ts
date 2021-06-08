@@ -24,6 +24,33 @@ export class ExpensesComponent implements OnInit {
   searchBy: String = "";
   changeSearchBy(searchBy: String){
     this.searchBy = searchBy;
+    if(searchBy === "dateRange"){
+      console.log(searchBy)
+      console.log(this.expensesRequest.period)
+      this.expensesRequest.period = null
+      console.log(this.expensesRequest.period)
+    }
+    else if (searchBy === "period"){
+      console.log(searchBy)
+      console.log(this.expensesRequest.startdate)
+      this.expensesRequest.startdate = null
+      console.log(this.expensesRequest.startdate)
+      console.log(this.expensesRequest.enddate)
+      this.expensesRequest.enddate = null
+      console.log(this.expensesRequest.enddate)
+    }
+    else {
+      console.log(searchBy)
+      console.log(this.expensesRequest.period)
+      this.expensesRequest.period = null
+      console.log(this.expensesRequest.period)
+      console.log(this.expensesRequest.startdate)
+      this.expensesRequest.startdate = null
+      console.log(this.expensesRequest.startdate)
+      console.log(this.expensesRequest.enddate)
+      this.expensesRequest.enddate = null
+      console.log(this.expensesRequest.enddate)
+    }
   }
 
   expensesRequest = new GetExpensesHttpRequest();
