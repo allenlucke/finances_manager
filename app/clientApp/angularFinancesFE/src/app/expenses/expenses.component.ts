@@ -16,6 +16,16 @@ export class ExpensesComponent implements OnInit {
   periodData: any = [];
   expCatData: any = [];
 
+  isValid: boolean = true;
+  changeValue(valid: boolean) {
+    this.isValid = valid;
+  }
+
+  searchBy: String = "";
+  changeSearchBy(searchBy: String){
+    this.searchBy = searchBy;
+  }
+
   expensesRequest = new GetExpensesHttpRequest();
 
   constructor(

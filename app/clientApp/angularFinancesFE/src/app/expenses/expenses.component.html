@@ -1,6 +1,17 @@
 <h2>My Expenses</h2>
 <div class="container">
   <div>
+    <!-- <h3>Using NGIF</h3>
+    <div>
+      <input type ="radio" name ="rad1" (click)= "changeValue(true)">True
+      <input type ="radio" name ="rad1" (click)= "changeValue(false)">False
+    </div>
+    <div *ngIf="isValid">
+      <b>Data is valid</b>
+    </div>
+    <div *ngIf="!isValid">
+      <b>Data is not valid</b>
+    </div> -->
     <div>
       <!-- <label>User ID: </label>
       <input [(ngModel)] = "expensesRequest.users_id" /> -->
@@ -20,18 +31,40 @@
       <label>Amount Due: </label>
       <input [(ngModel)] = "expensesRequest.amount_due" />
       <label>Amount Paid: </label>
-      <input [(ngModel)] = "expensesRequest.amount_paid" />
-      <label>Period: </label>
-      <select [(ngModel)] = "expensesRequest.period" >
-        <option></option>
-        <option *ngFor="let period of periodData" value = "{{ period.id }}">From: {{ period.start_date }} To: {{ period.end_date }}</option>
-        <!-- <option >Custom Dates</option> -->
-      </select>
-      
-      <label>Start Date: </label>
-      <input [(ngModel)] = "expensesRequest.startdate" />
-      <label>End Date: </label>
-      <input [(ngModel)] = "expensesRequest.enddate" />
+      <input [(ngModel)] = "expensesRequest.amount_paid" /> 
+      <!-- <select [(ngModel)] = "expensesRequest.period" > -->
+      <div>
+        <input type ="radio" name ="rad1" (click)= "changeSearchBy('last60')"[(ngModel)] = "expensesRequest.startdate" [(ngModel)] = "expensesRequest.period">All Time
+        <input type ="radio" name ="rad1" (click)= "changeSearchBy('period')" [(ngModel)] = "expensesRequest.startdate">Period
+        <input type ="radio" name ="rad1" (click)= "changeSearchBy('dateRange')" [(ngModel)] = "expensesRequest.period">Date Range
+      </div>
+      <!-- <div>
+        <input type ="radio" name ="rad1" (click)= "changeSearchBy('last60')">All Time
+        <input type ="radio" name ="rad1" (click)= "changeSearchBy('period')" >Period
+        <input type ="radio" name ="rad1" (click)= "changeSearchBy('dateRange')" >Date Range
+      </div> -->
+
+      <div *ngIf="searchBy === 'period'">
+        <label>Period: </label>
+        <select [(ngModel)] = "expensesRequest.period">
+          <option></option>
+          <option *ngFor="let period of periodData" value = "{{ period.id }}">From: {{ period.start_date }} To: {{ period.end_date }}</option>
+          <option></option>      
+        </select>
+      </div>
+
+      <div *ngIf="searchBy === 'dateRange'">
+        <label>Start Date: </label>
+        <input [(ngModel)] = "expensesRequest.startdate"
+          placeholder="Start Date"
+          class="form-control"
+          bsDatepicker>
+        <label>End Date: </label>
+        <input [(ngModel)] = "expensesRequest.enddate"
+          placeholder="End Date"
+          class="form-control"
+          bsDatepicker>
+      </div>
       <div>
         <button (click)="loadExpensesRequest()">Add</button>
       </div>

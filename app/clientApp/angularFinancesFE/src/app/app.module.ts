@@ -4,13 +4,12 @@ import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
 // Forms module
 import { FormsModule } from '@angular/forms'; 
-// import { MatDatepickerModule } from '@angular/material/datepicker';
 
-// import { MatDialogModule } from '@angular/material/dialog';
-// import { MatTableModule } from '@angular/material/table';
-// import { MatFormFieldModule } from '@angular/material/form-field';
-// import { MatInputModule } from '@angular/material/input';
-// import { MatButtonModule } from '@angular/material/button';
+// import { MaterialModule } from './material.module';
+// Datepicker module
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { BsDatepickerModule } from 'ngx-bootstrap/datepicker';
+
 // Datatables
 import {DataTablesModule} from 'angular-datatables';
 // Routing module for router service
@@ -20,6 +19,7 @@ import { AppComponent } from './app.component';
 import { ExpensesComponent } from './expenses/expenses.component';
 import { HelloComponent } from './hello/hello.component';
 
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -28,11 +28,12 @@ import { HelloComponent } from './hello/hello.component';
   ],
   imports: [
     BrowserModule,
+    BrowserAnimationsModule,
+    BsDatepickerModule.forRoot(),
     HttpClientModule,
     FormsModule,
     AppRoutingModule,
-    DataTablesModule,
-    // MatDatepickerModule, 
+    DataTablesModule
   ],
   providers: [],
   bootstrap: [AppComponent]
