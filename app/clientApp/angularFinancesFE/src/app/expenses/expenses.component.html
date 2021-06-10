@@ -41,9 +41,21 @@
       <label>Name: </label>
       <input [(ngModel)] = "expensesRequest.name" />
       <label>Paid: </label>
+      <!-- <select [(ngModel)] = "expensesRequest.paid" >
+        <option></option>
+        <option value="true" >TRUE</option>
+        <option value="false" >FALSE</option>
+      </select> -->
       <input [(ngModel)] = "expensesRequest.paid" />
+
       <label>Recurring: </label>
-      <input [(ngModel)] = "expensesRequest.recurring" />
+      <select [(ngModel)] = "expensesRequest.recurring" >
+        <option></option>
+        <option value="true" >TRUE</option>
+        <option value="false" >FALSE</option>
+      </select>
+
+      <!-- <input [(ngModel)] = "expensesRequest.recurring" /> -->
       <label>Amount Due: </label>
       <input [(ngModel)] = "expensesRequest.amount_due" />
       <label>Amount Paid: </label>
