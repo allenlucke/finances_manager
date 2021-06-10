@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { RestApiService } from "../shared/rest-api.service";
 import { GetExpensesHttpRequest } from '../shared/getExpensesHttpRequest';
+import { formatDate } from "@angular/common";
 import { Expense } from '../expense'; 
 
 
@@ -15,6 +16,11 @@ export class ExpensesComponent implements OnInit {
   allExpenses: any = [];
   periodData: any = [];
   expCatData: any = [];
+  
+  // dateNow : Date = new Date();
+  // dateNowISO = this.dateNow.toISOString();
+  // dateNowMilliseconds = this.dateNow.getTime();
+
 
   isValid: boolean = true;
   changeValue(valid: boolean) {

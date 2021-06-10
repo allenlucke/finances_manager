@@ -1,18 +1,34 @@
 <h2>My Expenses</h2>
 <div class="container">
   <div>
-    <!-- <h3>Using NGIF</h3>
     <div>
-      <input type ="radio" name ="rad1" (click)= "changeValue(true)">True
-      <input type ="radio" name ="rad1" (click)= "changeValue(false)">False
-    </div>
-    <div *ngIf="isValid">
-      <b>Data is valid</b>
-    </div>
-    <div *ngIf="!isValid">
-      <b>Data is not valid</b>
-    </div> -->
-    <div>
+      <label>Select Search Timeframe Criteria</label>
+      <div>
+        <input type ="radio" name ="rad1" (click)= "changeSearchBy('last60')">All Time
+        <input type ="radio" name ="rad1" (click)= "changeSearchBy('period')" >Period
+        <input type ="radio" name ="rad1" (click)= "changeSearchBy('dateRange')" >Date Range
+      </div>
+      <div *ngIf="searchBy === 'period'">
+        <label>Period: </label>
+        <select [(ngModel)] = "expensesRequest.period">
+          <option></option>
+          <option *ngFor="let period of periodData" value = "{{ period.id }}">{{ period.start_date | date: 'MM/dd/yyyy' }} - {{ period.end_date | date: 'MM/dd/yyyy' }}</option>
+          <option></option>      
+        </select>
+      </div>
+      <div *ngIf="searchBy === 'dateRange'">
+        <label>Start Date: </label>
+        <input [(ngModel)] = "expensesRequest.startdate"
+          placeholder="Start Date"
+          class="form-control"
+          bsDatepicker>
+        <label>End Date: </label>
+        <input [(ngModel)] = "expensesRequest.enddate"
+          placeholder="End Date"
+          class="form-control"
+          bsDatepicker>
+      </div>
+
       <!-- <label>User ID: </label>
       <input [(ngModel)] = "expensesRequest.users_id" /> -->
       <label>Category: </label>
@@ -32,86 +48,49 @@
       <input [(ngModel)] = "expensesRequest.amount_due" />
       <label>Amount Paid: </label>
       <input [(ngModel)] = "expensesRequest.amount_paid" /> 
-      <!-- <select [(ngModel)] = "expensesRequest.period" > -->
-      <!-- <div>
-        <input type ="radio" name ="rad1" (click)= "changeSearchBy('last60')"[(ngModel)] = "expensesRequest.startdate" [(ngModel)] = "expensesRequest.period">All Time
-        <input type ="radio" name ="rad1" (click)= "changeSearchBy('period')" [(ngModel)] = "expensesRequest.startdate">Period
-        <input type ="radio" name ="rad1" (click)= "changeSearchBy('dateRange')" [(ngModel)] = "expensesRequest.period">Date Range
-      </div> -->
       <div>
-        <input type ="radio" name ="rad1" (click)= "changeSearchBy('last60')">All Time
-        <input type ="radio" name ="rad1" (click)= "changeSearchBy('period')" >Period
-        <input type ="radio" name ="rad1" (click)= "changeSearchBy('dateRange')" >Date Range
-      </div>
-
-      <div *ngIf="searchBy === 'period'">
-        <label>Period: </label>
-        <select [(ngModel)] = "expensesRequest.period">
-          <option></option>
-          <option *ngFor="let period of periodData" value = "{{ period.id }}">From: {{ period.start_date }} To: {{ period.end_date }}</option>
-          <option></option>      
-        </select>
-      </div>
-
-      <div *ngIf="searchBy === 'dateRange'">
-        <label>Start Date: </label>
-        <input [(ngModel)] = "expensesRequest.startdate"
-          placeholder="Start Date"
-          class="form-control"
-          bsDatepicker>
-        <label>End Date: </label>
-        <input [(ngModel)] = "expensesRequest.enddate"
-          placeholder="End Date"
-          class="form-control"
-          bsDatepicker>
-      </div>
-      <div>
-        <button (click)="loadExpensesRequest()">Add</button>
+        <button (click)="loadExpensesRequest()">Search Expenses</button>
       </div>
     </div>
   </div>
-  <!-- <div class="card m-5 p-3">
-      <div class="card-body"> -->
-          <table class="testDiv">
-          <!-- <table class="table table-bordered table-striped table-hover"> -->
-              <thead>
-              <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Paid</th>
-                  <th>Due By</th>
-                  <th>Paid On</th>
-                  <th>Recurring</th>
-                  <th>Amount Due</th>
-                  <th>Amount Paid</th>
-                  <th>User ID</th>
-                  <th>Category ID</th>
-                  <th>Accounts ID</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr *ngFor="let expense of allExpenses">
-                  <td>{{ expense.id }}</td>
-                  <td>{{ expense.name }}</td>
-                  <td>{{ expense.paid }}</td>
-                  <td>{{ expense.due_by }}</td>
-                  <td>{{ expense.paid_on }}</td>
-                  <td>{{ expense.recurring }}</td>
-                  <td>{{ expense.amount_due }}</td>
-                  <td>{{ expense.amount_paid}}</td>
-                  <td>{{ expense.user_id }}</td>
-                  <td>{{ expense.category_id }}</td>
-                  <td>{{ expense.accounts_id }}</td>
-              </tr>
-              </tbody>
-          </table>
-      <!-- </div>
-
-  </div> -->
+  <div>
+    <table class="table table-bordered table-striped table-hover">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Paid</th>
+            <th>Due By</th>
+            <th>Paid On</th>
+            <th>Recurring</th>
+            <th>Amount Due</th>
+            <th>Amount Paid</th>
+            <th>User ID</th>
+            <th>Category ID</th>
+            <!-- <th>Accounts ID</th> -->
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let expense of allExpenses">
+            <td>{{ expense.id }}</td>
+            <td>{{ expense.name }}</td>
+            <td>{{ expense.paid }}</td>
+            <td>{{ expense.due_by | date: 'MM/dd/yyyy'}}</td>
+            <td>{{ expense.paid_on | date: 'MM/dd/yyyy' }}</td>
+            <td>{{ expense.recurring }}</td>
+            <td>{{ expense.amount_due }}</td>
+            <td>{{ expense.amount_paid}}</td>
+            <td>{{ expense.user_id }}</td>
+            <td>{{ expense.category_id }}</td>
+            <!-- <td>{{ expense.accounts_id }}</td> -->
+        </tr>
+        </tbody>
+    </table>
+  </div>
 </div>
 
 
 <!-- <div>
     <label for="expense-name">Expense Name: </label>
     <input id="expense-name"[(ngModel)]="selectedExpense.name" placeholder="name">
-</div> --> 
+</div> -->

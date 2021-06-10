@@ -67,5 +67,5 @@ table tr:nth-child(even) {
   background-color: #ffffff;
 }
 .container {
-  padding: 4rem;
+  /* padding: 2rem; */
 }
