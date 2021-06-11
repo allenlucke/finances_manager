@@ -1,5 +1,5 @@
-<h2>My Expenses</h2>
-<div class="container">
+<div class="expenses_container1">
+  <h1>My Expenses</h1>
   <div>
     <div>
       <label>Select Search Timeframe Criteria</label>
@@ -41,21 +41,18 @@
       <label>Name: </label>
       <input [(ngModel)] = "expensesRequest.name" />
       <label>Paid: </label>
-      <!-- <select [(ngModel)] = "expensesRequest.paid" >
-        <option></option>
-        <option value="true" >TRUE</option>
-        <option value="false" >FALSE</option>
-      </select> -->
-      <input [(ngModel)] = "expensesRequest.paid" />
-
-      <label>Recurring: </label>
-      <select [(ngModel)] = "expensesRequest.recurring" >
-        <option></option>
+      <select [(ngModel)] = "expensesRequest.paid" >
+        <option value=null></option>
         <option value="true" >TRUE</option>
         <option value="false" >FALSE</option>
       </select>
 
-      <!-- <input [(ngModel)] = "expensesRequest.recurring" /> -->
+      <label>Recurring: </label>
+      <select [(ngModel)] = "expensesRequest.recurring" >
+        <option value=null></option>
+        <option value="true" >TRUE</option>
+        <option value="false" >FALSE</option>
+      </select>
       <label>Amount Due: </label>
       <input [(ngModel)] = "expensesRequest.amount_due" />
       <label>Amount Paid: </label>
@@ -65,11 +62,46 @@
       </div>
     </div>
   </div>
+
   <div>
+    <h2> Expenses Over Timeframe </h2>
+    <table class="table table-bordered table-striped table-hover">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Due By</th>
+        <th>Amount Paid</th>
+        <th>Recurring</th>
+        <th>Amount Due</th>
+        <!-- <th>User ID</th>
+        <th>Period Id</th> -->
+        <th>Paid On</th>
+      </tr>
+      </thead>
+      <tbody>
+          <tr *ngFor="let expense_category of allExpenses" (click)=addToAnotherTable(expense_category)>
+            <td>{{ expense_category.id }}</td>
+            <td>{{ expense_category.name }}</td>
+            <td>{{ expense_category.due_by | date: 'MM/dd/yyyy' }}</td>
+            <td>{{ expense_category.amount_paid | currency: '$'}}</td>
+            <td>{{ expense_category.recurring }}</td>
+            <td>{{ expense_category.amount_due | currency: '$'}}</td>
+            <!-- <td>{{ expense_category.users_id }}</td>
+            <td>{{ expense_category.period_id }}</td> -->
+            <td>{{ expense_category.paid_on | date: 'MM/dd/yyyy' }}</td>
+        </tr>
+
+        </tbody>
+    </table>
+  </div>
+
+  <div>
+    <h2> Line Item Expenses over Timeframe </h2>
     <table class="table table-bordered table-striped table-hover">
         <thead>
         <tr>
-            <th>ID</th>
+            <!-- <th>ID</th> -->
             <th>Name</th>
             <th>Paid</th>
             <th>Due By</th>
@@ -77,32 +109,26 @@
             <th>Recurring</th>
             <th>Amount Due</th>
             <th>Amount Paid</th>
-            <th>User ID</th>
-            <th>Category ID</th>
+            <!-- <th>User ID</th> -->
+            <!-- <th>Category</th> -->
             <!-- <th>Accounts ID</th> -->
         </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let expense of allExpenses">
-            <td>{{ expense.id }}</td>
+        <tr *ngFor="let expense of expenses">
+            <!-- <td>{{ expense.id }}</td> -->
             <td>{{ expense.name }}</td>
             <td>{{ expense.paid }}</td>
             <td>{{ expense.due_by | date: 'MM/dd/yyyy'}}</td>
             <td>{{ expense.paid_on | date: 'MM/dd/yyyy' }}</td>
             <td>{{ expense.recurring }}</td>
-            <td>{{ expense.amount_due }}</td>
-            <td>{{ expense.amount_paid}}</td>
-            <td>{{ expense.user_id }}</td>
-            <td>{{ expense.category_id }}</td>
+            <td>{{ expense.amount_due | currency: '$'}}</td>
+            <td>{{ expense.amount_paid | currency: '$'}}</td>
+            <!-- <td>{{ expense.user_id }}</td> -->
+            <!-- <td>{{ expense.category_id }}</td> -->
+            <!-- <td>{{ expense.category_name }}</td> -->
             <!-- <td>{{ expense.accounts_id }}</td> -->
         </tr>
         </tbody>
     </table>
   </div>
-</div>
-
-
-<!-- <div>
-    <label for="expense-name">Expense Name: </label>
-    <input id="expense-name"[(ngModel)]="selectedExpense.name" placeholder="name">
-</div> -->

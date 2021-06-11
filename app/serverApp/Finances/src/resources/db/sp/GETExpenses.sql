@@ -90,7 +90,7 @@ BEGIN
 		V_PAID_ := paid;
 	END IF;
     IF (RTRIM(paid)IS NOT NULL AND RTRIM(paid) != 2 )THEN
-        PAISTR := ' AND expenses.recieved = ''' || V_PAID_ || ''' ';
+        PAISTR := ' AND expenses.paid = ''' || V_PAID_ || ''' ';
 	END IF;
     
     --recurring variable/querystring assignment
@@ -142,7 +142,7 @@ BEGIN
 	
 	SQLSTR := SQLSTR || 'SELECT expenses.id, expenses.name, expenses.paid, expenses.due_by, expenses.paid_on, ';
     SQLSTR := SQLSTR || 'expenses.recurring, expenses.amount_due, expenses.amount_paid, expenses.users_id, ';
-    SQLSTR := SQLSTR || 'expenses.category_id, expenses.accounts_id FROM expenses ';
+    SQLSTR := SQLSTR || 'expenses.category_id, expenses_categories.name AS category_name, expenses.accounts_id FROM expenses ';
     SQLSTR := SQLSTR || 'INNER JOIN expenses_categories ON expenses_categories.id = expenses.category_id ';
     SQLSTR := SQLSTR || 'INNER JOIN period ON period.id = expenses_categories.period_id ';
     SQLSTR := SQLSTR || 'INNER JOIN users ON users.id = period.users_id ';

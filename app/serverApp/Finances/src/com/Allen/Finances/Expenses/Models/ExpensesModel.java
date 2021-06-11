@@ -16,6 +16,7 @@ public class ExpensesModel {
     private BigDecimal amount_paid;
     private int users_id;
     private int category_id;
+    private String category_name;
     private int accounts_id;
 
     
@@ -122,6 +123,14 @@ public class ExpensesModel {
 		this.category_id = category_id;
 	}
 
+	public String getCategory_name() {
+		return category_name;
+	}
+
+
+	public void setCategory_name(String category_name) {
+		this.category_name = category_name;
+	}
 
 	public int getAccounts_id() {
 		return accounts_id;
@@ -134,7 +143,7 @@ public class ExpensesModel {
 
 	//Constructor
 	public ExpensesModel(int id, String name, Boolean paid, String due_by, Timestamp paid_on, Boolean recurring,
-			BigDecimal amount_due, BigDecimal amount_paid, int users_id, int category_id, int accounts_id) {
+			BigDecimal amount_due, BigDecimal amount_paid, int users_id, int category_id, String category_name, int accounts_id) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -146,14 +155,18 @@ public class ExpensesModel {
 		this.amount_paid = amount_paid;
 		this.users_id = users_id;
 		this.category_id = category_id;
+		this.category_name = category_name;
 		this.accounts_id = accounts_id;
 	}
+
 
 	@Override
 	public String toString() {
 		return "ExpensesModel [id=" + id + ", name=" + name + ", paid=" + paid + ", due_by=" + due_by + ", paid_on="
 				+ paid_on + ", recurring=" + recurring + ", amount_due=" + amount_due + ", amount_paid=" + amount_paid
-				+ ", users_id=" + users_id + ", category_id=" + category_id + ", accounts_id=" + accounts_id + "]";
+				+ ", users_id=" + users_id + ", category_id=" + category_id + ", category_name=" + category_name
+				+ ", accounts_id=" + accounts_id + "]";
 	}
+
     
 }

@@ -10,6 +10,7 @@ export interface Expense {
     amount_due: number, 
     amount_paid: number, 
     users_id: number, 
-    category_id: number, 
+    category_id: number,
+    category_name: string, 
     accounts_id: number,
 }

@@ -14,6 +14,7 @@ import { Expense } from '../expense';
 export class ExpensesComponent implements OnInit {
 
   allExpenses: any = [];
+  expenses: any = [];
   periodData: any = [];
   expCatData: any = [];
   
@@ -26,6 +27,18 @@ export class ExpensesComponent implements OnInit {
   changeValue(valid: boolean) {
     this.isValid = valid;
   }
+
+  addToAnotherTable(expense_category: any){
+    this.expenses = expense_category.expenses;
+  }
+
+  // addToAnotherTable(ind: any){
+  //   let index: any = this.expenses.indexOf(ind);
+  //   if (index > -1) {
+  //     this.expenses.splice(index, 1)
+  //   }
+  //   this.expenses.push(ind)
+  // }
 
   searchBy: String = "";
   changeSearchBy(searchBy: String){

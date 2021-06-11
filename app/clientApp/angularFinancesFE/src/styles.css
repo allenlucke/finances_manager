@@ -1,2 +1,15 @@
 /* You can add global styles to this file, and also import other style files */
 /* @import '~angular/material/prebuilt-themes/indigo-pink.css' */
+body {
+    /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 100px; */
+    /* background-image: url('./../../images/background1.jpeg'); */
+    /* background-image: url('./../../images/paint-background.jpg'); */
+    /* background-image: url('./../../images/background2.jpeg'); */
+    /* background-image: url('./../../images/theMatrix.jpg'); */
+    /* background-image: url('./../../images/brickWall.jpg'); */
+    /* background-image: url('./../../images/lukeMa.png'); */
+    /* background-color: #000; */
+    /* background-image: url('/images/brickWall.jpg'); */
+    /* color: whitesmoke; */
+}

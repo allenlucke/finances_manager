@@ -2,6 +2,7 @@ package com.Allen.Finances.Expenses.Services;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.naming.NamingException;
@@ -18,7 +19,10 @@ import javax.ws.rs.core.Response;
 
 import com.Allen.Finances.Bean.CatalinaSimpleLog;
 import com.Allen.Finances.Bean.JsonConverter;
+import com.Allen.Finances.Expenses.DAO.GetExpensesCategoriesDao;
 import com.Allen.Finances.Expenses.DAO.GetExpensesSPDAO;
+import com.Allen.Finances.Expenses.DAO.GetExpenses_CategoriesSPDAO;
+import com.Allen.Finances.Expenses.Models.ExpensesCategoriesModel;
 import com.Allen.Finances.Expenses.Models.ExpensesModel;
 import com.Allen.Finances.Expenses.Models.GetExpensesHttpRequestModel;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -30,16 +34,16 @@ public class GetExpensesSPService {
 	public static final String CLASS_NAME = GetExpensesSPService.class.getSimpleName();
 	
 	//REST service to GET expenses
-	//Is technically considered a POST request due to it's requiring a request body be sent.
+	//Is technically considered a POST request due to the request body requirement.
 	@POST
 	@Path("/GetExpensesSP")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)	
-	public Response getIncomeStP(@Context HttpServletRequest request) throws ServletException, IOException, NamingException, 
+	public Response getExpensesSP(@Context HttpServletRequest request) throws ServletException, IOException, NamingException, 
 	SQLException, JsonMappingException{
 			    
 
-		final String methodName = "getExpensesStP()";
+		final String methodName = "getExpensesSP()";
 		
 		CatalinaSimpleLog.log("INFO", CLASS_NAME, " In " + methodName);
 		
@@ -49,31 +53,64 @@ public class GetExpensesSPService {
 			return Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE).build();
 		}
 		
-		String requestBdyJson;		
+		String requestBdyJson;	
+		List<ExpensesModel> expResultList;
+		List<ExpensesCategoriesModel> expCatResultList;
 		String responseJSON;
 
-//		List <Expenses> response;
-		
+		//Creates request body out of request input stream
+		requestBdyJson = JsonConverter.toString(request.getInputStream(), "UTF-8");
+		//Maps JSON object to java Expenses POJO
+		ObjectMapper mapper = new ObjectMapper();
+		GetExpensesHttpRequestModel requestPojo = mapper.readValue(requestBdyJson, GetExpensesHttpRequestModel.class);
+
+		//Make call to GETExpensesSPDAO
 		try {
-			//Creates request body out of request input stream
-			requestBdyJson = JsonConverter.toString(request.getInputStream(), "UTF-8");
-			
-			//Maps JSON object to java Expenses POJO
-			ObjectMapper mapper = new ObjectMapper();
-			GetExpensesHttpRequestModel requestPojo = mapper.readValue(requestBdyJson, GetExpensesHttpRequestModel.class);
-			
 			//Calls to GET method sending Expenses POJO
 			GetExpensesSPDAO dao = new GetExpensesSPDAO(); 
 			//Returns resultList from callGetExpenses
-			List<ExpensesModel> resultList = dao.callGetExpenses(requestPojo);
-			
-
-			responseJSON = mapper.writeValueAsString(resultList);
+			expResultList = dao.callGetExpenses(requestPojo);
 		}
 		catch( Exception e ) {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e).build();
 		}
+		
+		//Make call to GETExpenses_CategoriesSPDAO
+		try {		
+			//Calls to GET method sending Expenses POJO
+			GetExpenses_CategoriesSPDAO dao = new GetExpenses_CategoriesSPDAO(); 
+			//Returns resultList from callGetExpenses
+			expCatResultList = dao.callGetExpensesCategories(requestPojo);
+		}
+		catch( Exception e ) {
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e).build();
+		}
+		
+
+		//Add expenses List to expenses_categories list	
+		for (ExpensesCategoriesModel expCatObj: expCatResultList) {
+			int catId = expCatObj.getId();
 			
+			List<ExpensesModel> matchingExpenseList = new ArrayList<ExpensesModel>();
+
+			for (ExpensesModel expObj: expResultList) {
+				
+				int expid = expCatObj.getId();
+				if( expCatObj.getId() ==  expObj.getCategory_id()) {
+//					System.out.println("Do stuff");
+//					System.out.println("expCatObj.getId()  " + expCatObj.getId());
+//					System.out.println("expObj.getCategory_id()  " + expObj.getCategory_id());
+					
+					matchingExpenseList.add(expObj);
+				}
+				
+			}
+			expCatObj.setExpenses(matchingExpenseList);
+			
+		}
+		
+		responseJSON = mapper.writeValueAsString(expCatResultList);
 		return Response.status( Response.Status.OK ).entity(responseJSON).build();
 	}
+	
 }
