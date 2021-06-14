@@ -88,6 +88,10 @@ INSERT INTO period(start_date, end_date, users_id)
     VALUES('01-APR-2021', '30-APR-2021', 1);
 INSERT INTO period(start_date, end_date, users_id)
     VALUES('01-MAY-2021', '31-MAY-2021', 1);
+INSERT INTO period(start_date, end_date, users_id)
+    VALUES('01-JUN-2021', '30-JUN-2021', 1);
+INSERT INTO period(start_date, end_date, users_id)
+    VALUES('01-JUL-2021', '31-JUL-2021', 1);
   
 INSERT INTO period(start_date, end_date, users_id)
     VALUES('01-MAR-2021', '31-MAR-2021', 21);
@@ -95,6 +99,10 @@ INSERT INTO period(start_date, end_date, users_id)
     VALUES('01-APR-2021', '30-APR-2021', 21);
 INSERT INTO period(start_date, end_date, users_id)
     VALUES('01-MAY-2021', '31-MAY-2021', 21);
+INSERT INTO period(start_date, end_date, users_id)
+    VALUES('01-JUN-2021', '30-JUN-2021', 21);
+INSERT INTO period(start_date, end_date, users_id)
+    VALUES('01-JUL-2021', '31-JUL-2021', 21);
 
 --Post account
 INSERT INTO account(name, balance, users_id)

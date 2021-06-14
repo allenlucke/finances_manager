@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE GETEXPENSES_CATEGORIES
+create or replace NONEDITIONABLE PROCEDURE GETEXPENSES_CATEGORIES
 (
 	users_id		IN INT,
     category_id 	IN INT,
@@ -66,7 +66,7 @@ BEGIN
 		V_CATID := category_id;
 	END IF;
     IF (RTRIM(category_id)IS NOT NULL)THEN
-        CATSTR := ' AND expenses.category_id = ''' || V_CATID || ''' ';
+        CATSTR := ' AND expenses_categories.id = ''' || V_CATID || ''' ';
 	END IF;
 
     --accounts_id variable/querystring assignment

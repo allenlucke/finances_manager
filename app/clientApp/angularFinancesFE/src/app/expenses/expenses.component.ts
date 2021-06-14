@@ -13,9 +13,13 @@ import { Expense } from '../expense';
 })
 export class ExpensesComponent implements OnInit {
 
+  //Used to hold all expense categories that fit search criteria
   allExpenses: any = [];
+  //Holds individual expenses
   expenses: any = [];
+  //Period data holds period info used to populate select options
   periodData: any = [];
+  //Used to populate expense category select option
   expCatData: any = [];
   
   // dateNow : Date = new Date();
@@ -44,31 +48,31 @@ export class ExpensesComponent implements OnInit {
   changeSearchBy(searchBy: String){
     this.searchBy = searchBy;
     if(searchBy === "dateRange"){
-      console.log(searchBy)
-      console.log(this.expensesRequest.period)
+      // console.log(searchBy)
+      // console.log(this.expensesRequest.period)
       this.expensesRequest.period = null
-      console.log(this.expensesRequest.period)
+      // console.log(this.expensesRequest.period)
     }
     else if (searchBy === "period"){
-      console.log(searchBy)
-      console.log(this.expensesRequest.startdate)
+      // console.log(searchBy)
+      // console.log(this.expensesRequest.startdate)
       this.expensesRequest.startdate = null
-      console.log(this.expensesRequest.startdate)
-      console.log(this.expensesRequest.enddate)
+      // console.log(this.expensesRequest.startdate)
+      // console.log(this.expensesRequest.enddate)
       this.expensesRequest.enddate = null
-      console.log(this.expensesRequest.enddate)
+      // console.log(this.expensesRequest.enddate)
     }
     else {
-      console.log(searchBy)
-      console.log(this.expensesRequest.period)
+      // console.log(searchBy)
+      // console.log(this.expensesRequest.period)
       this.expensesRequest.period = null
-      console.log(this.expensesRequest.period)
-      console.log(this.expensesRequest.startdate)
+      // console.log(this.expensesRequest.period)
+      // console.log(this.expensesRequest.startdate)
       this.expensesRequest.startdate = null
-      console.log(this.expensesRequest.startdate)
-      console.log(this.expensesRequest.enddate)
+      // console.log(this.expensesRequest.startdate)
+      // console.log(this.expensesRequest.enddate)
       this.expensesRequest.enddate = null
-      console.log(this.expensesRequest.enddate)
+      // console.log(this.expensesRequest.enddate)
     }
   }
 

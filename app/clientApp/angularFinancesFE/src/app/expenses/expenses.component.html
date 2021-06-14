@@ -36,16 +36,16 @@
         <option></option>
         <option *ngFor="let category of expCatData" value = "{{category.id}}">{{category.name}}</option>
       </select>
-      <label>Accounts ID: </label>
-      <input [(ngModel)] = "expensesRequest.accounts_id" />
+      <!-- <label>Accounts ID: </label>
+      <input [(ngModel)] = "expensesRequest.accounts_id" /> -->
       <label>Name: </label>
       <input [(ngModel)] = "expensesRequest.name" />
-      <label>Paid: </label>
+      <!-- <label>Paid: </label>
       <select [(ngModel)] = "expensesRequest.paid" >
         <option value=null></option>
         <option value="true" >TRUE</option>
         <option value="false" >FALSE</option>
-      </select>
+      </select> -->
 
       <label>Recurring: </label>
       <select [(ngModel)] = "expensesRequest.recurring" >
