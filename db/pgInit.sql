@@ -12,10 +12,11 @@ CREATE TABLE "users" (
     "isActive" BOOLEAN default TRUE
 );
 
+
 CREATE TABLE "period" (
 	"id" SERIAL PRIMARY KEY,
-	"start_date" TIMESTAMP WITH TIME ZONE,
-	"end_date" TIMESTAMP WITH TIME ZONE,
+	"startDate" TIMESTAMP WITH TIME ZONE,
+	"endDate" TIMESTAMP WITH TIME ZONE,
 	"users_id" INT NOT NULL REFERENCES "users"
 );
 
