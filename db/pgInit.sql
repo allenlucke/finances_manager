@@ -15,37 +15,38 @@ CREATE TABLE "users" (
 
 CREATE TABLE "period" (
 	"id" SERIAL PRIMARY KEY,
+	"name" VARCHAR(20) NOT NULL,
 	"startDate" TIMESTAMP WITH TIME ZONE,
 	"endDate" TIMESTAMP WITH TIME ZONE,
 	"users_id" INT NOT NULL REFERENCES "users"
 );
 
-CREATE TABLE "budget" (
-  "id" SERIAL PRIMARY KEY,
-  "name" VARCHAR (80) UNIQUE NOT NULL
-);
-
-CREATE TABLE "budget_period" (
-  "id" SERIAL PRIMARY KEY,
-  "budget_id" INT NOT NULL REFERENCES "budget",
-  "period_id" INT NOT NULL REFERENCES "period",
-  "isClosed" BOOLEAN default FALSE
-);
+--CREATE TABLE "budget" (
+--  "id" SERIAL PRIMARY KEY,
+--  "name" VARCHAR (80) UNIQUE NOT NULL
+--);
+--
+--CREATE TABLE "budget_period" (
+--  "id" SERIAL PRIMARY KEY,
+--  "budget_id" INT NOT NULL REFERENCES "budget",
+--  "period_id" INT NOT NULL REFERENCES "period",
+--  "isClosed" BOOLEAN default FALSE
+--);
 
 CREATE TABLE "expenseCategory" (
   "id" SERIAL PRIMARY KEY,
   "name" VARCHAR (80) UNIQUE NOT NULL
 );
 
-CREATE TABLE "budget_expenseCategory" (
-  "id" SERIAL PRIMARY KEY,
-  "budget_id" INT NOT NULL REFERENCES "budget",
-  "expenseCategory_id" INT NOT NULL REFERENCES "expenseCategory",
-  "amountBudgeted" NUMERIC(12,2) DEFAULT 0.00,
-  "amountPaid" NUMERIC(12,2) DEFAULT 0.00,
-  "dueDate" TIMESTAMP WITH TIME ZONE,
-  "datePaidInFull" TIMESTAMP WITH TIME ZONE
-);
+--CREATE TABLE "budget_expenseCategory" (
+--  "id" SERIAL PRIMARY KEY,
+--  "budget_id" INT NOT NULL REFERENCES "budget",
+--  "expenseCategory_id" INT NOT NULL REFERENCES "expenseCategory",
+--  "amountBudgeted" NUMERIC(12,2) DEFAULT 0.00,
+--  "amountPaid" NUMERIC(12,2) DEFAULT 0.00,
+--  "dueDate" TIMESTAMP WITH TIME ZONE,
+--  "datePaidInFull" TIMESTAMP WITH TIME ZONE
+--);
 
 CREATE TABLE "account" (
   "id" SERIAL PRIMARY KEY,

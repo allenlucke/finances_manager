@@ -11,3 +11,35 @@ VALUES
 	('May-2021', '05-01-2021', '05-31-2021', 1),
 	('June-2021', '06-01-2021', '06-30-2021', 1),
 	('July-2021', '07-01-2021', '07-31-2021', 1);
+	
+INSERT INTO "expenseCategory"
+	("name")
+VALUES
+	('Electric Bill'),
+	('Groceries'),
+	('Day Care');
+	
+-- INSERT INTO "budget"
+-- 	("name") 
+-- VALUES
+-- 	('Test Budget');
+	
+-- INSERT INTO "budget_period" 
+-- 	("budget_id", "period_id")
+-- VALUES
+-- 	(1, 1),
+-- 	(1, 2),
+-- 	(1, 3);
+	
+INSERT INTO "account"
+	("name", "balance", "availBalance")
+VALUES
+	('checking', 10000.00, 9879.32);
+	
+INSERT INTO "account"
+	("name", "balance", "availBalance", "isCredit")
+VALUES
+	('credit card', 0, 0, true);
+	
+INSERT INTO "budget_expenseCategory"
+	("")
