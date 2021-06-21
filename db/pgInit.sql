@@ -21,32 +21,27 @@ CREATE TABLE "period" (
 	"users_id" INT NOT NULL REFERENCES "users"
 );
 
---CREATE TABLE "budget" (
---  "id" SERIAL PRIMARY KEY,
---  "name" VARCHAR (80) UNIQUE NOT NULL
---);
---
---CREATE TABLE "budget_period" (
---  "id" SERIAL PRIMARY KEY,
---  "budget_id" INT NOT NULL REFERENCES "budget",
---  "period_id" INT NOT NULL REFERENCES "period",
---  "isClosed" BOOLEAN default FALSE
---);
+CREATE TABLE "budget" (
+ "id" SERIAL PRIMARY KEY,
+ "name" VARCHAR (80) UNIQUE NOT NULL,
+ "period_id" INT NOT NULL REFERENCES "period",
+ "isClosed" BOOLEAN DEFAULT FALSE
+);
 
 CREATE TABLE "expenseCategory" (
   "id" SERIAL PRIMARY KEY,
   "name" VARCHAR (80) UNIQUE NOT NULL
 );
 
---CREATE TABLE "budget_expenseCategory" (
---  "id" SERIAL PRIMARY KEY,
---  "budget_id" INT NOT NULL REFERENCES "budget",
---  "expenseCategory_id" INT NOT NULL REFERENCES "expenseCategory",
---  "amountBudgeted" NUMERIC(12,2) DEFAULT 0.00,
---  "amountPaid" NUMERIC(12,2) DEFAULT 0.00,
---  "dueDate" TIMESTAMP WITH TIME ZONE,
---  "datePaidInFull" TIMESTAMP WITH TIME ZONE
---);
+CREATE TABLE "budget_expenseCategory" (
+ "id" SERIAL PRIMARY KEY,
+ "budget_id" INT NOT NULL REFERENCES "budget",
+ "expenseCategory_id" INT NOT NULL REFERENCES "expenseCategory",
+ "amountBudgeted" NUMERIC(12,2) DEFAULT 0.00,
+ "amountPaid" NUMERIC(12,2) DEFAULT 0.00,
+ "dueDate" TIMESTAMP WITH TIME ZONE,
+ "datePaidInFull" TIMESTAMP WITH TIME ZONE
+);
 
 CREATE TABLE "account" (
   "id" SERIAL PRIMARY KEY,
@@ -59,10 +54,16 @@ CREATE TABLE "account" (
 CREATE TABLE "expenseItems" (
   "id" SERIAL PRIMARY KEY,
   "budget_expenseCategory_id" INT REFERENCES "budget_expenseCategory",
-  "name" VARCHAR (80) NOT NULL,
+  "name" VARCHAR NOT NULL,
   "datePaid" TIMESTAMP WITH TIME ZONE,
   "isPaid" BOOLEAN,
   "account_id" INT NOT NULL REFERENCES "account"
 );
 
-
+CREATE TABLE "account_period" (
+	"id" SERIAL PRIMARY KEY,
+	"account_id" INT REFERNCES "account",
+	"period_id" INT REFERNCES "period",
+	"beginningBalance" NUMERIC(12,2),
+	"endingBalance" NUMERIC(12,2)
+);
