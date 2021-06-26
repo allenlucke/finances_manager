@@ -13,8 +13,8 @@ CREATE TABLE "users" (
 CREATE TABLE "period" (
 	"id" SERIAL PRIMARY KEY,
 	"name" VARCHAR(80) NOT NULL,
-	"startDate" TIMESTAMP WITH TIME ZONE,
-	"endDate" TIMESTAMP WITH TIME ZONE,
+	"startDate" TIMESTAMP WITH TIME ZONE NOT NULL,
+	"endDate" TIMESTAMP WITH TIME ZONE NOT NULL,
 	"users_id" INT NOT NULL REFERENCES "users"
 );
 
@@ -43,14 +43,17 @@ CREATE TABLE "account" (
 	"name" VARCHAR (120) NOT NULL,
 	"users_id" INT NOT NULL REFERENCES "users",
 	"isCredit" BOOLEAN DEFAULT FALSE,
-	"isActrive" BOOLEAN DEFAULT TRUE
+	"isActive" BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE "expenseItem" (
 	"id" SERIAL PRIMARY KEY,
+	--budget_expenseCategory_id can be nullable,
+	--typically use case scenario of a null value
+	--would be a payment made towards a credit card  balance
 	"budget_expenseCategory_id" INT REFERENCES "budget_expenseCategory",
 	"name" VARCHAR (200) NOT NULL,
-	"transactionDate" TIMESTAMP WITH TIME ZONE,
+	"transactionDate" TIMESTAMP WITH TIME ZONE NOT NULL,
 	"amount" NUMERIC(12,2) DEFAULT 0.00,
 	--Denotes item was paid by credit card
 	"paidWithCredit" BOOLEAN DEFAULT FALSE,
@@ -64,7 +67,8 @@ CREATE TABLE "expenseItem" (
 	--This should be allocated to the period in
 	-- whitch the card was paid off
 	"interestPaymentToCreditAccount" BOOLEAN DEFAULT FALSE,
-	"account_id" INT NOT NULL REFERENCES "account"
+	"account_id" INT NOT NULL REFERENCES "account",
+	"users_id" INT NOT NULL REFERENCES "users"
 );
 
 CREATE TABLE "incomeCategory" (
@@ -82,20 +86,26 @@ CREATE TABLE "budget_incomeCategory" (
 
 CREATE TABLE "incomeItem" (
 	"id" SERIAL PRIMARY KEY,
-	"budget_incomeCategory_id" INT REFERENCES "budget_incomeCategory",
+	"budget_incomeCategory_id" INT NOT NULL REFERENCES "budget_incomeCategory",
 	"name" VARCHAR (200) NOT NULL,
 	"recievedDate" TIMESTAMP WITH TIME ZONE,
 	"amountExpected" NUMERIC(12,2) DEFAULT 0.00,
 	"amountRecieved" NUMERIC(12,2) DEFAULT 0.00,
-	"account_id" INT NOT NULL REFERENCES "account"
+	"account_id" INT NOT NULL REFERENCES "account",
+	"users_id" INT NOT NULL REFERENCES "users"
 );
 
 CREATE TABLE "accountTracker" (
 	"id" SERIAL PRIMARY KEY,
-	"account_id" INT REFERENCES "account",
+	"account_id" INT NOT NULL REFERENCES "account",
+	--Either incomeItem_id OR expenseItem_id can be
+	--null, but NOT both. Stored Procedures, Dao's, etc
+	--should be constructed to reflect this
+	--Use of check constraint is not desireable at this point,
+	--but may be considered in future iterrations
 	"incomeItem_id" INT REFERENCES "incomeItem",
 	"expenseItem_id" INT REFERENCES "expenseItem",
 	"beginningBalance" NUMERIC(12,2),
 	"endingBalance" NUMERIC(12,2),
-	"dateTime" TIMESTAMP WITH TIME ZONE
+	"dateTime" TIMESTAMP WITH TIME ZONE NOT NULL
 );
