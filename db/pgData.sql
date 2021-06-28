@@ -27,7 +27,7 @@ VALUES
 	('Electric Bill', 1),
 	('Groceries', 1),
 	('Day Care', 1),
-  ('Gas Bill', 1);
+	('Gas Bill', 1);
 
 --Create test budgets for user id#1
 INSERT INTO "budget"
@@ -42,8 +42,8 @@ INSERT INTO "account"
 	("name", "users_id", "isCredit" )
 VALUES
 	('test Checking', 1, FALSE ),
-  ('test credit card',  1, TRUE ),
-  ('test savings account', 1, FALSE );
+	('test credit card',  1, TRUE ),
+	('test savings account', 1, FALSE );
 
 --Create test budget_expenseCategorys for user id#1
 INSERT INTO "budget_expenseCategory"
@@ -52,4 +52,15 @@ VALUES
 	(1, 1, 250.00 ),
 	(1, 2, 500.00 ),
 	(1, 3, 1200.00 ),
-  (1, 4, 100.00);
+	(1, 4, 100.00);
+
+--Create test data expenseItem for user id#1
+INSERT INTO "expenseItem"
+	("budget_expenseCategory_id", "name", "transactionDate", "amount", "paymentToCreditAccount", "interestPaymentToCreditAccount", "paidWithCredit", "account_id", users_id)
+VALUES
+	(1, 'Evergy Payment - May', '05/21/2021', 156.38, false, false, false, 1, 1 ),
+	(2, 'Wal-Mart Groceries - May(1)', '05/22/2021', 131.08, false, false, false, 1, 1 ),
+	(2, 'Wal-Mart Groceries - May(2)', '05/29/2021', 147.08, false, false, false, 1, 1 ),
+	(3, 'Day Care (1) - May', '05/01/2021', 200, false, false, false, 1, 1 ),
+	(3, 'Day Care (1) - May', '05/08/2021', 200, false, false, false, 1, 1 ),
+	(4, 'KS Gas May', '05/04/2021', 87.95, false, false, false, 1, 1 );
