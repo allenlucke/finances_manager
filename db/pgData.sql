@@ -54,9 +54,19 @@ VALUES
 	(1, 3, 1200.00 ),
 	(1, 4, 100.00);
 
+--BELOW, STILL UNDER CONSTRUCTION
+
+--Initial account tracker values
+--Will not have incomeItem or expenseItem ID's,
+--This is to simulate an existing account
+INSERT INTO "accountTracker"
+	("account_id", "beginningBalance", "endingBalance", "dateTime")
+VALUES
+	(1, 10000.00, 10000.00);
+
 --Create test data expenseItem for user id#1
 INSERT INTO "expenseItem"
-	("budget_expenseCategory_id", "name", "transactionDate", "amount", "paymentToCreditAccount", "interestPaymentToCreditAccount", "paidWithCredit", "account_id", users_id)
+	("budget_expenseCategory_id", "name", "transactionDate", "amount", "paymentToCreditAccount", "interestPaymentToCreditAccount", "paidWithCredit", "account_id", "users_id")
 VALUES
 	(1, 'Evergy Payment - May', '05/21/2021', 156.38, false, false, false, 1, 1 ),
 	(2, 'Wal-Mart Groceries - May(1)', '05/22/2021', 131.08, false, false, false, 1, 1 ),
