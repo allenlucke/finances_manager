@@ -43,7 +43,7 @@ INSERT INTO "account"
 VALUES
 	('test Checking', 1, FALSE ),
 	('test credit card',  1, TRUE ),
-	('test savings account', 1, FALSE );
+	('test savings account', 1, FALSE);
 
 --Create test budget_expenseCategorys for user id#1
 INSERT INTO "budget_expenseCategory"
@@ -53,16 +53,6 @@ VALUES
 	(1, 2, 500.00 ),
 	(1, 3, 1200.00 ),
 	(1, 4, 100.00);
-
---BELOW, STILL UNDER CONSTRUCTION
-
---Initial account tracker values
---Will not have incomeItem or expenseItem ID's,
---This is to simulate an existing account
-INSERT INTO "accountTracker"
-	("account_id", "beginningBalance", "endingBalance", "dateTime")
-VALUES
-	(1, 10000.00, 10000.00);
 
 --Create test data expenseItem for user id#1
 INSERT INTO "expenseItem"
@@ -74,3 +64,32 @@ VALUES
 	(3, 'Day Care (1) - May', '05/01/2021', 200, false, false, false, 1, 1 ),
 	(3, 'Day Care (1) - May', '05/08/2021', 200, false, false, false, 1, 1 ),
 	(4, 'KS Gas May', '05/04/2021', 87.95, false, false, false, 1, 1 );
+
+--
+--BELOW This line, may be unstable
+--
+
+--Initial period test data user id#1
+INSERT INTO "accountPeriod"
+	("account_id", "period_id",	"beginningBalance")
+VALUES
+	(1, 1, 10000.00);
+
+--incomeCat test data
+INSERT INTO "incomeCategory"
+	("name", "users_id")
+VALUES
+	('testUsser Paycheck', 1);
+
+--budget_IncomeCat Test dat user id#1
+INSERT INTO "budget_incomeCategory"
+	("budget_id", "incomeCategory_id", "amountBudgeted")
+VALUES
+	(1, 1, 6500.00 );
+
+--Income item test data
+INSERT INTO "incomeItem" 
+	("budget_incomeCategory_id", "name", "recievedDate", "amountExpected", "amountRecieved","account_id", "users_id")
+VALUES
+	(1, 'May Pacheck -1', '05/02/2021', 1200.00, 1200.00, 1, 1),
+	(1, 'May Pacheck -2', '05/16/2021', 1200.00, 1200.00, 1, 1);
