@@ -24,6 +24,9 @@ public class SpringFinancesServerApplication {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
+	@Autowired
+	UserTestDao dao;
+
 	public static void main(String[] args) {
 		SpringApplication.run(SpringFinancesServerApplication.class, args);
 	}
@@ -38,14 +41,15 @@ public class SpringFinancesServerApplication {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public String userTest(@QueryParam("id") int id) {
-		String sqlQuery = "SELECT \"firstName\" FROM \"users\" WHERE \"id\" = ?;";
-
-		return jdbcTemplate.queryForObject( sqlQuery, new Object[]{id}, String.class);
+		String respString;
+//		UserTestDao dao = new UserTestDao();
+		respString = dao.getUserName(id);
+		return respString;
 	}
 
 	@GetMapping("/alluserTest")
 	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
+//	@Produces(MediaType.APPLICATION_JSON)
 	public List<UserModel> getAllEmployees(){
 		String sql = "SELECT * FROM \"users\";";
 		List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
