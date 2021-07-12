@@ -3,6 +3,8 @@ package com.Allen.SpringFinancesServer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.ws.rs.Consumes;
@@ -31,11 +33,18 @@ public class UserService {
         return respString;
     }
 
-    @GetMapping("/alluserTest")
+    @GetMapping("/allUserTest")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<UserModel> getAllEmployees(){
+    public List<UserModel> getAllUsers(){
         List<UserModel> result;
-        result = dao.getAllEmployees();
+        result = dao.getAllUsers();
         return result;
+    }
+
+    @PostMapping("/addUser")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public boolean addUser(@RequestBody UserModel usr) {
+        boolean created = dao.addUser(usr);
+        return created;
     }
 }

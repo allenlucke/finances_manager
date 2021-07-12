@@ -11,6 +11,8 @@ public class UserModel {
     private String role;
     private boolean isActive;
 
+    public UserModel(){}
+
     public String getPassword() {
         return password;
     }
