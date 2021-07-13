@@ -1,4 +1,4 @@
-package com.Allen.SpringFinancesServer;
+package com.Allen.SpringFinancesServer.User;
 
 public class UserModel {
     private int id;

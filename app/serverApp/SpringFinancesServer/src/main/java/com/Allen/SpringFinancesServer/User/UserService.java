@@ -1,4 +1,4 @@
-package com.Allen.SpringFinancesServer;
+package com.Allen.SpringFinancesServer.User;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -11,9 +11,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 public class UserService {
@@ -22,18 +20,18 @@ public class UserService {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    UserTestDao dao;
+    UserDao dao;
 
-    @GetMapping("/userTest")
+    @GetMapping("/getUserFirstName")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public String userTest(@QueryParam("id") int id) {
+    public String getUserFirstName(@QueryParam("id") int id) {
         String respString;
-        respString = dao.getUserName(id);
+        respString = dao.getUserFirstName(id);
         return respString;
     }
 
-    @GetMapping("/allUserTest")
+    @GetMapping("/getAllUsers")
     @Consumes(MediaType.APPLICATION_JSON)
     public List<UserModel> getAllUsers(){
         List<UserModel> result;
@@ -41,10 +39,17 @@ public class UserService {
         return result;
     }
 
-    @PostMapping("/addUser")
+    @PostMapping("/addUserRetId")
     @Consumes(MediaType.APPLICATION_JSON)
-    public boolean addUser(@RequestBody UserModel usr) {
-        boolean created = dao.addUser(usr);
-        return created;
+    public int addUser(@RequestBody UserModel usr) {
+        int returnedId = dao.addUserReturnId(usr);
+        return returnedId;
+    }
+
+    @PostMapping("/addUserRetUsr")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public UserModel addUserRetUsr(@RequestBody UserModel usr) {
+        UserModel user = dao.addUserReturnUser(usr);
+        return user;
     }
 }
