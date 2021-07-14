@@ -84,7 +84,6 @@ public class UserDao {
                 ps.setString(6, usr.getEmail());
                 ps.setString(7, usr.getRole());
 
-
                 return ps;
             },holder);
             return (int) holder.getKey();
