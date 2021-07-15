@@ -7,7 +7,7 @@ public class PeriodModel {
     private String name;
     private Timestamp startDate;
     private Timestamp endDate;
-    private int users_id;
+    private int usersId;
 
     public PeriodModel() {};
 
@@ -43,11 +43,11 @@ public class PeriodModel {
         this.endDate = endDate;
     }
 
-    public int getUsers_id() {
-        return users_id;
+    public int getUsersId() {
+        return usersId;
     }
 
-    public void setUsers_id(int users_id) {
-        this.users_id = users_id;
+    public void setUsersId(int usersId) {
+        this.usersId = usersId;
     }
 }

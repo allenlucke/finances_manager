@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.Period;
 
+import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.User.UserModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -43,8 +44,8 @@ public class PeriodService {
 
     @PostMapping("/addPeriodRetId")
     @Consumes(MediaType.APPLICATION_JSON)
-    public int addPeriod(@RequestBody PeriodModel period) {
-        int returnedId = dao.addPeriodReturnId(period);
+    public List<ReturnIdModel> addPeriodRetId(@RequestBody PeriodModel period) {
+        List<ReturnIdModel> returnedId = dao.addPeriodReturnId(period);
         return returnedId;
     }
 }

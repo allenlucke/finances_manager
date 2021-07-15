@@ -16,7 +16,7 @@ public class PeriodRowMapper implements RowMapper<PeriodModel> {
         period.setName(rs.getString("name"));
         period.setStartDate(rs.getTimestamp("startDate"));
         period.setEndDate(rs.getTimestamp("endDate"));
-        period.setUsers_id(rs.getInt("users_id"));
+        period.setUsersId(rs.getInt("users_id"));
 
         return period;
     }

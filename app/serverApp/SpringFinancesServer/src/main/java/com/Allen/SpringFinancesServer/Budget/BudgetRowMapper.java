@@ -14,7 +14,7 @@ public class BudgetRowMapper implements RowMapper<BudgetModel> {
 
         budget.setId(rs.getInt("id"));
         budget.setName(rs.getString("name"));
-        budget.setPeriod_id(rs.getInt("period_id"));
+        budget.setPeriodId(rs.getInt("period_id"));
         budget.setClosed(rs.getBoolean("isClosed"));
 
         return budget;

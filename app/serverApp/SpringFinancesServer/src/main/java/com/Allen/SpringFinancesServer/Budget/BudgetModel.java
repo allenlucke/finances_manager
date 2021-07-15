@@ -4,7 +4,7 @@ public class BudgetModel {
 
     private int id;
     private String name;
-    private int period_id;
+    private int periodId;
     private boolean isClosed;
 
     public BudgetModel() {};
@@ -25,12 +25,12 @@ public class BudgetModel {
         this.name = name;
     }
 
-    public int getPeriod_id() {
-        return period_id;
+    public int getPeriodId() {
+        return periodId;
     }
 
-    public void setPeriod_id(int period_id) {
-        this.period_id = period_id;
+    public void setPeriodId(int periodId) {
+        this.periodId = periodId;
     }
 
     public boolean isClosed() {

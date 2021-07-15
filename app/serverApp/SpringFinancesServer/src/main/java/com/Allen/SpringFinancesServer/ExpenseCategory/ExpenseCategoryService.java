@@ -1,6 +1,5 @@
-package com.Allen.SpringFinancesServer.Budget;
+package com.Allen.SpringFinancesServer.ExpenseCategory;
 
-import com.Allen.SpringFinancesServer.Period.PeriodModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -14,27 +13,27 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 @RestController
-public class BudgetService {
+public class ExpenseCategoryService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    BudgetDao dao;
+    ExpenseCategoryDao dao;
 
-    @GetMapping("/getAllBudgets")
+    @GetMapping("/getAllExpCat")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<BudgetModel> getAllBudgets(){
-        List<BudgetModel> result;
-        result = dao.getAllBudgets();
+    public List<ExpenseCategoryModel> getAllExpCat(){
+        List<ExpenseCategoryModel> result;
+        result = dao.getAllExpCats();
 
         return result;
     }
 
-    @PostMapping("/addBudgetRetId")
+    @PostMapping("/addExpCatRetId")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<ReturnIdModel> addBudgetRetId(@RequestBody BudgetModel budget) {
-        List<ReturnIdModel> returnedId = dao.addBudgetReturnId(budget);
+    public List<ReturnIdModel> addExpCatRetId(@RequestBody ExpenseCategoryModel expCat ) {
+        List<ReturnIdModel> returnedId = dao.addExpCatReturnId(expCat);
         return returnedId;
     }
 }
