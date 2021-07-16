@@ -31,6 +31,8 @@ CREATE TABLE "expenseCategory" (
 	"users_id" INT NOT NULL REFERENCES "users"
 );
 
+--Junction table used to represent the one to many relationship
+--from expenseCategory - to - budget
 CREATE TABLE "budget_expenseCategory" (
 	"id" SERIAL PRIMARY KEY,
 	"budget_id" INT NOT NULL REFERENCES "budget",
@@ -65,7 +67,7 @@ CREATE TABLE "expenseItem" (
 	"paymentToCreditAccount" BOOLEAN DEFAULT FALSE,
 	--Denotes interest payment on a credit card,
 	--This should be allocated to the period in
-	-- whitch the card was paid off
+	-- which the card was paid off
 	"interestPaymentToCreditAccount" BOOLEAN DEFAULT FALSE,
 	"account_id" INT NOT NULL REFERENCES "account",
 	"users_id" INT NOT NULL REFERENCES "users"

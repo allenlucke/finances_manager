@@ -1,6 +1,5 @@
 package com.Allen.SpringFinancesServer.Account;
 
-
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;

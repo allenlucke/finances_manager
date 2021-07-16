@@ -14,7 +14,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 @RestController
-public class UserService {
+public class UserController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -29,6 +29,16 @@ public class UserService {
         String respString;
         respString = dao.getUserFirstName(id);
         return respString;
+    }
+
+    @GetMapping("/getUser")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public List<UserModel> getUserById(@QueryParam("id") int id){
+        List<UserModel> result;
+
+        result = dao.getUserById(id);
+
+        return result;
     }
 
     @GetMapping("/getAllUsers")

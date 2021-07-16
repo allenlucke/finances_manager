@@ -35,6 +35,18 @@ public class ExpenseCategoryDao {
         return result;
     }
 
+    public List<ExpenseCategoryModel> getExpCatById(int id){
+        String sql = "SELECT * FROM \"expenseCategory\" WHERE \"id\" = ?;";
+
+        ExpenseCategoryModel expenseCat = jdbcTemplate.queryForObject( sql, new Object[]{id}, new ExpenseCategoryRowMapper());
+
+        List<ExpenseCategoryModel> result = new ArrayList<ExpenseCategoryModel>();
+
+        result.add(expenseCat);
+
+        return result;
+    }
+
     public List<ReturnIdModel> addExpCatReturnId(final ExpenseCategoryModel expCat) {
         String sql = "INSERT INTO \"expenseCategory\"\n" +
                 "\t(\"name\", \"users_id\")\n" +

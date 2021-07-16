@@ -36,6 +36,18 @@ public class BudgetDao {
         return result;
     }
 
+    public List<BudgetModel> getBudgetById(int id){
+        String sql = "SELECT * FROM \"budget\" WHERE \"id\" = ?;";
+
+        BudgetModel budget = jdbcTemplate.queryForObject( sql, new Object[]{id}, new BudgetRowMapper());
+
+        List<BudgetModel> result = new ArrayList<BudgetModel>();
+
+        result.add(budget);
+
+        return result;
+    }
+
 //    public int addBudgetReturnId(final BudgetModel budget) {
 //        String sql = "INSERT INTO \"budget\"\n" +
 //                "\t(\"name\", \"period_id\")\n" +

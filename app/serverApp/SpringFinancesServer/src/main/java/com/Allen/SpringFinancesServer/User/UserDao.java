@@ -1,6 +1,5 @@
 package com.Allen.SpringFinancesServer.User;
 
-import com.Allen.SpringFinancesServer.User.UserModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -44,6 +43,18 @@ public class UserDao {
             usr.setActive((boolean)row.get("isActive"));
             result.add(usr);
         }
+        return result;
+    }
+
+    public List<UserModel> getUserById(int id){
+        String sql = "SELECT * FROM \"users\" WHERE \"id\" = ?;";
+
+        UserModel usr = jdbcTemplate.queryForObject( sql, new Object[]{id}, new UserRowMapper());
+
+        List<UserModel> result = new ArrayList<UserModel>();
+
+        result.add(usr);
+
         return result;
     }
 

@@ -1,4 +1,4 @@
-package com.Allen.SpringFinancesServer.Account;
+package com.Allen.SpringFinancesServer.BudgetExpenseCategory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -11,29 +11,29 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 @RestController
-public class AccountService {
+public class BudgetExpenseCategoryController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    AccountDao dao;
+    BudgetExpenseCategoryDao dao;
 
-    @GetMapping("/getAllAccounts")
+    @GetMapping("/getAllBudgetExpCats")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<AccountModel> getAllAccounts(){
-        List<AccountModel> result;
-        result = dao.getAllAccounts();
+    public List<BudgetExpenseCategoryModel> getAllBudgetExpCats(){
+        List<BudgetExpenseCategoryModel> result;
+        result = dao.getAllBudgetExpCats();
 
         return result;
     }
 
-    @GetMapping("/getAccount")
+    @GetMapping("/getBudgetExpCat")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<AccountModel> getAccountById(@QueryParam("id") int id){
-        List<AccountModel> result;
+    public List<BudgetExpenseCategoryModel> getBudgetExpCatById(@QueryParam("id") int id){
+        List<BudgetExpenseCategoryModel> result;
 
-        result = dao.getAccountById(id);
+        result = dao.getBudgetExpCatById(id);
 
         return result;
     }

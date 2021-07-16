@@ -1,7 +1,6 @@
-package com.Allen.SpringFinancesServer.Period;
+package com.Allen.SpringFinancesServer.AccountPeriod;
 
 import com.Allen.SpringFinancesServer.ReturnIdModel;
-import com.Allen.SpringFinancesServer.User.UserModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,37 +14,37 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 @RestController
-public class PeriodService {
+public class AccountPeriodController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    PeriodDao dao;
+    AccountPeriodDao dao;
 
-    @GetMapping("/getAllPeriods")
+    @GetMapping("/getAllAcctPeriods")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<PeriodModel> getAllPeriods(){
-        List<PeriodModel> result;
-        result = dao.getAllPeriods();
+    public List<AccountPeriodModel> getAllAccountPeriods(){
+        List<AccountPeriodModel> result;
+        result = dao.getAllAccountPeriods();
 
         return result;
     }
 
-    @GetMapping("/getPeriod")
+    @GetMapping("/getAcctPeriod")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<PeriodModel> getPeriodById(@QueryParam("id") int id){
-        List<PeriodModel> result;
+    public List<AccountPeriodModel> getAcctPeriodById(@QueryParam("id") int id){
+        List<AccountPeriodModel> result;
 
-            result = dao.getPeriodById(id);
+        result = dao.getAcctPeriodById(id);
 
         return result;
     }
 
-    @PostMapping("/addPeriodRetId")
+    @PostMapping("/addAccountPeriodRetId")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<ReturnIdModel> addPeriodRetId(@RequestBody PeriodModel period) {
-        List<ReturnIdModel> returnedId = dao.addPeriodReturnId(period);
+    public List<ReturnIdModel> addAcctPeriodReturningId(@RequestBody AccountPeriodModel acctPeriod) {
+        List<ReturnIdModel> returnedId = dao.addAcctPeriodReturningId(acctPeriod);
         return returnedId;
     }
 }

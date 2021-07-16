@@ -1,8 +1,5 @@
 package com.Allen.SpringFinancesServer.Account;
 
-import com.Allen.SpringFinancesServer.Budget.BudgetModel;
-import com.Allen.SpringFinancesServer.Period.PeriodModel;
-import com.Allen.SpringFinancesServer.Period.PeriodRowMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -45,5 +42,16 @@ public class AccountDao {
         result.add(account);
 
         return result;
+    }
+
+    public boolean checkForCreditAccount(int id){
+        String sql = "SELECT \"isCredit\" FROM \"account\" WHERE \"id\" = ?;";
+
+//        AccountModel account = jdbcTemplate.queryForObject( sql, new Object[]{id}, new AccountRowMapper());
+        Boolean isCredit = jdbcTemplate.queryForObject( sql, new Object[]{id}, Boolean.class);
+
+//        Boolean isCredit = account.isCredit();
+
+        return isCredit;
     }
 }
