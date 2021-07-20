@@ -88,8 +88,29 @@ VALUES
 	(1, 1, 6500.00 );
 
 --Income item test data
-INSERT INTO "incomeItem" 
+INSERT INTO "incomeItem"
 	("budget_incomeCategory_id", "name", "recievedDate", "amountExpected", "amountRecieved","account_id", "users_id")
 VALUES
 	(1, 'May Pacheck -1', '05/02/2021', 1200.00, 1200.00, 1, 1),
 	(1, 'May Pacheck -2', '05/16/2021', 1200.00, 1200.00, 1, 1);
+
+
+
+  --GET expenseItems by account/period
+  SELECT "expenseItem".id, "expenseItem"."transactionDate", "account".name AS "accountName" , "period".id AS "periodId",
+  "expenseItem".name AS "expenseItemName", "account".id AS "accountId", "expenseItem".amount FROM "expenseItem"
+  JOIN "account" ON "expenseItem"."account_id" = "account".id
+  JOIN "budget_expenseCategory" ON "expenseItem"."budget_expenseCategory_id" = "budget_expenseCategory".id
+  JOIN "budget" ON "budget_expenseCategory".id = "budget".id
+  JOIN "period" ON "budget".period_id = "period".id
+  JOIN "accountPeriod" ON "period".id = "accountPeriod".period_id
+  WHERE "expenseItem"."transactionDate" >= "period"."startDate" AND "expenseItem"."transactionDate" <= "period"."endDate"
+  AND "account".id =1
+  AND "period".id = 1
+  ORDER BY "expenseItem"."transactionDate";
+
+  --Get count of open periods prior to period's startdate
+SELECT COUNT(*) FROM "period"
+JOIN "budget" ON "period".id = "budget".period_id
+WHERE "startDate" < '08/01/2021'
+AND "budget"."isClosed" = 'false';
