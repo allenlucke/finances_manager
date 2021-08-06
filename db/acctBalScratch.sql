@@ -39,3 +39,29 @@ WHERE "period"."startDate" < '08/01/2021'
 AND "budget"."isClosed" = 'false'
 ORDER BY "period"."startDate" ASC
 LIMIT 1;
+
+--Get count of open periods prior to period's startdate
+SELECT COUNT(*) FROM "period" 
+JOIN "budget" ON "period".id = "budget".period_id
+WHERE "startDate" < '08/01/2021'
+AND "budget"."isClosed" = 'false';
+
+
+--Get startdate of last unclosed period
+SELECT * FROM "period" 
+JOIN "budget" ON "period".id = "budget".period_id
+WHERE "period"."startDate" < '08/01/2021'
+AND "budget"."isClosed" = 'false'
+ORDER BY "period"."startDate" ASC
+LIMIT 1;
+
+UPDATE "budget" SET "isClosed" = false WHERE "budget".id =1;
+
+--Get beggining balance of last unclosed period
+SELECT "accountPeriod"."beginningBalance" FROM "period" 
+JOIN "budget" ON "period".id = "budget".period_id
+JOIN "accountPeriod" ON "period".id = "accountPeriod".period_id
+WHERE "period"."startDate" < '08/01/2021'
+AND "budget"."isClosed" = 'false'
+ORDER BY "period"."startDate" ASC
+LIMIT 1;
