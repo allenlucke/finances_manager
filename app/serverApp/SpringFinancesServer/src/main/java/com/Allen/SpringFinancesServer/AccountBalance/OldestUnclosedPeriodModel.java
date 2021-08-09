@@ -2,7 +2,7 @@ package com.Allen.SpringFinancesServer.AccountBalance;
 
 import java.sql.Timestamp;
 
-public class AccountBalanceModel {
+public class OldestUnclosedPeriodModel {
 
     private int periodId;
     private String periodName;
@@ -13,7 +13,7 @@ public class AccountBalanceModel {
     private String budgetName;
     private boolean isClosed;
 
-    public AccountBalanceModel () {}
+    public OldestUnclosedPeriodModel(){}
 
     public int getPeriodId() {
         return periodId;
@@ -78,5 +78,4 @@ public class AccountBalanceModel {
     public void setClosed(boolean closed) {
         isClosed = closed;
     }
-
 }

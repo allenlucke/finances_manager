@@ -1,7 +1,9 @@
 package com.Allen.SpringFinancesServer.AccountBalance;
 
-import com.Allen.SpringFinancesServer.Account.AccountModel;
+import com.Allen.SpringFinancesServer.User.UserModel;
+import com.Allen.SpringFinancesServer.User.UserRowMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -47,16 +49,65 @@ public class AccountBalanceDao {
 
             result.add(expItem);
 
-//            expItem.setId(rs.getInt("id"));
-//            expItem.setTransactionDate(rs.getTimestamp("transactionDate"));
-//            expItem.setAccountName(rs.getString("accountName"));
-//            expItem.setPeriodId(rs.getInt("periodId"));
-//            expItem.setExpenseItemName(rs.getString("expenseItemName"));
-//            expItem.setAccountId(rs.getInt("accountId"));
-//            expItem.setAmount(rs.getBigDecimal("amount"));
         }
         return result;
     }
+
+    //Get the startDate etc of the oldest unclosed period
+    public OldestUnclosedPeriodModel getLastUnclosedPeriod(Timestamp targetPeriod) throws EmptyResultDataAccessException {
+        String sql = "SELECT \"period\".\"id\" as \"periodId\", \"period\".\"name\" AS \"periodName\",\n" +
+                "\"period\".\"startDate\" AS \"startDate\", \"period\".\"endDate\" AS \"endDate\",\n" +
+                "\"period\".\"users_id\" AS \"usersId\", \"budget\".id AS \"budgetId\",\n" +
+                "\"budget\".name AS \"budgetName\", \"budget\".\"isClosed\" FROM \"period\" \n" +
+                "JOIN \"budget\" ON \"period\".id = \"budget\".period_id\n" +
+                "WHERE \"period\".\"startDate\" < ?\n" +
+                "AND \"budget\".\"isClosed\" = 'false'\n" +
+                "ORDER BY \"period\".\"startDate\" ASC\n" +
+                "LIMIT 1;";
+
+        OldestUnclosedPeriodModel oldestUnclosedPeriod = jdbcTemplate.queryForObject( sql, new Object[]{targetPeriod}, new OldestUnclosedPeriodRowMapper());
+
+        return oldestUnclosedPeriod;
+    }
+
+//    public List<PeriodModel> getExpItemByPeriodNAcctType(int acctId, int periodId){
+//        String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
+//                "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \"expenseItem\".amount FROM \"expenseItem\"\n" +
+//                "JOIN \"account\" ON \"expenseItem\".\"account_id\" = \"account\".id\n" +
+//                "JOIN \"budget_expenseCategory\" ON \"expenseItem\".\"budget_expenseCategory_id\" = \"budget_expenseCategory\".id\n" +
+//                "JOIN \"budget\" ON \"budget_expenseCategory\".id = \"budget\".id\n" +
+//                "JOIN \"period\" ON \"budget\".period_id = \"period\".id\n" +
+//                "JOIN \"accountPeriod\" ON \"period\".id = \"accountPeriod\".period_id\n" +
+//                "WHERE \"expenseItem\".\"transactionDate\" >= \"period\".\"startDate\" AND \"expenseItem\".\"transactionDate\" <= \"period\".\"endDate\"\n" +
+//                "AND \"account\".id =?\n" +
+//                "AND \"period\".id = ?\n" +
+//                "ORDER BY \"expenseItem\".\"transactionDate\";";
+//        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+//                new Object[] {acctId, periodId} ); /*,
+//                new ExpItemMapper());*/
+//        List<PeriodModel> result = new ArrayList<PeriodModel>();
+//        for(Map<String, Object> row:rows){
+//            PeriodModel period = new PeriodModel();
+//
+//
+//            period.setId((int)row.get("id"));
+//            period.setName((String)row.get("name"));
+//            period.setStartDate((Timestamp)row.get("startDate"));
+//            period.setEndDate((Timestamp)row.get("endDate"));
+//            period.setUsersId((int)row.get("users_Id"));
+//
+//            period.setTransactionDate((Timestamp)row.get("transactionDate"));
+//            period.setAccountName((String)row.get("accountName"));
+//            period.setPeriodId((int)row.get("periodId"));
+//            period.setExpenseItemName((String)row.get("expenseItemName"));
+//            period.setAccountId((int)row.get("accountId"));
+//            period.setAmount((BigDecimal)row.get("amount"));
+//
+//            result.add(period);
+//
+//        }
+//        return result;
+//    }
 
 //        List<ExpItemModel> result = new ArrayList<>();
 //        for(Map<String, Object> row:rows){
@@ -80,4 +131,7 @@ public class AccountBalanceDao {
 //        }
 //        return result;
 //    }
+
+
+
 }

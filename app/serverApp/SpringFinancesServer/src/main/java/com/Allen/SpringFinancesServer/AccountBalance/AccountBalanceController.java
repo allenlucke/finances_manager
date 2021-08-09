@@ -22,6 +22,9 @@ public class AccountBalanceController {
     @Autowired
     AccountBalanceDao dao;
 
+    @Autowired
+    AccountBalanceLogic mgr;
+
     @GetMapping("/getAcctBalTest")
     @Consumes(MediaType.APPLICATION_JSON)
     public List<ExpItemModel> getExpItemByPeriodNAcctType(@QueryParam("acctId") int acctId,
@@ -29,19 +32,20 @@ public class AccountBalanceController {
         List<ExpItemModel> result;
         result = dao.getExpItemByPeriodNAcctType( acctId, periodId );
 
+        mgr.balanceManager(acctId, periodId );
 //        MathContext mc = new MathContext(2);
-        BigDecimal acctBal = BigDecimal.valueOf(12000.00);
-        for( ExpItemModel exp : result) {
-
-            System.out.println("balance." +  acctBal);
-            System.out.println("exp amount" + exp.getAmount());
-
-            acctBal = acctBal.subtract(exp.getAmount());
-
-            System.out.println("New Bal " + acctBal);
-
-
-        }
+//        BigDecimal acctBal = BigDecimal.valueOf(12000.00);
+//        for( ExpItemModel exp : result) {
+//
+//            System.out.println("balance: " +  acctBal);
+//            System.out.println("exp amount: " + exp.getAmount());
+//
+//            acctBal = acctBal.subtract(exp.getAmount());
+//
+//            System.out.println("New Bal: " + acctBal);
+//
+//
+//        }
 
         return result;
     }
