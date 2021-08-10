@@ -45,7 +45,7 @@ VALUES
 	('test credit card',  1, TRUE ),
 	('test savings account', 1, FALSE);
 
---Create test budget_expenseCategorys for user id#1
+--Create test budget_expenseCategories for user id#1
 INSERT INTO "budget_expenseCategory"
 	("budget_id", "expenseCategory_id", "amountBudgeted" )
 VALUES
@@ -53,6 +53,15 @@ VALUES
 	(1, 2, 500.00 ),
 	(1, 3, 1200.00 ),
 	(1, 4, 100.00);
+
+--Create test budget_expenseCategories for user id#1
+INSERT INTO "budget_expenseCategory"
+	("budget_id", "expenseCategory_id", "amountBudgeted" )
+VALUES
+	(2, 1, 250.00 ),
+	(2, 2, 500.00 ),
+	(2, 3, 1200.00 ),
+	(2, 4, 100.00);
 
 --Create test data expenseItem for user id#1
 INSERT INTO "expenseItem"
@@ -74,6 +83,11 @@ INSERT INTO "accountPeriod"
 	("account_id", "period_id",	"beginningBalance")
 VALUES
 	(1, 1, 10000.00);
+
+INSERT INTO "accountPeriod"
+	("account_id", "period_id")
+VALUES
+	(1, 2);
 
 --incomeCat test data
 INSERT INTO "incomeCategory"

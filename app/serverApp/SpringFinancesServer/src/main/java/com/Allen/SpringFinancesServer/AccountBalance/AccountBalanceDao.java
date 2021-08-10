@@ -20,17 +20,33 @@ public class AccountBalanceDao {
     private JdbcTemplate jdbcTemplate;
 
     public List<ExpItemModel> getExpItemByPeriodNAcctType(int acctId, int periodId){
-        String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
-                "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \"expenseItem\".amount FROM \"expenseItem\"\n" +
+//        String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
+//                "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \"expenseItem\".amount FROM \"expenseItem\"\n" +
+//                "JOIN \"account\" ON \"expenseItem\".\"account_id\" = \"account\".id\n" +
+//                "JOIN \"budget_expenseCategory\" ON \"expenseItem\".\"budget_expenseCategory_id\" = \"budget_expenseCategory\".id\n" +
+//                "JOIN \"budget\" ON \"budget_expenseCategory\".id = \"budget\".id\n" +
+//                "JOIN \"period\" ON \"budget\".period_id = \"period\".id\n" +
+//                "JOIN \"accountPeriod\" ON \"period\".id = \"accountPeriod\".period_id\n" +
+//                "WHERE \"expenseItem\".\"transactionDate\" >= \"period\".\"startDate\" AND \"expenseItem\".\"transactionDate\" <= \"period\".\"endDate\"\n" +
+//                "AND \"account\".id =?\n" +
+//                "AND \"period\".id = ?\n" +
+//                "ORDER BY \"expenseItem\".\"transactionDate\";";
+
+        String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
+                "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
+                "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \n" +
+                "\"expenseItem\".amount FROM \"expenseItem\"\n" +
                 "JOIN \"account\" ON \"expenseItem\".\"account_id\" = \"account\".id\n" +
                 "JOIN \"budget_expenseCategory\" ON \"expenseItem\".\"budget_expenseCategory_id\" = \"budget_expenseCategory\".id\n" +
-                "JOIN \"budget\" ON \"budget_expenseCategory\".id = \"budget\".id\n" +
+                "JOIN \"budget\" ON \"budget_expenseCategory\".\"budget_id\" = \"budget\".id\n" +
                 "JOIN \"period\" ON \"budget\".period_id = \"period\".id\n" +
                 "JOIN \"accountPeriod\" ON \"period\".id = \"accountPeriod\".period_id\n" +
-                "WHERE \"expenseItem\".\"transactionDate\" >= \"period\".\"startDate\" AND \"expenseItem\".\"transactionDate\" <= \"period\".\"endDate\"\n" +
-                "AND \"account\".id =?\n" +
+                "WHERE \"expenseItem\".\"transactionDate\" >= \"period\".\"startDate\" \n" +
+                "AND \"expenseItem\".\"transactionDate\" <= \"period\".\"endDate\"\n" +
+                "AND \"account\".id = ?\n" +
                 "AND \"period\".id = ?\n" +
                 "ORDER BY \"expenseItem\".\"transactionDate\";";
+
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {acctId, periodId} ); /*,
                 new ExpItemMapper());*/

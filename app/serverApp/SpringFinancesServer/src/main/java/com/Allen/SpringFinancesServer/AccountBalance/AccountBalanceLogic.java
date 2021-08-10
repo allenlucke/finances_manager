@@ -39,17 +39,36 @@ public class AccountBalanceLogic {
         System.out.println("Desired period startDate: " + desiredPeriodStartDate);
 
         //Get data of oldest unclosed period
+        int lastUnclosedPeriod = 0;
         try {
             OldestUnclosedPeriodModel oldestUnclosedPeriodModel = acctBalDao.getLastUnclosedPeriod(desiredPeriodStartDate);
 
+            lastUnclosedPeriod = oldestUnclosedPeriodModel.getPeriodId();
+
             System.out.println("Last unclosed period start date: " + oldestUnclosedPeriodModel.getStartDate());
         } catch (EmptyResultDataAccessException e) {
-            System.out.println("No data returned for last uncloded period");
+            System.out.println("No data returned for last unclosed period");
         }
-        //Get beginning balance of last unclosed period
 
-        //Get the expense data up to the beginning of desired period
+        //Get the expense data prior to the beginning of desired period
+        final int noPriorPeriod = 0;
+        if(lastUnclosedPeriod != noPriorPeriod ){
+            List<ExpItemModel>  priorPeriodData = acctBalDao.getExpItemByPeriodNAcctType(lastUnclosedPeriod, periodId);
 
-        //Parse correct account data for desired period
+            for( ExpItemModel exp : priorPeriodData) {
+                System.out.println("prior period exp amount: " + exp.getAmount());
+            }
+        }
+        else{
+            System.out.println("No prior unclosed period" );
+        }
+        List<ExpItemModel>  priorPeriodData = acctBalDao.getExpItemByPeriodNAcctType(acctId, periodId);
+
+        for( ExpItemModel exp : priorPeriodData) {
+            System.out.println("prior period exp amount: " + exp.getAmount());
+        }
+
+        //Get desired period beginning balance
+
     }
 }

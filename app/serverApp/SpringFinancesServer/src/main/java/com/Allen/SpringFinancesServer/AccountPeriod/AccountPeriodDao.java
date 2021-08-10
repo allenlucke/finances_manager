@@ -10,6 +10,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 
+import javax.xml.crypto.dom.DOMCryptoContext;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -53,6 +54,9 @@ public class AccountPeriodDao {
         return result;
     }
 
+    //To-Do
+    //Method should not take in beginning balance
+    //
     public List<ReturnIdModel> addAcctPeriodReturningId(final AccountPeriodModel acctPeriod) {
         String sql = "INSERT INTO \"accountPeriod\"\n" +
                 "\t(\"account_id\", \"period_id\", \"beginningBalance\")\n" +
