@@ -1,6 +1,5 @@
 package com.Allen.SpringFinancesServer.ExpenseItem;
 
-import com.Allen.SpringFinancesServer.ExpenseCategory.ExpenseCategoryModel;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;

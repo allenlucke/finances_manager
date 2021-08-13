@@ -1,16 +1,19 @@
 
 
 --GET expenseItems by account/period
-SELECT "expenseItem".id, "expenseItem"."transactionDate", "account".name AS "accountName" , "period".id AS "periodId", 
-"expenseItem".name AS "expenseItemName", "account".id AS "accountId", "expenseItem".amount FROM "expenseItem"
+SELECT "expenseItem".id, "expenseItem"."transactionDate", 
+"account".name AS "accountName" , "period".id AS "periodId", 
+"expenseItem".name AS "expenseItemName", "account".id AS "accountId", 
+"expenseItem".amount FROM "expenseItem"
 JOIN "account" ON "expenseItem"."account_id" = "account".id
 JOIN "budget_expenseCategory" ON "expenseItem"."budget_expenseCategory_id" = "budget_expenseCategory".id
-JOIN "budget" ON "budget_expenseCategory".id = "budget".id
+JOIN "budget" ON "budget_expenseCategory"."budget_id" = "budget".id
 JOIN "period" ON "budget".period_id = "period".id
 JOIN "accountPeriod" ON "period".id = "accountPeriod".period_id
-WHERE "expenseItem"."transactionDate" >= "period"."startDate" AND "expenseItem"."transactionDate" <= "period"."endDate"
+WHERE "expenseItem"."transactionDate" >= "period"."startDate" 
+AND "expenseItem"."transactionDate" <= "period"."endDate"
 AND "account".id =1
-AND "period".id = 1
+AND "period".id = 2
 ORDER BY "expenseItem"."transactionDate";
 
 
@@ -34,11 +37,34 @@ LIMIT 1;
 
 UPDATE "budget" SET "isClosed" = false WHERE "budget".id =1;
 
---Get beggining balance of last unclosed period
-SELECT "accountPeriod"."beginningBalance" FROM "period" 
+--Get beggining balance of oldest unclosed period
+SELECT "accountPeriod"."beginningBalance", "period".id FROM "period" 
 JOIN "budget" ON "period".id = "budget".period_id
 JOIN "accountPeriod" ON "period".id = "accountPeriod".period_id
-WHERE "period"."startDate" < '08/01/2021'
+WHERE "period"."startDate" < '06/01/2021'
 AND "budget"."isClosed" = 'false'
 ORDER BY "period"."startDate" ASC
 LIMIT 1;
+
+--Get beginning balance by id
+SELECT "accountPeriod"."beginningBalance", "period".id FROM "period" 
+JOIN "budget" ON "period".id = "budget".period_id
+JOIN "accountPeriod" ON "period".id = "accountPeriod".period_id
+WHERE "period"."id" = 1;
+
+--GET expenseItems by dates/account
+SELECT "expenseItem".id, "expenseItem"."transactionDate", 
+"account".name AS "accountName" , "period".id AS "periodId", 
+"expenseItem".name AS "expenseItemName", "account".id AS "accountId", 
+"expenseItem".amount FROM "expenseItem"
+JOIN "account" ON "expenseItem"."account_id" = "account".id
+JOIN "budget_expenseCategory" ON "expenseItem"."budget_expenseCategory_id" = "budget_expenseCategory".id
+JOIN "budget" ON "budget_expenseCategory"."budget_id" = "budget".id
+JOIN "period" ON "budget".period_id = "period".id
+JOIN "accountPeriod" ON "period".id = "accountPeriod".period_id
+WHERE "expenseItem"."transactionDate" >= "period"."startDate" 
+AND "expenseItem"."transactionDate" <= "period"."endDate"
+AND "account".id =1
+AND "expenseItem"."transactionDate" >= '2021-05-01 00:00:00.0'
+AND "expenseItem"."transactionDate" < '2021-06-01 00:00:00.0'
+ORDER BY "expenseItem"."transactionDate";

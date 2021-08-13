@@ -90,9 +90,9 @@ CREATE TABLE "incomeItem" (
 	"id" SERIAL PRIMARY KEY,
 	"budget_incomeCategory_id" INT NOT NULL REFERENCES "budget_incomeCategory",
 	"name" VARCHAR (200) NOT NULL,
-	"recievedDate" TIMESTAMP WITH TIME ZONE,
+	"receivedDate" TIMESTAMP WITH TIME ZONE,
 	"amountExpected" NUMERIC(12,2) DEFAULT 0.00,
-	"amountRecieved" NUMERIC(12,2) DEFAULT 0.00,
+	"amountReceived" NUMERIC(12,2) DEFAULT 0.00,
 	"account_id" INT NOT NULL REFERENCES "account",
 	"users_id" INT NOT NULL REFERENCES "users"
 );

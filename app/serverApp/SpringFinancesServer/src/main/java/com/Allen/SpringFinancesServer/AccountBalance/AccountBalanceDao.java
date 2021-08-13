@@ -1,7 +1,5 @@
 package com.Allen.SpringFinancesServer.AccountBalance;
 
-import com.Allen.SpringFinancesServer.User.UserModel;
-import com.Allen.SpringFinancesServer.User.UserRowMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -19,19 +17,7 @@ public class AccountBalanceDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public List<ExpItemModel> getExpItemByPeriodNAcctType(int acctId, int periodId){
-//        String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
-//                "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \"expenseItem\".amount FROM \"expenseItem\"\n" +
-//                "JOIN \"account\" ON \"expenseItem\".\"account_id\" = \"account\".id\n" +
-//                "JOIN \"budget_expenseCategory\" ON \"expenseItem\".\"budget_expenseCategory_id\" = \"budget_expenseCategory\".id\n" +
-//                "JOIN \"budget\" ON \"budget_expenseCategory\".id = \"budget\".id\n" +
-//                "JOIN \"period\" ON \"budget\".period_id = \"period\".id\n" +
-//                "JOIN \"accountPeriod\" ON \"period\".id = \"accountPeriod\".period_id\n" +
-//                "WHERE \"expenseItem\".\"transactionDate\" >= \"period\".\"startDate\" AND \"expenseItem\".\"transactionDate\" <= \"period\".\"endDate\"\n" +
-//                "AND \"account\".id =?\n" +
-//                "AND \"period\".id = ?\n" +
-//                "ORDER BY \"expenseItem\".\"transactionDate\";";
-
+    public List<BalanceSheetModel> getExpItemByPeriodNAcctType(int acctId, int periodId){
         String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \n" +
@@ -50,12 +36,52 @@ public class AccountBalanceDao {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {acctId, periodId} ); /*,
                 new ExpItemMapper());*/
-        List<ExpItemModel> result = new ArrayList<ExpItemModel>();
+        List<BalanceSheetModel> result = new ArrayList<BalanceSheetModel>();
         for(Map<String, Object> row:rows){
-            ExpItemModel expItem = new ExpItemModel();
+            BalanceSheetModel expItem = new BalanceSheetModel();
 
 
-            expItem.setId((int)row.get("id"));
+            expItem.setExpenseItemId((int)row.get("id"));
+            expItem.setTransactionDate((Timestamp)row.get("transactionDate"));
+            expItem.setAccountName((String)row.get("accountName"));
+            expItem.setPeriodId((int)row.get("periodId"));
+            expItem.setExpenseItemName((String)row.get("expenseItemName"));
+            expItem.setAccountId((int)row.get("accountId"));
+            expItem.setAmount((BigDecimal)row.get("amount"));
+
+            result.add(expItem);
+
+        }
+        return result;
+    }
+
+    //Get expense item by date range and acct type
+    public List<BalanceSheetModel> getExpItemByDatesNAcctType(int acctId, Timestamp startDate, Timestamp dayAfterEndDate){
+        String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
+                "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
+                "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \n" +
+                "\"expenseItem\".amount FROM \"expenseItem\"\n" +
+                "JOIN \"account\" ON \"expenseItem\".\"account_id\" = \"account\".id\n" +
+                "JOIN \"budget_expenseCategory\" ON \"expenseItem\".\"budget_expenseCategory_id\" = \"budget_expenseCategory\".id\n" +
+                "JOIN \"budget\" ON \"budget_expenseCategory\".\"budget_id\" = \"budget\".id\n" +
+                "JOIN \"period\" ON \"budget\".period_id = \"period\".id\n" +
+                "JOIN \"accountPeriod\" ON \"period\".id = \"accountPeriod\".period_id\n" +
+                "WHERE \"expenseItem\".\"transactionDate\" >= \"period\".\"startDate\" \n" +
+                "AND \"expenseItem\".\"transactionDate\" <= \"period\".\"endDate\"\n" +
+                "AND \"account\".id = ?\n" +
+                "AND \"expenseItem\".\"transactionDate\" >= ?\n" +
+                "AND \"expenseItem\".\"transactionDate\" < ?\n" +
+                "ORDER BY \"expenseItem\".\"transactionDate\";";
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {acctId, startDate, dayAfterEndDate} ); /*,
+                new ExpItemMapper());*/
+        List<BalanceSheetModel> result = new ArrayList<BalanceSheetModel>();
+        for(Map<String, Object> row:rows){
+            BalanceSheetModel expItem = new BalanceSheetModel();
+
+
+            expItem.setExpenseItemId((int)row.get("id"));
             expItem.setTransactionDate((Timestamp)row.get("transactionDate"));
             expItem.setAccountName((String)row.get("accountName"));
             expItem.setPeriodId((int)row.get("periodId"));
@@ -86,49 +112,7 @@ public class AccountBalanceDao {
         return oldestUnclosedPeriod;
     }
 
-//    public List<PeriodModel> getExpItemByPeriodNAcctType(int acctId, int periodId){
-//        String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
-//                "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \"expenseItem\".amount FROM \"expenseItem\"\n" +
-//                "JOIN \"account\" ON \"expenseItem\".\"account_id\" = \"account\".id\n" +
-//                "JOIN \"budget_expenseCategory\" ON \"expenseItem\".\"budget_expenseCategory_id\" = \"budget_expenseCategory\".id\n" +
-//                "JOIN \"budget\" ON \"budget_expenseCategory\".id = \"budget\".id\n" +
-//                "JOIN \"period\" ON \"budget\".period_id = \"period\".id\n" +
-//                "JOIN \"accountPeriod\" ON \"period\".id = \"accountPeriod\".period_id\n" +
-//                "WHERE \"expenseItem\".\"transactionDate\" >= \"period\".\"startDate\" AND \"expenseItem\".\"transactionDate\" <= \"period\".\"endDate\"\n" +
-//                "AND \"account\".id =?\n" +
-//                "AND \"period\".id = ?\n" +
-//                "ORDER BY \"expenseItem\".\"transactionDate\";";
-//        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
-//                new Object[] {acctId, periodId} ); /*,
-//                new ExpItemMapper());*/
-//        List<PeriodModel> result = new ArrayList<PeriodModel>();
-//        for(Map<String, Object> row:rows){
-//            PeriodModel period = new PeriodModel();
-//
-//
-//            period.setId((int)row.get("id"));
-//            period.setName((String)row.get("name"));
-//            period.setStartDate((Timestamp)row.get("startDate"));
-//            period.setEndDate((Timestamp)row.get("endDate"));
-//            period.setUsersId((int)row.get("users_Id"));
-//
-//            period.setTransactionDate((Timestamp)row.get("transactionDate"));
-//            period.setAccountName((String)row.get("accountName"));
-//            period.setPeriodId((int)row.get("periodId"));
-//            period.setExpenseItemName((String)row.get("expenseItemName"));
-//            period.setAccountId((int)row.get("accountId"));
-//            period.setAmount((BigDecimal)row.get("amount"));
-//
-//            result.add(period);
-//
-//        }
-//        return result;
-//    }
 
-//        List<ExpItemModel> result = new ArrayList<>();
-//        for(Map<String, Object> row:rows){
-//        return rows;
-//    }
 //
 //    public List<AccountModel> getAllAccounts(){
 //        String sql = "SELECT * FROM \"account\";";

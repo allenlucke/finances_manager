@@ -93,20 +93,35 @@ VALUES
 INSERT INTO "incomeCategory"
 	("name", "users_id")
 VALUES
-	('testUsser Paycheck', 1);
+	('SS&C', 1);
+
+INSERT INTO "incomeCategory"
+	("name", "users_id")
+VALUES
+	('KUMC', 1);
 
 --budget_IncomeCat Test dat user id#1
 INSERT INTO "budget_incomeCategory"
 	("budget_id", "incomeCategory_id", "amountBudgeted")
 VALUES
-	(1, 1, 6500.00 );
+	(1, 1, 2400.00 );
+
+INSERT INTO "budget_incomeCategory"
+	("budget_id", "incomeCategory_id", "amountBudgeted")
+VALUES
+	(1, 2, 2400.00 );
 
 --Income item test data
 INSERT INTO "incomeItem"
-	("budget_incomeCategory_id", "name", "recievedDate", "amountExpected", "amountRecieved","account_id", "users_id")
+	("budget_incomeCategory_id", "name", "receivedDate", "amountExpected", "amountReceived","account_id", "users_id")
 VALUES
 	(1, 'May Pacheck -1', '05/02/2021', 1200.00, 1200.00, 1, 1),
 	(1, 'May Pacheck -2', '05/16/2021', 1200.00, 1200.00, 1, 1);
+
+INSERT INTO "incomeItem"
+	("budget_incomeCategory_id", "name", "receivedDate", "amountExpected", "amountReceived","account_id", "users_id")
+VALUES
+	(2, 'KUMC May Pacheck -1', '05/02/2021', 1200.00, 1200.00, 1, 1);
 
 
 

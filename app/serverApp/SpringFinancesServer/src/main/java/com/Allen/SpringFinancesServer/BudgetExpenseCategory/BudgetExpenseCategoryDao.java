@@ -1,6 +1,5 @@
 package com.Allen.SpringFinancesServer.BudgetExpenseCategory;
 
-import com.Allen.SpringFinancesServer.ExpenseItem.ExpenseItemModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;

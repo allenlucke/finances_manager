@@ -12,7 +12,7 @@ public class OldestUnclosedPeriodRowMapper implements RowMapper<OldestUnclosedPe
 
         OldestUnclosedPeriodModel unclosedPer = new OldestUnclosedPeriodModel();
 
-        unclosedPer.setBudgetId(rs.getInt("periodId"));
+        unclosedPer.setPeriodId(rs.getInt("periodId"));
         unclosedPer.setPeriodName(rs.getString("periodName"));
         unclosedPer.setStartDate(rs.getTimestamp("startDate"));
         unclosedPer.setEndDate(rs.getTimestamp("endDate"));
