@@ -59,7 +59,7 @@ public class IncomeItemDao {
                 "\t(\"budget_incomeCategory_id\", \"name\", \"receivedDate\", \n" +
                 "\t \"amountExpected\", \"amountReceived\",\"account_id\", \"users_id\")\n" +
                 "VALUES\n" +
-                "\t(?, ?, ?, ?, ?, ?, ?);";
+                "\t(?, ?, ?, ?, ?, ?, ?) RETURNING \"id\";";
 
         KeyHolder holder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {

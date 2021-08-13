@@ -42,7 +42,7 @@ public class BudgetIncomeCategoryController {
         return result;
     }
 
-    @PostMapping("/addBudgetExpCatReturnId")
+    @PostMapping("/addBudgetIncomeCatReturnId")
     @Consumes(MediaType.APPLICATION_JSON)
     public List<ReturnIdModel> addBudgetIncomeCatReturnId(@RequestBody BudgetIncomeCategoryModel budgetIncomeCat) {
 
