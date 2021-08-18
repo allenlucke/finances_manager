@@ -35,12 +35,18 @@ public class AccountBalanceLogic {
     public List<BalanceSheetModel> balanceManager(final int acctId, final int periodId){
 
         //
-        //Get expense item data for desired period
+        //Get expense item data and income item for desired period
         //
-        List<BalanceSheetModel>  desiredPeriodData = acctBalDao.getExpItemByPeriodNAcctType(acctId, periodId);
+        List<BalanceSheetModel>  desiredPeriodExpenseData = acctBalDao.getExpItemByPeriodNAcctType(acctId, periodId);
 
-        for( BalanceSheetModel exp : desiredPeriodData) {
+        for( BalanceSheetModel exp : desiredPeriodExpenseData) {
             System.out.println("Desired period exp amount: " + exp.getAmount());
+        }
+
+        List<BalanceSheetModel>  desiredPeriodIncomeData = acctBalDao.getIncomeItemByPeriodNAcctType(acctId, periodId);
+
+        for( BalanceSheetModel income : desiredPeriodIncomeData) {
+            System.out.println("Desired period income amount: " + income.getAmount());
         }
 
         //
@@ -60,7 +66,7 @@ public class AccountBalanceLogic {
             beginningBalance = getBeginningBalance(periodId);
             System.out.println("DesiredPeriod has a beginning balance, beginning balance is: " + beginningBalance);
             //Get Balance Sheet
-            List<BalanceSheetModel> response = generateBalanceSheet(beginningBalance, desiredPeriodData);
+            List<BalanceSheetModel> response = generateBalanceSheet(beginningBalance, desiredPeriodExpenseData);
             return response;
         }
         //
@@ -84,7 +90,7 @@ public class AccountBalanceLogic {
             beginningBalance = getEndingBalance(oldestUnclosedPerBegBal, expItemsPriorToDesiredPeriodList);
             System.out.println("Desired period beginning Balance: " + beginningBalance);
             //Get Balance Sheet
-            List<BalanceSheetModel> response = generateBalanceSheet(beginningBalance, desiredPeriodData);
+            List<BalanceSheetModel> response = generateBalanceSheet(beginningBalance, desiredPeriodExpenseData);
             return response;
         }
     }

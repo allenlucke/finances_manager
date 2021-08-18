@@ -17,6 +17,7 @@ public class AccountBalanceDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    //Get expense item by period and acct type
     public List<BalanceSheetModel> getExpItemByPeriodNAcctType(int acctId, int periodId){
         String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
@@ -112,26 +113,81 @@ public class AccountBalanceDao {
         return oldestUnclosedPeriod;
     }
 
+    //Get income item by date range and acct type
+    public List<BalanceSheetModel> getIncomeItemByDatesNAcctType(int acctId, Timestamp startDate, Timestamp dayAfterEndDate){
+        String sql = "SELECT \"incomeItem\".id, \"incomeItem\".\"receivedDate\", \n" +
+                "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
+                "\"incomeItem\".name AS \"incomeItemName\", \"account\".id AS \"accountId\", \n" +
+                "\"incomeItem\".\"amountReceived\" FROM \"incomeItem\"\n" +
+                "JOIN \"account\" ON \"incomeItem\".\"account_id\" = \"account\".id\n" +
+                "JOIN \"budget_incomeCategory\" ON \"incomeItem\".\"budget_incomeCategory_id\" = \"budget_incomeCategory\".id\n" +
+                "JOIN \"budget\" ON \"budget_incomeCategory\".\"budget_id\" = \"budget\".id\n" +
+                "JOIN \"period\" ON \"budget\".period_id = \"period\".id\n" +
+                "JOIN \"accountPeriod\" ON \"period\".id = \"accountPeriod\".period_id\n" +
+                "WHERE \"incomeItem\".\"receivedDate\" >= \"period\".\"startDate\" \n" +
+                "AND \"incomeItem\".\"receivedDate\" <= \"period\".\"endDate\"\n" +
+                "AND \"account\".id =?\n" +
+                "AND \"incomeItem\".\"receivedDate\" >= ?\n" +
+                "AND \"incomeItem\".\"receivedDate\" < ?\n" +
+                "ORDER BY \"incomeItem\".\"receivedDate\";";
 
-//
-//    public List<AccountModel> getAllAccounts(){
-//        String sql = "SELECT * FROM \"account\";";
-//        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
-//
-//        List<AccountModel> result = new ArrayList<AccountModel>();
-//        for(Map<String, Object> row:rows){
-//            AccountModel account = new AccountModel();
-//            account.setId((int)row.get("id"));
-//            account.setName((String)row.get("name"));
-//            account.setUsersId((int)row.get("users_id"));
-//            account.setCredit((boolean)row.get("isCredit"));
-//            account.setActive((boolean)row.get("isActive"));
-//
-//            result.add(account);
-//        }
-//        return result;
-//    }
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {acctId, startDate, dayAfterEndDate} );
+        List<BalanceSheetModel> result = new ArrayList<BalanceSheetModel>();
+        for(Map<String, Object> row:rows){
+            BalanceSheetModel incomeItem = new BalanceSheetModel();
+
+            incomeItem.setIncomeItemId((int)row.get("id"));
+            incomeItem.setTransactionDate((Timestamp)row.get("receivedDate"));
+            incomeItem.setAccountName((String)row.get("accountName"));
+            incomeItem.setPeriodId((int)row.get("periodId"));
+            incomeItem.setIncomeItemName((String)row.get("incomeItemName"));
+            incomeItem.setAccountId((int)row.get("accountId"));
+            incomeItem.setAmount((BigDecimal)row.get("amount"));
+
+            result.add(incomeItem);
+
+        }
+        return result;
+    }
+
+    //Get income item by period and acct type
+    public List<BalanceSheetModel> getIncomeItemByPeriodNAcctType(int acctId, int periodId){
+        String sql = "SELECT \"incomeItem\".id, \"incomeItem\".\"receivedDate\", \n" +
+                "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
+                "\"incomeItem\".name AS \"incomeItemName\", \"account\".id AS \"accountId\", \n" +
+                "\"incomeItem\".\"amountReceived\" FROM \"incomeItem\"\n" +
+                "JOIN \"account\" ON \"incomeItem\".\"account_id\" = \"account\".id\n" +
+                "JOIN \"budget_incomeCategory\" ON \"incomeItem\".\"budget_incomeCategory_id\" = \"budget_incomeCategory\".id\n" +
+                "JOIN \"budget\" ON \"budget_incomeCategory\".\"budget_id\" = \"budget\".id\n" +
+                "JOIN \"period\" ON \"budget\".period_id = \"period\".id\n" +
+                "JOIN \"accountPeriod\" ON \"period\".id = \"accountPeriod\".period_id\n" +
+                "WHERE \"incomeItem\".\"receivedDate\" >= \"period\".\"startDate\" \n" +
+                "AND \"incomeItem\".\"receivedDate\" <= \"period\".\"endDate\"\n" +
+                "AND \"account\".id = ?\n" +
+                "AND \"period\".id =  ?\n" +
+                "ORDER BY \"incomeItem\".\"receivedDate\";";
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {acctId, periodId} ); /*,
+                new ExpItemMapper());*/
+        List<BalanceSheetModel> result = new ArrayList<BalanceSheetModel>();
+        for(Map<String, Object> row:rows){
+            BalanceSheetModel incomeItem = new BalanceSheetModel();
 
 
+            incomeItem.setIncomeItemId((int)row.get("id"));
+            incomeItem.setTransactionDate((Timestamp)row.get("receivedDate"));
+            incomeItem.setAccountName((String)row.get("accountName"));
+            incomeItem.setPeriodId((int)row.get("periodId"));
+            incomeItem.setIncomeItemName((String)row.get("incomeItemName"));
+            incomeItem.setAccountId((int)row.get("accountId"));
+            incomeItem.setAmount((BigDecimal)row.get("amountReceived"));
+
+            result.add(incomeItem);
+
+        }
+        return result;
+    }
 
 }

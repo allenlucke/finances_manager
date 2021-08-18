@@ -68,3 +68,19 @@ AND "account".id =1
 AND "expenseItem"."transactionDate" >= '2021-05-01 00:00:00.0'
 AND "expenseItem"."transactionDate" < '2021-06-01 00:00:00.0'
 ORDER BY "expenseItem"."transactionDate";
+
+--GET incomeItems by account/period
+SELECT "incomeItem".id, "incomeItem"."receivedDate", 
+"account".name AS "accountName" , "period".id AS "periodId", 
+"incomeItem".name AS "incomeItemName", "account".id AS "accountId", 
+"incomeItem"."amountReceived" FROM "incomeItem"
+JOIN "account" ON "incomeItem"."account_id" = "account".id
+JOIN "budget_incomeCategory" ON "incomeItem"."budget_incomeCategory_id" = "budget_incomeCategory".id
+JOIN "budget" ON "budget_incomeCategory"."budget_id" = "budget".id
+JOIN "period" ON "budget".period_id = "period".id
+JOIN "accountPeriod" ON "period".id = "accountPeriod".period_id
+WHERE "incomeItem"."receivedDate" >= "period"."startDate" 
+AND "incomeItem"."receivedDate" <= "period"."endDate"
+AND "account".id =1
+AND "period".id = 1
+ORDER BY "incomeItem"."receivedDate";
