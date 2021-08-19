@@ -1,4 +1,4 @@
-package com.Allen.SpringFinancesServer.AccountBalance;
+package com.Allen.SpringFinancesServer.AccountBalanceSheet;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -9,7 +9,7 @@ public class BalanceSheetModel {
     private int incomeItemId;
     private Timestamp transactionDate;
     private String accountName;
-    private int PeriodId;
+    private int periodId;
     private String expenseItemName;
     private String incomeItemName;
     private int accountId;
@@ -52,11 +52,11 @@ public class BalanceSheetModel {
     }
 
     public int getPeriodId() {
-        return PeriodId;
+        return periodId;
     }
 
     public void setPeriodId(int periodId) {
-        PeriodId = periodId;
+        this.periodId = periodId;
     }
 
     public String getExpenseItemName() {
@@ -105,5 +105,42 @@ public class BalanceSheetModel {
 
     public void setPostBalance(BigDecimal postBalance) {
         this.postBalance = postBalance;
+    }
+
+
+    public BalanceSheetModel(int expenseItemId, int incomeItemId,
+                             Timestamp transactionDate, String accountName,
+                             int periodId, String expenseItemName,
+                             String incomeItemName, int accountId,
+                             BigDecimal amount, BigDecimal preBalance,
+                             BigDecimal postBalance) {
+        this.expenseItemId = expenseItemId;
+        this.incomeItemId = incomeItemId;
+        this.transactionDate = transactionDate;
+        this.accountName = accountName;
+        this.periodId = periodId;
+        this.expenseItemName = expenseItemName;
+        this.incomeItemName = incomeItemName;
+        this.accountId = accountId;
+        this.amount = amount;
+        this.preBalance = preBalance;
+        this.postBalance = postBalance;
+    }
+
+    @Override
+    public String toString() {
+        return "BalanceSheetModel{" +
+                "expenseItemId=" + expenseItemId +
+                ", incomeItemId=" + incomeItemId +
+                ", transactionDate=" + transactionDate +
+                ", accountName='" + accountName + '\'' +
+                ", PeriodId=" + periodId +
+                ", expenseItemName='" + expenseItemName + '\'' +
+                ", incomeItemName='" + incomeItemName + '\'' +
+                ", accountId=" + accountId +
+                ", amount=" + amount +
+                ", preBalance=" + preBalance +
+                ", postBalance=" + postBalance +
+                '}';
     }
 }

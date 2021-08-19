@@ -1,4 +1,4 @@
-package com.Allen.SpringFinancesServer.AccountBalance;
+package com.Allen.SpringFinancesServer.AccountBalanceSheet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -143,7 +143,7 @@ public class AccountBalanceDao {
             incomeItem.setPeriodId((int)row.get("periodId"));
             incomeItem.setIncomeItemName((String)row.get("incomeItemName"));
             incomeItem.setAccountId((int)row.get("accountId"));
-            incomeItem.setAmount((BigDecimal)row.get("amount"));
+            incomeItem.setAmount((BigDecimal)row.get("amountReceived"));
 
             result.add(incomeItem);
 

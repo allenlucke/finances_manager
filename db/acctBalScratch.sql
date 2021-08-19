@@ -84,3 +84,4 @@ AND "incomeItem"."receivedDate" <= "period"."endDate"
 AND "account".id =1
 AND "period".id = 1
 ORDER BY "incomeItem"."receivedDate";
+

@@ -1,4 +1,4 @@
-package com.Allen.SpringFinancesServer.AccountBalance;
+package com.Allen.SpringFinancesServer.AccountBalanceSheet;
 
 import com.Allen.SpringFinancesServer.AccountPeriod.AccountPeriodDao;
 import com.Allen.SpringFinancesServer.AccountPeriod.AccountPeriodModel;
@@ -12,11 +12,12 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
 public class AccountBalanceLogic {
-//    final int noPriorPeriod = 0;
+
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -66,7 +67,7 @@ public class AccountBalanceLogic {
             beginningBalance = getBeginningBalance(periodId);
             System.out.println("DesiredPeriod has a beginning balance, beginning balance is: " + beginningBalance);
             //Get Balance Sheet
-            List<BalanceSheetModel> response = generateBalanceSheet(beginningBalance, desiredPeriodExpenseData);
+            List<BalanceSheetModel> response = generateBalanceSheet(beginningBalance, desiredPeriodExpenseData, desiredPeriodIncomeData);
             return response;
         }
         //
@@ -82,15 +83,18 @@ public class AccountBalanceLogic {
             System.out.println("Startdate of oldest unclosed period is: " + oldestUnclosedPerStartDate);
             //Get beginning balance for oldest unclosed period
             BigDecimal oldestUnclosedPerBegBal = getBeginningBalance(oldestUnclosedPeriodId);
-            System.out.println("Beginning balance of oldest unclosed period is: " + oldestUnclosedPerStartDate);
-            //Get expense items from start of oldest unclosed period up to day prior to desired period
+            System.out.println("Beginning balance of oldest unclosed period is: " + oldestUnclosedPerBegBal);
+            //Get expense and income items from start of oldest unclosed period up to day prior to desired period
             List<BalanceSheetModel> expItemsPriorToDesiredPeriodList =
                     acctBalDao.getExpItemByDatesNAcctType(acctId, oldestUnclosedPerStartDate, desiredPeriodStartDate);
+
+            List<BalanceSheetModel> incomeItemsPriorToDesiredPeriodList =
+                    acctBalDao.getIncomeItemByDatesNAcctType(acctId, oldestUnclosedPerStartDate, desiredPeriodStartDate);
             //Get desired periods starting balance
-            beginningBalance = getEndingBalance(oldestUnclosedPerBegBal, expItemsPriorToDesiredPeriodList);
+            beginningBalance = getEndingBalance(oldestUnclosedPerBegBal, expItemsPriorToDesiredPeriodList, incomeItemsPriorToDesiredPeriodList);
             System.out.println("Desired period beginning Balance: " + beginningBalance);
             //Get Balance Sheet
-            List<BalanceSheetModel> response = generateBalanceSheet(beginningBalance, desiredPeriodExpenseData);
+            List<BalanceSheetModel> response = generateBalanceSheet(beginningBalance, desiredPeriodExpenseData, desiredPeriodIncomeData);
             return response;
         }
     }
@@ -132,33 +136,86 @@ public class AccountBalanceLogic {
         return oldestUnclosedPeriodList;
     }
 
-    //Calculate balance sheet based on expense Items
-    private BigDecimal getEndingBalance(BigDecimal startingBalance, List<BalanceSheetModel> expenseItemList){
-        for( BalanceSheetModel exp : expenseItemList) {
-            System.out.println("balance: " +  startingBalance);
-            System.out.println("exp amount: " + exp.getAmount());
+    //Calculate ending balance of a period
+    //To be used to determine starting balance of next period
+    private BigDecimal getEndingBalance(BigDecimal startingBalance,
+                                        List<BalanceSheetModel> expenseItemList,
+                                        List<BalanceSheetModel> incomeItemList){
 
-            startingBalance = startingBalance.subtract(exp.getAmount());
-            System.out.println("New Bal: " + startingBalance);
+        //Merge and order expense item and income item lists
+        List<BalanceSheetModel> orderedBalanceSheetList = mergeAndOrderBalanceListByDate(expenseItemList, incomeItemList);
+
+        for( BalanceSheetModel balanceItem : orderedBalanceSheetList) {
+            System.out.println("balance: " +  startingBalance);
+            System.out.println("Balance item to String; " + balanceItem.toString());
+            //Check to see if balance item is expense
+            if(balanceItem.getIncomeItemId() == 0) {
+                System.out.println("exp amount: " + balanceItem.getAmount());
+
+                startingBalance = startingBalance.subtract(balanceItem.getAmount());
+                System.out.println("New Bal: " + startingBalance);
+            }
+            else {
+                System.out.println("income amount: " + balanceItem.getAmount());
+
+                startingBalance = startingBalance.add(balanceItem.getAmount());
+                System.out.println("New Bal: " + startingBalance);
+            }
         }
         return startingBalance;
     }
 
-    //Calculate balance sheet based on expense Items
-    private List<BalanceSheetModel> generateBalanceSheet(BigDecimal startingBalance, List<BalanceSheetModel> expenseItemList){
+    //Calculate balance sheet based on expense and income Items
+    private List<BalanceSheetModel> generateBalanceSheet(BigDecimal startingBalance,
+                                                         List<BalanceSheetModel> expenseItemList,
+                                                         List<BalanceSheetModel> incomeItemList){
+
+        //Merge and order expense item and income item lists
+        List<BalanceSheetModel> orderedBalanceSheetList = mergeAndOrderBalanceListByDate(expenseItemList, incomeItemList);
+
         List<BalanceSheetModel>  result = new ArrayList<BalanceSheetModel>();;
-        for( BalanceSheetModel exp : expenseItemList) {
+        for( BalanceSheetModel balanceItem : orderedBalanceSheetList) {
 
             System.out.println("balance: " +  startingBalance);
-            exp.setPreBalance(startingBalance);
-            System.out.println("exp amount: " + exp.getAmount());
+            balanceItem.setPreBalance(startingBalance);
+            //Check to see if balance item has income id
+            if(balanceItem.getIncomeItemId() == 0) {
+                System.out.println("exp amount: " + balanceItem.getAmount());
 
-            startingBalance = startingBalance.subtract(exp.getAmount());
-            System.out.println("New Bal: " + startingBalance);
-            exp.setPostBalance(startingBalance);
+                startingBalance = startingBalance.subtract(balanceItem.getAmount());
+                System.out.println("New Bal: " + startingBalance);
+                balanceItem.setPostBalance(startingBalance);
+            }
+            else {
+                System.out.println("income amount: " + balanceItem.getAmount());
 
-            result.add(exp);
+                startingBalance = startingBalance.add(balanceItem.getAmount());
+                System.out.println("New Bal: " + startingBalance);
+                balanceItem.setPostBalance(startingBalance);
+            }
+            result.add(balanceItem);
         }
         return result;
+    }
+
+    //Merge and order expense list and income list into on ordered list
+    private List<BalanceSheetModel> mergeAndOrderBalanceListByDate(List<BalanceSheetModel> expenseItemList,
+                                        List<BalanceSheetModel> incomeItemList){
+
+        //Merge expense item and income item lists
+        List<BalanceSheetModel> unorderedBalanceSheetList = new ArrayList<BalanceSheetModel>(expenseItemList);
+        unorderedBalanceSheetList.addAll(incomeItemList);
+
+        for( BalanceSheetModel item : unorderedBalanceSheetList) {
+//            System.out.println("Unorderlist item: " + item.toString());
+        }
+
+        Collections.sort(unorderedBalanceSheetList, new SortBalanceSheet());
+
+        List<BalanceSheetModel> orderedBalanceSheetList = new ArrayList<BalanceSheetModel>(unorderedBalanceSheetList);
+        for( BalanceSheetModel item : orderedBalanceSheetList) {
+//            System.out.println("Orderlist item: " + item.toString());
+        }
+        return orderedBalanceSheetList;
     }
 }

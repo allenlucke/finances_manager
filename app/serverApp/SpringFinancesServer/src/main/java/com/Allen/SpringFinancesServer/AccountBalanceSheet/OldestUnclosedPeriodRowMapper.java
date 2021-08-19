@@ -1,4 +1,4 @@
-package com.Allen.SpringFinancesServer.AccountBalance;
+package com.Allen.SpringFinancesServer.AccountBalanceSheet;
 
 import org.springframework.jdbc.core.RowMapper;
 

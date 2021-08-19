@@ -1,4 +1,4 @@
-package com.Allen.SpringFinancesServer.AccountBalance;
+package com.Allen.SpringFinancesServer.AccountBalanceSheet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,21 +27,7 @@ public class AccountBalanceController {
     public List<BalanceSheetModel> getExpItemByPeriodNAcctType(@QueryParam("acctId") int acctId,
                                                           @QueryParam("periodId") int periodId){
         List<BalanceSheetModel> result;
-//        result = dao.getExpItemByPeriodNAcctType( acctId, periodId );
         result = mgr.balanceManager(acctId, periodId );
-//        MathContext mc = new MathContext(2);
-//        BigDecimal acctBal = BigDecimal.valueOf(12000.00);
-//        for( ExpItemModel exp : result) {
-//
-//            System.out.println("balance: " +  acctBal);
-//            System.out.println("exp amount: " + exp.getAmount());
-//
-//            acctBal = acctBal.subtract(exp.getAmount());
-//
-//            System.out.println("New Bal: " + acctBal);
-//
-//
-//        }
 
         return result;
     }
