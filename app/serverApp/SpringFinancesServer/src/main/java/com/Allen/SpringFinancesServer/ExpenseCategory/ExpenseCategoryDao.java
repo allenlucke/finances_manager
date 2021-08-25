@@ -19,7 +19,24 @@ public class ExpenseCategoryDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public List<ExpenseCategoryModel> getAllExpCats() {
+    public List<ExpenseCategoryModel> getAllExpCats(final int usersId) {
+        String sql = "SELECT * FROM \"expenseCategory\" WHERE \"users_id\" =1;";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {usersId} );
+
+        List<ExpenseCategoryModel> result = new ArrayList<ExpenseCategoryModel>();
+        for(Map<String, Object> row:rows){
+            ExpenseCategoryModel expCat = new ExpenseCategoryModel();
+            expCat.setId((int)row.get("id"));
+            expCat.setName((String)row.get("name"));
+            expCat.setUsersId((int)row.get("users_id"));
+
+            result.add(expCat);
+        }
+        return result;
+    }
+
+    public List<ExpenseCategoryModel> adminGetAllExpCats() {
         String sql = "SELECT * FROM \"expenseCategory\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
@@ -35,7 +52,19 @@ public class ExpenseCategoryDao {
         return result;
     }
 
-    public List<ExpenseCategoryModel> getExpCatById(int id){
+    public List<ExpenseCategoryModel> getExpCatById(final int catId, final int usersId){
+        String sql = "SELECT * FROM \"expenseCategory\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+
+        ExpenseCategoryModel expenseCat = jdbcTemplate.queryForObject( sql, new Object[]{catId, usersId}, new ExpenseCategoryRowMapper());
+
+        List<ExpenseCategoryModel> result = new ArrayList<ExpenseCategoryModel>();
+
+        result.add(expenseCat);
+
+        return result;
+    }
+
+    public List<ExpenseCategoryModel> adminGetExpCatById(int id){
         String sql = "SELECT * FROM \"expenseCategory\" WHERE \"id\" = ?;";
 
         ExpenseCategoryModel expenseCat = jdbcTemplate.queryForObject( sql, new Object[]{id}, new ExpenseCategoryRowMapper());

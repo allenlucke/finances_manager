@@ -2,6 +2,7 @@ package com.Allen.SpringFinancesServer.BudgetIncomeCategory;
 
 import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
+import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,9 @@ public class BudgetIncomeCategoryController {
 
     @Autowired
     BudgetIncomeCategoryDao dao;
+
+    @Autowired
+    AuthorizationFilter authorizationFilter;
 
     @GetMapping("/getAllBudgetIncomeCats")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -49,4 +53,5 @@ public class BudgetIncomeCategoryController {
         List<ReturnIdModel> returnedId = dao.addBudgetIncomeCatReturnId(budgetIncomeCat);
         return returnedId;
     }
+    
 }
