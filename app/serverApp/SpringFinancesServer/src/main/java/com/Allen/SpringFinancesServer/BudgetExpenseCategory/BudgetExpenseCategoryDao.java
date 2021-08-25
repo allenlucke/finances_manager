@@ -20,7 +20,26 @@ public class BudgetExpenseCategoryDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public List<BudgetExpenseCategoryModel> getAllBudgetExpCats() {
+    public List<BudgetExpenseCategoryModel> getAllBudgetExpCats(final int usersId) {
+        String sql = "SELECT * FROM \"budget_expenseCategory\" WHERE \"users_id\" = ?;";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {usersId} );
+
+        List<BudgetExpenseCategoryModel> result = new ArrayList<BudgetExpenseCategoryModel>();
+        for(Map<String, Object> row:rows){
+            BudgetExpenseCategoryModel budgExpCat = new BudgetExpenseCategoryModel();
+            budgExpCat.setId((int)row.get("id"));
+            budgExpCat.setBudgetId((int)row.get("budget_id"));
+            budgExpCat.setExpenseCategoryId((int)row.get("expenseCategory_id"));
+            budgExpCat.setAmountBudgeted((BigDecimal)row.get("amountBudgeted"));
+            budgExpCat.setUsersId((int)row.get("users_id"));
+
+            result.add(budgExpCat);
+        }
+        return result;
+    }
+
+    public List<BudgetExpenseCategoryModel> adminGetAllBudgetExpCats() {
         String sql = "SELECT * FROM \"budget_expenseCategory\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
@@ -31,13 +50,27 @@ public class BudgetExpenseCategoryDao {
             budgExpCat.setBudgetId((int)row.get("budget_id"));
             budgExpCat.setExpenseCategoryId((int)row.get("expenseCategory_id"));
             budgExpCat.setAmountBudgeted((BigDecimal)row.get("amountBudgeted"));
+            budgExpCat.setUsersId((int)row.get("users_id"));
 
             result.add(budgExpCat);
         }
         return result;
     }
 
-    public List<BudgetExpenseCategoryModel> getBudgetExpCatById(int id){
+    public List<BudgetExpenseCategoryModel> getBudgetExpCatById(final int budgExpCatId, final int usersId){
+        String sql = "SELECT * FROM \"budget_expenseCategory\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+
+        BudgetExpenseCategoryModel budgetExpCat = jdbcTemplate.queryForObject(
+                sql, new Object[]{budgExpCatId, usersId}, new BudgetExpenseCategoryRowMapper());
+
+        List<BudgetExpenseCategoryModel> result = new ArrayList<BudgetExpenseCategoryModel>();
+
+        result.add(budgetExpCat);
+
+        return result;
+    }
+
+    public List<BudgetExpenseCategoryModel> adminGetBudgetExpCatById(int id){
         String sql = "SELECT * FROM \"budget_expenseCategory\" WHERE \"id\" = ?;";
 
         BudgetExpenseCategoryModel budgetExpCat = jdbcTemplate.queryForObject( sql, new Object[]{id}, new BudgetExpenseCategoryRowMapper());
@@ -63,6 +96,7 @@ public class BudgetExpenseCategoryDao {
             ps.setInt(1, budgetExpCat.getBudgetId());
             ps.setInt(2, budgetExpCat.getExpenseCategoryId());
             ps.setBigDecimal(3, budgetExpCat.getAmountBudgeted());
+            ps.setInt(4, budgetExpCat.getUsersId());
 
             return ps;
         },holder);

@@ -17,6 +17,7 @@ public class AccountPeriodRowMapper implements RowMapper<AccountPeriodModel> {
         acctPeriod.setPeriodId(rs.getInt("period_id"));
         acctPeriod.setBeginningBalance(rs.getBigDecimal("beginningBalance"));
         acctPeriod.setEndingBalance(rs.getBigDecimal("endingBalance"));
+        acctPeriod.setUsersId(rs.getInt("users_id"));
 
         return acctPeriod;
     }

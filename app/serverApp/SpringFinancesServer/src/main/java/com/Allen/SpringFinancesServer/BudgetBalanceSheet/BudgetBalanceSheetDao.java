@@ -17,7 +17,7 @@ public class BudgetBalanceSheetDao {
 
 
     //Get budget expense categories by period
-    public List<BudgetBalanceSheetModel> getBudgetExpCatsByPeriod(int periodId){
+    public List<BudgetBalanceSheetModel> getBudgetExpCatsByPeriod(int periodId, final int usersId){
         String sql = "SELECT \"expenseCategory\".id AS \"expenseCategoryId\",\n" +
                 "\"expenseCategory\".name AS \"expenseCategoryName\", \"expenseCategory\".\"users_id\" AS \"usersId\",\n" +
                 "\"budget_expenseCategory\".id AS \"budgetExpenseCategoryId\", \"budget\".id AS \"budgetId\",\n" +
@@ -26,10 +26,11 @@ public class BudgetBalanceSheetDao {
                 "\"budget\".\"isClosed\" AS \"isClosed\" FROM \"expenseCategory\"\n" +
                 "JOIN \"budget_expenseCategory\" ON \"expenseCategory\".id = \"budget_expenseCategory\".\"expenseCategory_id\"\n" +
                 "JOIN \"budget\" ON \"budget_expenseCategory\".\"budget_id\" = \"budget\".id\n" +
-                "WHERE \"budget\".\"period_id\" = ?;";
+                "WHERE \"budget\".\"period_id\" = ?\n" +
+                "AND \"budget\".\"users_id\" = ?;";
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
-                new Object[] {periodId} );
+                new Object[] {periodId, usersId} );
 
         List<BudgetBalanceSheetModel> result = new ArrayList<BudgetBalanceSheetModel>();
         for(Map<String, Object> row:rows){

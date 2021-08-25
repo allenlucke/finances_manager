@@ -8,6 +8,7 @@ public class BudgetIncomeCategoryModel {
     private int budgetId;
     private int incomeCategoryId;
     private BigDecimal amountBudgeted;
+    private int usersId;
 
     public BudgetIncomeCategoryModel() {};
 
@@ -41,5 +42,13 @@ public class BudgetIncomeCategoryModel {
 
     public void setAmountBudgeted(BigDecimal amountBudgeted) {
         this.amountBudgeted = amountBudgeted;
+    }
+
+    public int getUsersId() {
+        return usersId;
+    }
+
+    public void setUsersId(int usersId) {
+        this.usersId = usersId;
     }
 }

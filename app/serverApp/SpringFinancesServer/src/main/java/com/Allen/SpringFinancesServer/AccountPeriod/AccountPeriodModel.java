@@ -9,6 +9,7 @@ public class AccountPeriodModel {
     private int periodId;
     private BigDecimal beginningBalance;
     private BigDecimal endingBalance;
+    private int usersId;
 
     public AccountPeriodModel() {};
 
@@ -50,5 +51,13 @@ public class AccountPeriodModel {
 
     public void setEndingBalance(BigDecimal endingBalance) {
         this.endingBalance = endingBalance;
+    }
+
+    public int getUsersId() {
+        return usersId;
+    }
+
+    public void setUsersId(int usersId) {
+        this.usersId = usersId;
     }
 }

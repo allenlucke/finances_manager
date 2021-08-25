@@ -31,11 +31,11 @@ VALUES
 
 --Create test budgets for user id#1
 INSERT INTO "budget"
-	("name", "period_id")
+	("name", "period_id", "users_id")
 VALUES
-	(' May-21 Test Budget', 1 ),
-	(' June-21 Test Budget', 2 ),
-	(' July-21 Test Budget', 3 );
+	(' May-21 Test Budget', 1, 1 ),
+	(' June-21 Test Budget', 2, 1 ),
+	(' July-21 Test Budget', 3, 1 );
 
 --Create test accounts for user id#1
 INSERT INTO "account"
@@ -47,21 +47,21 @@ VALUES
 
 --Create test budget_expenseCategories for user id#1
 INSERT INTO "budget_expenseCategory"
-	("budget_id", "expenseCategory_id", "amountBudgeted" )
+	("budget_id", "expenseCategory_id", "amountBudgeted", "users_id" )
 VALUES
-	(1, 1, 250.00 ),
-	(1, 2, 500.00 ),
-	(1, 3, 1200.00 ),
-	(1, 4, 100.00);
+	(1, 1, 250.00, 1 ),
+	(1, 2, 500.00, 1 ),
+	(1, 3, 1200.00, 1 ),
+	(1, 4, 100.00, 1);
 
 --Create test budget_expenseCategories for user id#1
 INSERT INTO "budget_expenseCategory"
-	("budget_id", "expenseCategory_id", "amountBudgeted" )
+	("budget_id", "expenseCategory_id", "amountBudgeted", "users_id" )
 VALUES
-	(2, 1, 250.00 ),
-	(2, 2, 500.00 ),
-	(2, 3, 1200.00 ),
-	(2, 4, 100.00);
+	(2, 1, 250.00, 1 ),
+	(2, 2, 500.00, 1 ),
+	(2, 3, 1200.00, 1 ),
+	(2, 4, 100.00, 1);
 
 --Create test data expenseItem for user id#1
 INSERT INTO "expenseItem"
@@ -74,20 +74,16 @@ VALUES
 	(3, 'Day Care (1) - May', '05/08/2021', 200, false, false, false, 1, 1 ),
 	(4, 'KS Gas May', '05/04/2021', 87.95, false, false, false, 1, 1 );
 
---
---BELOW This line, may be unstable
---
-
 --Initial period test data user id#1
 INSERT INTO "accountPeriod"
-	("account_id", "period_id",	"beginningBalance")
+	("account_id", "period_id",	"beginningBalance", "users_id")
 VALUES
-	(1, 1, 10000.00);
+	(1, 1, 10000.00, 1);
 
 INSERT INTO "accountPeriod"
-	("account_id", "period_id")
+	("account_id", "period_id", "users_id")
 VALUES
-	(1, 2);
+	(1, 2, 1);
 
 --incomeCat test data
 INSERT INTO "incomeCategory"
@@ -102,14 +98,14 @@ VALUES
 
 --budget_IncomeCat Test dat user id#1
 INSERT INTO "budget_incomeCategory"
-	("budget_id", "incomeCategory_id", "amountBudgeted")
+	("budget_id", "incomeCategory_id", "amountBudgeted", "users_id")
 VALUES
-	(1, 1, 2400.00 );
+	(1, 1, 2400.00, 1 );
 
 INSERT INTO "budget_incomeCategory"
-	("budget_id", "incomeCategory_id", "amountBudgeted")
+	("budget_id", "incomeCategory_id", "amountBudgeted", "users_id")
 VALUES
-	(1, 2, 2400.00 );
+	(1, 2, 2400.00, 1 );
 
 --Income item test data
 INSERT INTO "incomeItem"

@@ -38,13 +38,15 @@ public class AccountBalanceSheetLogic {
         //
         //Get expense item data and income item for desired period
         //
-        List<AccountBalanceSheetModel>  desiredPeriodExpenseData = acctBalDao.getExpItemByPeriodNAcctType(acctId, periodId);
+        List<AccountBalanceSheetModel>  desiredPeriodExpenseData =
+                acctBalDao.getExpItemByPeriodNAcctType(acctId, periodId, usersId);
 
         for( AccountBalanceSheetModel exp : desiredPeriodExpenseData) {
             System.out.println("Desired period exp amount: " + exp.getAmount());
         }
 
-        List<AccountBalanceSheetModel>  desiredPeriodIncomeData = acctBalDao.getIncomeItemByPeriodNAcctType(acctId, periodId);
+        List<AccountBalanceSheetModel>  desiredPeriodIncomeData =
+                acctBalDao.getIncomeItemByPeriodNAcctType(acctId, periodId, usersId);
 
         for( AccountBalanceSheetModel income : desiredPeriodIncomeData) {
             System.out.println("Desired period income amount: " + income.getAmount());
@@ -63,11 +65,12 @@ public class AccountBalanceSheetLogic {
         //
         //Check to see if the desired period has a beginning balance
         //
-        if(!getBeginningBalance(periodId).equals(NO_BEGINNING_BALANCE)){
-            beginningBalance = getBeginningBalance(periodId);
+        if(!getBeginningBalance(periodId, usersId).equals(NO_BEGINNING_BALANCE)){
+            beginningBalance = getBeginningBalance(periodId, usersId);
             System.out.println("DesiredPeriod has a beginning balance, beginning balance is: " + beginningBalance);
             //Get Balance Sheet
-            List<AccountBalanceSheetModel> response = generateBalanceSheet(beginningBalance, desiredPeriodExpenseData, desiredPeriodIncomeData);
+            List<AccountBalanceSheetModel> response =
+                    generateBalanceSheet(beginningBalance, desiredPeriodExpenseData, desiredPeriodIncomeData);
             return response;
         }
         //
@@ -75,36 +78,38 @@ public class AccountBalanceSheetLogic {
         //
         else {
             //Get data for oldest unclosed period
-            OldestUnclosedPeriodModel oldestUnclosedPeriod = getOldestUnclosedPeriod(desiredPeriodStartDate);
+            OldestUnclosedPeriodModel oldestUnclosedPeriod = getOldestUnclosedPeriod(desiredPeriodStartDate, usersId);
             //Get startdate for oldest unclosed period
             Timestamp oldestUnclosedPerStartDate = oldestUnclosedPeriod.getStartDate();
             //Get ID for oldest unclosed period
             int oldestUnclosedPeriodId = oldestUnclosedPeriod.getPeriodId();
             System.out.println("Startdate of oldest unclosed period is: " + oldestUnclosedPerStartDate);
             //Get beginning balance for oldest unclosed period
-            BigDecimal oldestUnclosedPerBegBal = getBeginningBalance(oldestUnclosedPeriodId);
+            BigDecimal oldestUnclosedPerBegBal = getBeginningBalance(oldestUnclosedPeriodId, usersId);
             System.out.println("Beginning balance of oldest unclosed period is: " + oldestUnclosedPerBegBal);
             //Get expense and income items from start of oldest unclosed period up to day prior to desired period
             List<AccountBalanceSheetModel> expItemsPriorToDesiredPeriodList =
-                    acctBalDao.getExpItemByDatesNAcctType(acctId, oldestUnclosedPerStartDate, desiredPeriodStartDate);
+                    acctBalDao.getExpItemByDatesNAcctType(acctId, oldestUnclosedPerStartDate, desiredPeriodStartDate, usersId);
 
             List<AccountBalanceSheetModel> incomeItemsPriorToDesiredPeriodList =
-                    acctBalDao.getIncomeItemByDatesNAcctType(acctId, oldestUnclosedPerStartDate, desiredPeriodStartDate);
+                    acctBalDao.getIncomeItemByDatesNAcctType(acctId, oldestUnclosedPerStartDate, desiredPeriodStartDate, usersId);
             //Get desired periods starting balance
-            beginningBalance = getEndingBalance(oldestUnclosedPerBegBal, expItemsPriorToDesiredPeriodList, incomeItemsPriorToDesiredPeriodList);
+            beginningBalance = getEndingBalance(
+                    oldestUnclosedPerBegBal, expItemsPriorToDesiredPeriodList, incomeItemsPriorToDesiredPeriodList);
             System.out.println("Desired period beginning Balance: " + beginningBalance);
             //Get Balance Sheet
-            List<AccountBalanceSheetModel> response = generateBalanceSheet(beginningBalance, desiredPeriodExpenseData, desiredPeriodIncomeData);
+            List<AccountBalanceSheetModel> response =
+                    generateBalanceSheet(beginningBalance, desiredPeriodExpenseData, desiredPeriodIncomeData);
             return response;
         }
     }
 
     //Get beginning balance of a period
-    private BigDecimal getBeginningBalance (int periodId) {
+    private BigDecimal getBeginningBalance (final int periodId, final int usersId) {
 
         try {
             //Check desired period for beginning balance
-            List<AccountPeriodModel> begginingBalanceList = acctPeriodDao.getAcctPeriodById(periodId);
+            List<AccountPeriodModel> begginingBalanceList = acctPeriodDao.getAcctPeriodById(periodId, usersId);
 
             BigDecimal beginningBalance = begginingBalanceList.get(0).getBeginningBalance();
 
@@ -119,11 +124,11 @@ public class AccountBalanceSheetLogic {
     }
 
     //Get data of oldest unclosed period
-    private OldestUnclosedPeriodModel getOldestUnclosedPeriod(Timestamp desiredPeriodStartDate) {
+    private OldestUnclosedPeriodModel getOldestUnclosedPeriod(Timestamp desiredPeriodStartDate, final int usersId) {
 //        int lastUnclosedPeriod = 0;
         OldestUnclosedPeriodModel oldestUnclosedPeriodList = new OldestUnclosedPeriodModel();
         try {
-            oldestUnclosedPeriodList = acctBalDao.getLastUnclosedPeriod(desiredPeriodStartDate);
+            oldestUnclosedPeriodList = acctBalDao.getLastUnclosedPeriod(desiredPeriodStartDate, usersId);
 
             int oldestUnclosedPeriod = oldestUnclosedPeriodList.getPeriodId();
             System.out.println("Last unclosed period id: " + oldestUnclosedPeriod);
@@ -171,7 +176,8 @@ public class AccountBalanceSheetLogic {
                                                                 List<AccountBalanceSheetModel> incomeItemList){
 
         //Merge and order expense item and income item lists
-        List<AccountBalanceSheetModel> orderedBalanceSheetList = mergeAndOrderBalanceListByDate(expenseItemList, incomeItemList);
+        List<AccountBalanceSheetModel> orderedBalanceSheetList =
+                mergeAndOrderBalanceListByDate(expenseItemList, incomeItemList);
 
         List<AccountBalanceSheetModel>  result = new ArrayList<AccountBalanceSheetModel>();;
         for( AccountBalanceSheetModel balanceItem : orderedBalanceSheetList) {
@@ -199,8 +205,8 @@ public class AccountBalanceSheetLogic {
     }
 
     //Merge and order expense list and income list into on ordered list
-    private List<AccountBalanceSheetModel> mergeAndOrderBalanceListByDate(List<AccountBalanceSheetModel> expenseItemList,
-                                                                          List<AccountBalanceSheetModel> incomeItemList){
+    private List<AccountBalanceSheetModel> mergeAndOrderBalanceListByDate(
+            List<AccountBalanceSheetModel> expenseItemList, List<AccountBalanceSheetModel> incomeItemList){
 
         //Merge expense item and income item lists
         List<AccountBalanceSheetModel> unorderedBalanceSheetList = new ArrayList<AccountBalanceSheetModel>(expenseItemList);

@@ -21,6 +21,7 @@ public class JwtTokenUtil implements Serializable {
 
     public static final long JWT_TOKEN_VALIDITY = 5 * 60 *60;
 
+    //Get secret value from application properties
     @Value("${jwt.secret}")
     private String secret;
 
@@ -29,10 +30,6 @@ public class JwtTokenUtil implements Serializable {
         return getClaimFromToken(token, Claims::getSubject);
     }
 
-    //retrieve username from jwt token
-//    public String getUserIdFromToken(String token) {
-//        return getClaimFromToken(token, Claims::getSubject);
-//    }
 
     //retrieve expiration date from jwt token
     public Date getExpirationDateFromToken(String token) {

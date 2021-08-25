@@ -6,6 +6,7 @@ public class BudgetModel {
     private String name;
     private int periodId;
     private boolean isClosed;
+    private int usersId;
 
     public BudgetModel() {};
 
@@ -39,5 +40,13 @@ public class BudgetModel {
 
     public void setClosed(boolean closed) {
         isClosed = closed;
+    }
+
+    public int getUsersId() {
+        return usersId;
+    }
+
+    public void setUsersId(int usersId) {
+        this.usersId = usersId;
     }
 }

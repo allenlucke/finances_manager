@@ -22,7 +22,8 @@ CREATE TABLE "budget" (
 	"id" SERIAL PRIMARY KEY,
 	"name" VARCHAR (80) NOT NULL,
 	"period_id" INT NOT NULL REFERENCES "period",
-	"isClosed" BOOLEAN DEFAULT FALSE
+	"isClosed" BOOLEAN DEFAULT FALSE,
+	"users_id" INT NOT NULL REFERENCES "users"
 );
 
 CREATE TABLE "expenseCategory" (
@@ -37,7 +38,8 @@ CREATE TABLE "budget_expenseCategory" (
 	"id" SERIAL PRIMARY KEY,
 	"budget_id" INT NOT NULL REFERENCES "budget",
 	"expenseCategory_id" INT NOT NULL REFERENCES "expenseCategory",
-	"amountBudgeted" NUMERIC(12,2) DEFAULT 0.00
+	"amountBudgeted" NUMERIC(12,2) DEFAULT 0.00,
+	"users_id" INT NOT NULL REFERENCES "users"
 );
 
 CREATE TABLE "account" (
@@ -83,7 +85,8 @@ CREATE TABLE "budget_incomeCategory" (
 	"id" SERIAL PRIMARY KEY,
 	"budget_id" INT NOT NULL REFERENCES "budget",
 	"incomeCategory_id" INT NOT NULL REFERENCES "incomeCategory",
-	"amountBudgeted" NUMERIC(12,2) DEFAULT 0.00
+	"amountBudgeted" NUMERIC(12,2) DEFAULT 0.00,
+	"users_id" INT NOT NULL REFERENCES "users"
 );
 
 CREATE TABLE "incomeItem" (
@@ -97,25 +100,12 @@ CREATE TABLE "incomeItem" (
 	"users_id" INT NOT NULL REFERENCES "users"
 );
 
--- CREATE TABLE "accountTracker" (
--- 	"id" SERIAL PRIMARY KEY,
--- 	"account_id" INT NOT NULL REFERENCES "account",
--- 	--Either incomeItem_id OR expenseItem_id can be
--- 	--null, but NOT both. Stored Procedures, Dao's, etc
--- 	--should be constructed to reflect this
--- 	--Use of check constraint is not desireable at this point,
--- 	--but may be considered in future iterrations
--- 	"incomeItem_id" INT REFERENCES "incomeItem",
--- 	"expenseItem_id" INT REFERENCES "expenseItem",
--- 	"beginningBalance" NUMERIC(12,2),
--- 	"endingBalance" NUMERIC(12,2),
--- 	"dateTime" TIMESTAMP WITH TIME ZONE NOT NULL
--- );
 
 CREATE TABLE "accountPeriod" (
 	"id" SERIAL PRIMARY KEY,
 	"account_id" INT NOT NULL REFERENCES "account",
 	"period_id" INT NOT NULL REFERENCES "period",
 	"beginningBalance" NUMERIC(12,2),
-	"endingBalance" NUMERIC(12,2)
+	"endingBalance" NUMERIC(12,2),
+	"users_id" INT NOT NULL REFERENCES "users"
 );

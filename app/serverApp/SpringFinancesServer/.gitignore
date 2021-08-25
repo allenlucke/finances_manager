@@ -78,3 +78,4 @@ target
 .flattened-pom.xml
 secrets.yml
 .gradletasknamecache
+*.log

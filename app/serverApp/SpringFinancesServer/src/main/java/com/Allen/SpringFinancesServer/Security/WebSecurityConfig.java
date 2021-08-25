@@ -15,10 +15,16 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    private static final String CLASS_NAME = "WebSecurityConfig --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
@@ -31,10 +37,15 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-            // configure AuthenticationManager so that it knows from where to load
-            // user for matching credentials
-            // Use BCryptPasswordEncoder
-            auth.userDetailsService(jwtUserDetailsService).passwordEncoder(passwordEncoder());
+
+        final String methodName = "configureGlobal() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        // configure AuthenticationManager so that it knows from where to load
+        // user for matching credentials
+        // Use BCryptPasswordEncoder
+        auth.userDetailsService(jwtUserDetailsService).passwordEncoder(passwordEncoder());
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
     }
 
     @Bean
@@ -50,18 +61,24 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
-            // We don't need CSRF for this example
-            httpSecurity.csrf().disable()
-            // dont authenticate this particular request
-            .authorizeRequests().antMatchers("/authenticate", "/register").permitAll().
-            // all other requests need to be authenticated
-            anyRequest().authenticated().and().
-            // make sure we use stateless session; session won't be used to
-            // store user's state.
-            exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint).and().sessionManagement()
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
-            // Add a filter to validate the tokens with every request
-            httpSecurity.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+        final String methodName = "configure() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        // We don't need CSRF for this example
+        httpSecurity.csrf().disable()
+        // dont authenticate this particular request
+        .authorizeRequests().antMatchers("/authenticate", "/register").permitAll().
+        // all other requests need to be authenticated
+        anyRequest().authenticated().and().
+        // make sure we use stateless session; session won't be used to
+        // store user's state.
+        exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint).and().sessionManagement()
+        .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
+        // Add a filter to validate the tokens with every request
+        httpSecurity.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             }
 }

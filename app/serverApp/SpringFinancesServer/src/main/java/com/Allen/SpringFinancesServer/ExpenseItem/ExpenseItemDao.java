@@ -92,17 +92,18 @@ public class ExpenseItemDao {
         return result;
     }
 
-    public List<ExpenseItemModel> getExpItemByPeriod(int periodId){
+    public List<ExpenseItemModel> getExpItemByPeriod(int periodId, final int usersId){
         String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"budget_expenseCategory_id\", \"expenseItem\".name,\n" +
                 "\"expenseItem\".\"transactionDate\", \"expenseItem\".\"amount\", \"expenseItem\".\"paidWithCredit\",\n" +
                 "\"expenseItem\".\"paymentToCreditAccount\", \"expenseItem\".\"interestPaymentToCreditAccount\",\n" +
                 "\"expenseItem\".\"account_id\", \"expenseItem\".\"users_id\" FROM \"expenseItem\"\n" +
                 "JOIN \"budget_expenseCategory\" ON \"expenseItem\".\"budget_expenseCategory_id\" = \"budget_expenseCategory\".id\n" +
                 "JOIN \"budget\" ON \"budget_expenseCategory\".\"budget_id\" = \"budget\".id\n" +
-                "WHERE \"budget\".\"period_id\" = ?;";
+                "WHERE \"budget\".\"period_id\" = ?\n" +
+                "AND \"budget\".\"users_id\" = ?;";
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
-                new Object[] {periodId} );
+                new Object[] {periodId, usersId} );
 
         List<ExpenseItemModel> result = new ArrayList<ExpenseItemModel>();
         for(Map<String, Object> row:rows){

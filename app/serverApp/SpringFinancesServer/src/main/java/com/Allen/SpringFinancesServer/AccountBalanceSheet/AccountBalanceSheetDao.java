@@ -18,7 +18,7 @@ public class AccountBalanceSheetDao {
     private JdbcTemplate jdbcTemplate;
 
     //Get expense item by period and acct type
-    public List<AccountBalanceSheetModel> getExpItemByPeriodNAcctType(int acctId, int periodId){
+    public List<AccountBalanceSheetModel> getExpItemByPeriodNAcctType(int acctId, int periodId, int usersId){
         String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \n" +
@@ -32,10 +32,11 @@ public class AccountBalanceSheetDao {
                 "AND \"expenseItem\".\"transactionDate\" <= \"period\".\"endDate\"\n" +
                 "AND \"account\".id = ?\n" +
                 "AND \"period\".id = ?\n" +
+                "AND \"period\".\"users_id\" = ?\n" +
                 "ORDER BY \"expenseItem\".\"transactionDate\";";
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
-                new Object[] {acctId, periodId} ); /*,
+                new Object[] {acctId, periodId, usersId} ); /*,
                 new ExpItemMapper());*/
         List<AccountBalanceSheetModel> result = new ArrayList<AccountBalanceSheetModel>();
         for(Map<String, Object> row:rows){
@@ -57,7 +58,8 @@ public class AccountBalanceSheetDao {
     }
 
     //Get expense item by date range and acct type
-    public List<AccountBalanceSheetModel> getExpItemByDatesNAcctType(int acctId, Timestamp startDate, Timestamp dayAfterEndDate){
+    public List<AccountBalanceSheetModel> getExpItemByDatesNAcctType(
+            int acctId, Timestamp startDate, Timestamp dayAfterEndDate, final int usersId){
         String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \n" +
@@ -72,10 +74,11 @@ public class AccountBalanceSheetDao {
                 "AND \"account\".id = ?\n" +
                 "AND \"expenseItem\".\"transactionDate\" >= ?\n" +
                 "AND \"expenseItem\".\"transactionDate\" < ?\n" +
+                "AND \"expenseItem\".\"users_id\" = ?\n" +
                 "ORDER BY \"expenseItem\".\"transactionDate\";";
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
-                new Object[] {acctId, startDate, dayAfterEndDate} ); /*,
+                new Object[] {acctId, startDate, dayAfterEndDate, usersId} ); /*,
                 new ExpItemMapper());*/
         List<AccountBalanceSheetModel> result = new ArrayList<AccountBalanceSheetModel>();
         for(Map<String, Object> row:rows){
@@ -97,7 +100,8 @@ public class AccountBalanceSheetDao {
     }
 
     //Get the startDate etc of the oldest unclosed period
-    public OldestUnclosedPeriodModel getLastUnclosedPeriod(Timestamp targetPeriod) throws EmptyResultDataAccessException {
+    public OldestUnclosedPeriodModel getLastUnclosedPeriod(
+            Timestamp targetPeriod, final int usersId) throws EmptyResultDataAccessException {
         String sql = "SELECT \"period\".\"id\" as \"periodId\", \"period\".\"name\" AS \"periodName\",\n" +
                 "\"period\".\"startDate\" AS \"startDate\", \"period\".\"endDate\" AS \"endDate\",\n" +
                 "\"period\".\"users_id\" AS \"usersId\", \"budget\".id AS \"budgetId\",\n" +
@@ -105,16 +109,19 @@ public class AccountBalanceSheetDao {
                 "JOIN \"budget\" ON \"period\".id = \"budget\".period_id\n" +
                 "WHERE \"period\".\"startDate\" < ?\n" +
                 "AND \"budget\".\"isClosed\" = 'false'\n" +
+                "AND \"budget\".\"users_id\" = ?\n" +
                 "ORDER BY \"period\".\"startDate\" ASC\n" +
                 "LIMIT 1;";
 
-        OldestUnclosedPeriodModel oldestUnclosedPeriod = jdbcTemplate.queryForObject( sql, new Object[]{targetPeriod}, new OldestUnclosedPeriodRowMapper());
+        OldestUnclosedPeriodModel oldestUnclosedPeriod = jdbcTemplate.queryForObject(
+                sql, new Object[]{targetPeriod, usersId}, new OldestUnclosedPeriodRowMapper());
 
         return oldestUnclosedPeriod;
     }
 
     //Get income item by date range and acct type
-    public List<AccountBalanceSheetModel> getIncomeItemByDatesNAcctType(int acctId, Timestamp startDate, Timestamp dayAfterEndDate){
+    public List<AccountBalanceSheetModel> getIncomeItemByDatesNAcctType(
+            int acctId, Timestamp startDate, Timestamp dayAfterEndDate, final int usersId){
         String sql = "SELECT \"incomeItem\".id, \"incomeItem\".\"receivedDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"incomeItem\".name AS \"incomeItemName\", \"account\".id AS \"accountId\", \n" +
@@ -129,10 +136,11 @@ public class AccountBalanceSheetDao {
                 "AND \"account\".id =?\n" +
                 "AND \"incomeItem\".\"receivedDate\" >= ?\n" +
                 "AND \"incomeItem\".\"receivedDate\" < ?\n" +
+                "AND \"incomeItem\".\"users_id\" = ?\n" +
                 "ORDER BY \"incomeItem\".\"receivedDate\";";
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
-                new Object[] {acctId, startDate, dayAfterEndDate} );
+                new Object[] {acctId, startDate, dayAfterEndDate, usersId} );
         List<AccountBalanceSheetModel> result = new ArrayList<AccountBalanceSheetModel>();
         for(Map<String, Object> row:rows){
             AccountBalanceSheetModel incomeItem = new AccountBalanceSheetModel();
@@ -152,7 +160,7 @@ public class AccountBalanceSheetDao {
     }
 
     //Get income item by period and acct type
-    public List<AccountBalanceSheetModel> getIncomeItemByPeriodNAcctType(int acctId, int periodId){
+    public List<AccountBalanceSheetModel> getIncomeItemByPeriodNAcctType(int acctId, int periodId, final int usersId){
         String sql = "SELECT \"incomeItem\".id, \"incomeItem\".\"receivedDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"incomeItem\".name AS \"incomeItemName\", \"account\".id AS \"accountId\", \n" +
@@ -166,15 +174,15 @@ public class AccountBalanceSheetDao {
                 "AND \"incomeItem\".\"receivedDate\" <= \"period\".\"endDate\"\n" +
                 "AND \"account\".id = ?\n" +
                 "AND \"period\".id =  ?\n" +
+                "AND \"period\".\"users_id\" = ?\n" +
                 "ORDER BY \"incomeItem\".\"receivedDate\";";
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
-                new Object[] {acctId, periodId} ); /*,
+                new Object[] {acctId, periodId, usersId} ); /*,
                 new ExpItemMapper());*/
         List<AccountBalanceSheetModel> result = new ArrayList<AccountBalanceSheetModel>();
         for(Map<String, Object> row:rows){
             AccountBalanceSheetModel incomeItem = new AccountBalanceSheetModel();
-
 
             incomeItem.setIncomeItemId((int)row.get("id"));
             incomeItem.setTransactionDate((Timestamp)row.get("receivedDate"));

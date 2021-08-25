@@ -24,13 +24,13 @@ public class BudgetBalanceSheetLogic {
 
     final static BigDecimal NO_STARTING_AMOUNT = BigDecimal.valueOf(0.00);
 
-    public List<BudgetBalanceSheetModel> balanceSheetByPeriodManager(final int periodId) {
+    public List<BudgetBalanceSheetModel> balanceSheetByPeriodManager(final int periodId, final int usersId) {
 
         //Get the target period's budget expense categories
-        List <BudgetBalanceSheetModel> budgetBalCatsModelList = dao.getBudgetExpCatsByPeriod(periodId);
+        List <BudgetBalanceSheetModel> budgetBalCatsModelList = dao.getBudgetExpCatsByPeriod(periodId, usersId);
 
         //Get expense items by period
-        List <ExpenseItemModel> expItemList = expItemDao.getExpItemByPeriod(periodId);
+        List <ExpenseItemModel> expItemList = expItemDao.getExpItemByPeriod(periodId, usersId);
 
         //Get merged Budget Balance Sheet List
         List <BudgetBalanceSheetModel> budgetBalanceSheetList = mergeExpenseItemsToExpenseCats(

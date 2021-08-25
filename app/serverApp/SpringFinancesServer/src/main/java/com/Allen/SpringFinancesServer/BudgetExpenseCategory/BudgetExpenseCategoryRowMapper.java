@@ -16,6 +16,7 @@ public class BudgetExpenseCategoryRowMapper implements RowMapper<BudgetExpenseCa
         budgExpCat.setBudgetId(rs.getInt("budget_id"));
         budgExpCat.setExpenseCategoryId(rs.getInt("expenseCategory_id"));
         budgExpCat.setAmountBudgeted(rs.getBigDecimal("amountBudgeted"));
+        budgExpCat.setUsersId(rs.getInt("users_id"));
 
         return budgExpCat;
     }
