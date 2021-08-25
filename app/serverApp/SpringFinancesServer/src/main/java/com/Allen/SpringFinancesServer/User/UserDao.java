@@ -101,6 +101,18 @@ public class UserDao {
 
     }
 
+    public UserModel getUserByUsername(final String username){
+        String sql = "SELECT * FROM \"users\" WHERE \"username\" = ?;";
+
+        UserModel usr = jdbcTemplate.queryForObject( sql, new Object[]{username}, new UserRowMapper());
+
+        List<UserModel> result = new ArrayList<UserModel>();
+
+//        result.add(usr);
+
+        return usr;
+    }
+
     public UserModel addUserReturnUser(final UserModel usr) {
 //            String sql = "INSERT INTO \"users\"(\"firstName\", \"lastName\", \"username\", \"password\", \"securityLevel\", \"email\", \"role\")\n" +
 //                    "VALUES( ?,?,?,?,?,?,?) returning \"id\";";

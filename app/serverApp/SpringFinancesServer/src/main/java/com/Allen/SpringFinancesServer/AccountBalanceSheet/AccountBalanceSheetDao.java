@@ -12,13 +12,13 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class AccountBalanceDao {
+public class AccountBalanceSheetDao {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
     //Get expense item by period and acct type
-    public List<BalanceSheetModel> getExpItemByPeriodNAcctType(int acctId, int periodId){
+    public List<AccountBalanceSheetModel> getExpItemByPeriodNAcctType(int acctId, int periodId){
         String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \n" +
@@ -37,9 +37,9 @@ public class AccountBalanceDao {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {acctId, periodId} ); /*,
                 new ExpItemMapper());*/
-        List<BalanceSheetModel> result = new ArrayList<BalanceSheetModel>();
+        List<AccountBalanceSheetModel> result = new ArrayList<AccountBalanceSheetModel>();
         for(Map<String, Object> row:rows){
-            BalanceSheetModel expItem = new BalanceSheetModel();
+            AccountBalanceSheetModel expItem = new AccountBalanceSheetModel();
 
 
             expItem.setExpenseItemId((int)row.get("id"));
@@ -57,7 +57,7 @@ public class AccountBalanceDao {
     }
 
     //Get expense item by date range and acct type
-    public List<BalanceSheetModel> getExpItemByDatesNAcctType(int acctId, Timestamp startDate, Timestamp dayAfterEndDate){
+    public List<AccountBalanceSheetModel> getExpItemByDatesNAcctType(int acctId, Timestamp startDate, Timestamp dayAfterEndDate){
         String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \n" +
@@ -77,9 +77,9 @@ public class AccountBalanceDao {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {acctId, startDate, dayAfterEndDate} ); /*,
                 new ExpItemMapper());*/
-        List<BalanceSheetModel> result = new ArrayList<BalanceSheetModel>();
+        List<AccountBalanceSheetModel> result = new ArrayList<AccountBalanceSheetModel>();
         for(Map<String, Object> row:rows){
-            BalanceSheetModel expItem = new BalanceSheetModel();
+            AccountBalanceSheetModel expItem = new AccountBalanceSheetModel();
 
 
             expItem.setExpenseItemId((int)row.get("id"));
@@ -114,7 +114,7 @@ public class AccountBalanceDao {
     }
 
     //Get income item by date range and acct type
-    public List<BalanceSheetModel> getIncomeItemByDatesNAcctType(int acctId, Timestamp startDate, Timestamp dayAfterEndDate){
+    public List<AccountBalanceSheetModel> getIncomeItemByDatesNAcctType(int acctId, Timestamp startDate, Timestamp dayAfterEndDate){
         String sql = "SELECT \"incomeItem\".id, \"incomeItem\".\"receivedDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"incomeItem\".name AS \"incomeItemName\", \"account\".id AS \"accountId\", \n" +
@@ -133,9 +133,9 @@ public class AccountBalanceDao {
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {acctId, startDate, dayAfterEndDate} );
-        List<BalanceSheetModel> result = new ArrayList<BalanceSheetModel>();
+        List<AccountBalanceSheetModel> result = new ArrayList<AccountBalanceSheetModel>();
         for(Map<String, Object> row:rows){
-            BalanceSheetModel incomeItem = new BalanceSheetModel();
+            AccountBalanceSheetModel incomeItem = new AccountBalanceSheetModel();
 
             incomeItem.setIncomeItemId((int)row.get("id"));
             incomeItem.setTransactionDate((Timestamp)row.get("receivedDate"));
@@ -152,7 +152,7 @@ public class AccountBalanceDao {
     }
 
     //Get income item by period and acct type
-    public List<BalanceSheetModel> getIncomeItemByPeriodNAcctType(int acctId, int periodId){
+    public List<AccountBalanceSheetModel> getIncomeItemByPeriodNAcctType(int acctId, int periodId){
         String sql = "SELECT \"incomeItem\".id, \"incomeItem\".\"receivedDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"incomeItem\".name AS \"incomeItemName\", \"account\".id AS \"accountId\", \n" +
@@ -171,9 +171,9 @@ public class AccountBalanceDao {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {acctId, periodId} ); /*,
                 new ExpItemMapper());*/
-        List<BalanceSheetModel> result = new ArrayList<BalanceSheetModel>();
+        List<AccountBalanceSheetModel> result = new ArrayList<AccountBalanceSheetModel>();
         for(Map<String, Object> row:rows){
-            BalanceSheetModel incomeItem = new BalanceSheetModel();
+            AccountBalanceSheetModel incomeItem = new AccountBalanceSheetModel();
 
 
             incomeItem.setIncomeItemId((int)row.get("id"));

@@ -2,9 +2,9 @@ package com.Allen.SpringFinancesServer.AccountBalanceSheet;
 
 import java.util.Comparator;
 
-public class SortBalanceSheet implements Comparator<BalanceSheetModel> {
+public class SortAccountBalanceSheet implements Comparator<AccountBalanceSheetModel> {
     @Override
-    public int compare(BalanceSheetModel o1, BalanceSheetModel o2) {
+    public int compare(AccountBalanceSheetModel o1, AccountBalanceSheetModel o2) {
 
         return o1.getTransactionDate().compareTo(o2.getTransactionDate());
     }

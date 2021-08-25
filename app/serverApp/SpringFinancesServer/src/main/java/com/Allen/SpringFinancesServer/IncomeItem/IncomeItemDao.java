@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.IncomeItem;
 
+import com.Allen.SpringFinancesServer.Period.PeriodModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,8 +22,9 @@ public class IncomeItemDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public List<IncomeItemModel> getAllIncomeItems() {
+    public List<IncomeItemModel> adminGetAllIncomeItems() {
         String sql = "SELECT * FROM \"incomeItem\";";
+
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
         List<IncomeItemModel> result = new ArrayList<IncomeItemModel>();
@@ -42,10 +44,46 @@ public class IncomeItemDao {
         return result;
     }
 
-    public List<IncomeItemModel> getIncomeItemById(int id){
+
+    public List<IncomeItemModel> getAllIncomeItems(final int usersId) {
+        String sql = "SELECT * FROM \"incomeItem\" WHERE \"users_id\" = ?;";
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {usersId} );
+
+        List<IncomeItemModel> result = new ArrayList<IncomeItemModel>();
+        for(Map<String, Object> row:rows){
+            IncomeItemModel incomeItem = new IncomeItemModel();
+            incomeItem.setId((int)row.get("id"));
+            incomeItem.setBudgetIncomeCategoryId((int)row.get("budget_incomeCategory_id"));
+            incomeItem.setName((String)row.get("name"));
+            incomeItem.setReceivedDate((Timestamp)row.get("receivedDate"));
+            incomeItem.setAmountExpected((BigDecimal)row.get("amountExpected"));
+            incomeItem.setAmountReceived((BigDecimal)row.get("amountReceived"));
+            incomeItem.setAccountId((int)row.get("account_id"));
+            incomeItem.setUsersId((int)row.get("users_id"));
+
+            result.add(incomeItem);
+        }
+        return result;
+    }
+
+    public List<IncomeItemModel> getIncomeItemById(final int itemId, final int usersId){
+        String sql = "SELECT * FROM \"incomeItem\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+
+        IncomeItemModel incomeItem = jdbcTemplate.queryForObject( sql, new Object[]{itemId, usersId}, new IncomeItemRowMapper());
+
+        List<IncomeItemModel> result = new ArrayList<IncomeItemModel>();
+
+        result.add(incomeItem);
+
+        return result;
+    }
+
+    public List<IncomeItemModel> adminGetIncomeItemById(final int itemId){
         String sql = "SELECT * FROM \"incomeItem\" WHERE \"id\" = ?;";
 
-        IncomeItemModel incomeItem = jdbcTemplate.queryForObject( sql, new Object[]{id}, new IncomeItemRowMapper());
+        IncomeItemModel incomeItem = jdbcTemplate.queryForObject( sql, new Object[]{itemId}, new IncomeItemRowMapper());
 
         List<IncomeItemModel> result = new ArrayList<IncomeItemModel>();
 

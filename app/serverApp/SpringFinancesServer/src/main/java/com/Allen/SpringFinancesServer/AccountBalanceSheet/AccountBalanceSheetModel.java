@@ -3,7 +3,7 @@ package com.Allen.SpringFinancesServer.AccountBalanceSheet;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
-public class BalanceSheetModel {
+public class AccountBalanceSheetModel {
 
     private int expenseItemId;
     private int incomeItemId;
@@ -17,7 +17,7 @@ public class BalanceSheetModel {
     private BigDecimal preBalance;
     private BigDecimal postBalance;
 
-    public BalanceSheetModel() {};
+    public AccountBalanceSheetModel() {};
 
     public int getExpenseItemId() {
         return expenseItemId;
@@ -108,12 +108,12 @@ public class BalanceSheetModel {
     }
 
 
-    public BalanceSheetModel(int expenseItemId, int incomeItemId,
-                             Timestamp transactionDate, String accountName,
-                             int periodId, String expenseItemName,
-                             String incomeItemName, int accountId,
-                             BigDecimal amount, BigDecimal preBalance,
-                             BigDecimal postBalance) {
+    public AccountBalanceSheetModel(int expenseItemId, int incomeItemId,
+                                    Timestamp transactionDate, String accountName,
+                                    int periodId, String expenseItemName,
+                                    String incomeItemName, int accountId,
+                                    BigDecimal amount, BigDecimal preBalance,
+                                    BigDecimal postBalance) {
         this.expenseItemId = expenseItemId;
         this.incomeItemId = incomeItemId;
         this.transactionDate = transactionDate;

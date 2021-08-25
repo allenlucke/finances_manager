@@ -21,7 +21,25 @@ public class IncomeCategoryDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public List<IncomeCategoryModel> getAllIncomeCats() {
+    public List<IncomeCategoryModel> getAllIncomeCats(final int usersId) {
+        String sql = "SELECT * FROM \"incomeCategory\" WHERE \"users_id\" = ?;";
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {usersId} );
+
+        List<IncomeCategoryModel> result = new ArrayList<IncomeCategoryModel>();
+        for(Map<String, Object> row:rows){
+            IncomeCategoryModel incomeCat = new IncomeCategoryModel();
+            incomeCat.setId((int)row.get("id"));
+            incomeCat.setName((String)row.get("name"));
+            incomeCat.setUsersId((int)row.get("users_id"));
+
+            result.add(incomeCat);
+        }
+        return result;
+    }
+
+    public List<IncomeCategoryModel> adminGetAllIncomeCats() {
         String sql = "SELECT * FROM \"incomeCategory\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
@@ -37,10 +55,22 @@ public class IncomeCategoryDao {
         return result;
     }
 
-    public List<IncomeCategoryModel> getIncomeCatById(int id){
+    public List<IncomeCategoryModel> adminGetIncomeCatById(final int id){
         String sql = "SELECT * FROM \"incomeCategory\" WHERE \"id\" = ?;";
 
         IncomeCategoryModel incomeCat = jdbcTemplate.queryForObject( sql, new Object[]{id}, new IncomeCategoryRowMapper());
+
+        List<IncomeCategoryModel> result = new ArrayList<IncomeCategoryModel>();
+
+        result.add(incomeCat);
+
+        return result;
+    }
+
+    public List<IncomeCategoryModel> getIncomeCatById(final int id, final int usersId){
+        String sql = "SELECT * FROM \"incomeCategory\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+
+        IncomeCategoryModel incomeCat = jdbcTemplate.queryForObject( sql, new Object[]{id, usersId}, new IncomeCategoryRowMapper());
 
         List<IncomeCategoryModel> result = new ArrayList<IncomeCategoryModel>();
 

@@ -21,7 +21,31 @@ public class ExpenseItemDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public List<ExpenseItemModel> getAllExpItems() {
+    public List<ExpenseItemModel> getAllExpItems(final int usersId) {
+        String sql = "SELECT * FROM \"expenseItem\" WHERE \"users_id\" = ?;";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {usersId} );
+
+        List<ExpenseItemModel> result = new ArrayList<ExpenseItemModel>();
+        for(Map<String, Object> row:rows){
+            ExpenseItemModel expItem = new ExpenseItemModel();
+            expItem.setId((int)row.get("id"));
+            expItem.setBudgetExpenseCategoryId((int)row.get("budget_expenseCategory_id"));
+            expItem.setName((String)row.get("name"));
+            expItem.setTransactionDate((Timestamp)row.get("transactionDate"));
+            expItem.setAmount((BigDecimal)row.get("amount"));
+            expItem.setPaidWithCredit((Boolean)row.get("paidWithCredit"));
+            expItem.setPaymentToCreditAccount((Boolean)row.get("paymentToCreditAccount"));
+            expItem.setInterestPaymentToCreditAccount((Boolean)row.get("interestPaymentToCreditAccount"));
+            expItem.setAccountId((int)row.get("account_id"));
+            expItem.setUsersId((int)row.get("users_id"));
+
+            result.add(expItem);
+        }
+        return result;
+    }
+
+    public List<ExpenseItemModel> adminGetAllExpItems() {
         String sql = "SELECT * FROM \"expenseItem\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
@@ -44,7 +68,19 @@ public class ExpenseItemDao {
         return result;
     }
 
-    public List<ExpenseItemModel> getExpItemById(int id){
+    public List<ExpenseItemModel> getExpItemById(final int itemId, final int usersId){
+        String sql = "SELECT * FROM \"expenseItem\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+
+        ExpenseItemModel expenseItem = jdbcTemplate.queryForObject( sql, new Object[]{itemId, usersId}, new ExpenseItemRowMapper());
+
+        List<ExpenseItemModel> result = new ArrayList<ExpenseItemModel>();
+
+        result.add(expenseItem);
+
+        return result;
+    }
+
+    public List<ExpenseItemModel> adminGetExpItemById(int id){
         String sql = "SELECT * FROM \"expenseItem\" WHERE \"id\" = ?;";
 
         ExpenseItemModel expenseItem = jdbcTemplate.queryForObject( sql, new Object[]{id}, new ExpenseItemRowMapper());
@@ -53,6 +89,37 @@ public class ExpenseItemDao {
 
         result.add(expenseItem);
 
+        return result;
+    }
+
+    public List<ExpenseItemModel> getExpItemByPeriod(int periodId){
+        String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"budget_expenseCategory_id\", \"expenseItem\".name,\n" +
+                "\"expenseItem\".\"transactionDate\", \"expenseItem\".\"amount\", \"expenseItem\".\"paidWithCredit\",\n" +
+                "\"expenseItem\".\"paymentToCreditAccount\", \"expenseItem\".\"interestPaymentToCreditAccount\",\n" +
+                "\"expenseItem\".\"account_id\", \"expenseItem\".\"users_id\" FROM \"expenseItem\"\n" +
+                "JOIN \"budget_expenseCategory\" ON \"expenseItem\".\"budget_expenseCategory_id\" = \"budget_expenseCategory\".id\n" +
+                "JOIN \"budget\" ON \"budget_expenseCategory\".\"budget_id\" = \"budget\".id\n" +
+                "WHERE \"budget\".\"period_id\" = ?;";
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {periodId} );
+
+        List<ExpenseItemModel> result = new ArrayList<ExpenseItemModel>();
+        for(Map<String, Object> row:rows){
+            ExpenseItemModel expItem = new ExpenseItemModel();
+            expItem.setId((int)row.get("id"));
+            expItem.setBudgetExpenseCategoryId((int)row.get("budget_expenseCategory_id"));
+            expItem.setName((String)row.get("name"));
+            expItem.setTransactionDate((Timestamp)row.get("transactionDate"));
+            expItem.setAmount((BigDecimal)row.get("amount"));
+            expItem.setPaidWithCredit((Boolean)row.get("paidWithCredit"));
+            expItem.setPaymentToCreditAccount((Boolean)row.get("paymentToCreditAccount"));
+            expItem.setInterestPaymentToCreditAccount((Boolean)row.get("interestPaymentToCreditAccount"));
+            expItem.setAccountId((int)row.get("account_id"));
+            expItem.setUsersId((int)row.get("users_id"));
+
+            result.add(expItem);
+        }
         return result;
     }
 

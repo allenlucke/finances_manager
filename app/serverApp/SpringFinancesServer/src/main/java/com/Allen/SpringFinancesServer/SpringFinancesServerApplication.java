@@ -30,31 +30,4 @@ public class SpringFinancesServerApplication {
 		return String.format("Hello %s!", name);
 	}
 
-//	@GetMapping("/userTest")
-//	@Consumes(MediaType.APPLICATION_JSON)
-//	@Produces(MediaType.APPLICATION_JSON)
-//	public String userTest(@QueryParam("id") int id) {
-//		String respString;
-//
-//		respString = dao.getUserName(id);
-//		return respString;
-//	}
-//
-//	@GetMapping("/alluserTest")
-//	@Consumes(MediaType.APPLICATION_JSON)
-////	@Produces(MediaType.APPLICATION_JSON)
-//	public List<UserModel> getAllEmployees(){
-//		String sql = "SELECT * FROM \"users\";";
-//		List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
-//
-//		List<UserModel> result = new ArrayList<UserModel>();
-//		for(Map<String, Object> row:rows){
-//			UserModel usr = new UserModel();
-//			usr.setId((int)row.get("id"));
-//			usr.setFirstName((String)row.get("firstName"));
-//			result.add(usr);
-//		}
-//
-//		return result;
-//	}
 }

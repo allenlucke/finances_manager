@@ -20,7 +20,7 @@ public class PeriodDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public List<PeriodModel> getAllPeriods(){
+    public List<PeriodModel> adminGetAllPeriods(){
         String sql = "SELECT * FROM \"period\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
@@ -38,11 +38,42 @@ public class PeriodDao {
         return result;
     }
 
+    public List<PeriodModel> getAllPeriods(int usersId){
+        String sql = "SELECT * FROM \"period\" WHERE \"users_id\" = ?;";
 
-    public List<PeriodModel> getPeriodById(int id){
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {usersId} );
+
+        List<PeriodModel> result = new ArrayList<PeriodModel>();
+        for(Map<String, Object> row:rows){
+            PeriodModel period = new PeriodModel();
+            period.setId((int)row.get("id"));
+            period.setName((String)row.get("name"));
+            period.setStartDate((Timestamp)row.get("startDate"));
+            period.setEndDate((Timestamp)row.get("endDate"));
+            period.setUsersId((int)row.get("users_id"));
+
+            result.add(period);
+        }
+        return result;
+    }
+
+    public List<PeriodModel> adminGetPeriodById(int id){
         String sql = "SELECT * FROM \"period\" WHERE \"id\" = ?;";
 
         PeriodModel period = jdbcTemplate.queryForObject( sql, new Object[]{id}, new PeriodRowMapper());
+
+        List<PeriodModel> result = new ArrayList<PeriodModel>();
+
+        result.add(period);
+
+        return result;
+    }
+
+    public List<PeriodModel> getPeriodById(int periodId, int usersId){
+        String sql = "SELECT * FROM \"period\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+
+        PeriodModel period = jdbcTemplate.queryForObject( sql, new Object[]{periodId, usersId}, new PeriodRowMapper());
 
         List<PeriodModel> result = new ArrayList<PeriodModel>();
 

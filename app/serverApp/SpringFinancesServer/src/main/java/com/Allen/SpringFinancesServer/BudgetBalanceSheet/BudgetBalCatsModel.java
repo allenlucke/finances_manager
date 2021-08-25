@@ -1,11 +1,8 @@
 package com.Allen.SpringFinancesServer.BudgetBalanceSheet;
 
-import com.Allen.SpringFinancesServer.ExpenseItem.ExpenseItemModel;
-
 import java.math.BigDecimal;
-import java.util.List;
 
-public class BudgetBalanceSheetModel {
+public class BudgetBalCatsModel {
 
     private int expenseCategoryId;
     private String expenseCategoryName;
@@ -15,11 +12,8 @@ public class BudgetBalanceSheetModel {
     private int periodId;
     private BigDecimal amountBudgeted;
     private boolean isClosed;
-    private List<ExpenseItemModel> expenseItems;
-    private BigDecimal amountSpent;
-    private BigDecimal amountRemaining;
 
-    public BudgetBalanceSheetModel() {};
+    public BudgetBalCatsModel() {};
 
     public int getExpenseCategoryId() {
         return expenseCategoryId;
@@ -83,29 +77,5 @@ public class BudgetBalanceSheetModel {
 
     public void setClosed(boolean closed) {
         isClosed = closed;
-    }
-
-    public List<ExpenseItemModel> getExpenseItems() {
-        return expenseItems;
-    }
-
-    public void setExpenseItems(List<ExpenseItemModel> expenseItems) {
-        this.expenseItems = expenseItems;
-    }
-
-    public BigDecimal getAmountSpent() {
-        return amountSpent;
-    }
-
-    public void setAmountSpent(BigDecimal amountSpent) {
-        this.amountSpent = amountSpent;
-    }
-
-    public BigDecimal getAmountRemaining() {
-        return amountRemaining;
-    }
-
-    public void setAmountRemaining(BigDecimal amountRemaining) {
-        this.amountRemaining = amountRemaining;
     }
 }
