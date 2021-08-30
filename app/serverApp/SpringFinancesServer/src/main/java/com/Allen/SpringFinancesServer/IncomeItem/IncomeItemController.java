@@ -16,8 +16,14 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @RestController
 public class IncomeItemController {
+
+    private static final String CLASS_NAME = "IncomeItemController --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -33,12 +39,18 @@ public class IncomeItemController {
     @Consumes(MediaType.APPLICATION_JSON)
     public List<IncomeItemModel> getAllIncomeItems(@RequestHeader("Authorization") String jwtString){
 
-        //May only get periods assigned to the user
+        final String methodName = "getAllIncomeItems() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<IncomeItemModel> result;
         result = dao.getAllIncomeItems(userId);
-
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
@@ -48,18 +60,21 @@ public class IncomeItemController {
     public ResponseEntity adminGetIncomeItemById(
             @RequestHeader("Authorization") String jwtString){
 
-        //Only Admin may get item
+        final String methodName = "adminGetIncomeItemById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
 
             List<IncomeItemModel> result;
             result = dao.adminGetAllIncomeItems();
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
@@ -70,19 +85,20 @@ public class IncomeItemController {
     public ResponseEntity adminGetIncomeItemById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int itemId){
 
-        //Only Admin may get item
+        final String methodName = "adminGetIncomeItemById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin may access any income item
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
-
             List<IncomeItemModel> result;
-
             result = dao.adminGetIncomeItemById(itemId);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
@@ -92,13 +108,18 @@ public class IncomeItemController {
     public List<IncomeItemModel> getIncomeItemById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int itemId){
 
-        //May only get periods assigned to the user
+        final String methodName = "getIncomeItemById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<IncomeItemModel> result;
-
         result = dao.getIncomeItemById(itemId, userId);
-
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
@@ -107,17 +128,20 @@ public class IncomeItemController {
     public ResponseEntity addIncomeItemReturnId(
             @RequestHeader("Authorization") String jwtString, @RequestBody IncomeItemModel expItem) throws ServletException, IOException {
 
-        //Only admin or assigned user may post
+        final String methodName = "addIncomeItemReturnId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        ///Check user auth: Only admin or assigned user may post
         int requestUserId = expItem.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
             List<ReturnIdModel> returnedId = dao.addIncomeItemReturnId(expItem);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }
     }

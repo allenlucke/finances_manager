@@ -13,17 +13,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @Service
 public class ExpenseCategoryDao {
+
+    private static final String CLASS_NAME = "ExpenseCategoryDao --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    //User may only access expense categories assigned to the user
     public List<ExpenseCategoryModel> getAllExpCats(final int usersId) {
+
+        final String methodName = "getAllExpCats() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"expenseCategory\" WHERE \"users_id\" =1;";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId} );
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<ExpenseCategoryModel> result = new ArrayList<ExpenseCategoryModel>();
         for(Map<String, Object> row:rows){
             ExpenseCategoryModel expCat = new ExpenseCategoryModel();
@@ -33,13 +45,20 @@ public class ExpenseCategoryDao {
 
             result.add(expCat);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access all expense categories
     public List<ExpenseCategoryModel> adminGetAllExpCats() {
+
+        final String methodName = "adminGetAllExpCats() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"expenseCategory\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<ExpenseCategoryModel> result = new ArrayList<ExpenseCategoryModel>();
         for(Map<String, Object> row:rows){
             ExpenseCategoryModel expCat = new ExpenseCategoryModel();
@@ -49,34 +68,51 @@ public class ExpenseCategoryDao {
 
             result.add(expCat);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //User may only access expense categories assigned to the user
     public List<ExpenseCategoryModel> getExpCatById(final int catId, final int usersId){
+
+        final String methodName = "getExpCatById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"expenseCategory\" WHERE \"id\" = ? AND \"users_id\" = ?;";
-
-        ExpenseCategoryModel expenseCat = jdbcTemplate.queryForObject( sql, new Object[]{catId, usersId}, new ExpenseCategoryRowMapper());
+        ExpenseCategoryModel expenseCat = jdbcTemplate.queryForObject(
+                sql, new Object[]{catId, usersId}, new ExpenseCategoryRowMapper());
 
         List<ExpenseCategoryModel> result = new ArrayList<ExpenseCategoryModel>();
-
         result.add(expenseCat);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access any expense category
     public List<ExpenseCategoryModel> adminGetExpCatById(int id){
-        String sql = "SELECT * FROM \"expenseCategory\" WHERE \"id\" = ?;";
 
-        ExpenseCategoryModel expenseCat = jdbcTemplate.queryForObject( sql, new Object[]{id}, new ExpenseCategoryRowMapper());
+        final String methodName = "adminGetExpCatById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"expenseCategory\" WHERE \"id\" = ?;";
+        ExpenseCategoryModel expenseCat = jdbcTemplate.queryForObject(
+                sql, new Object[]{id}, new ExpenseCategoryRowMapper());
 
         List<ExpenseCategoryModel> result = new ArrayList<ExpenseCategoryModel>();
-
         result.add(expenseCat);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Only Admin or the User to whom the income category will be assigned
+    //may use this post call
     public List<ReturnIdModel> addExpCatReturnId(final ExpenseCategoryModel expCat) {
+
+        final String methodName = "addExpCatReturnId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "INSERT INTO \"expenseCategory\"\n" +
                 "\t(\"name\", \"users_id\")\n" +
                 "VALUES\n" +
@@ -101,6 +137,7 @@ public class ExpenseCategoryDao {
 
         result.add(idObject);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 }

@@ -15,8 +15,14 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @RestController
 public class ExpenseCategoryController {
+
+    private static final String CLASS_NAME = "ExpenseCategoryController --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -31,12 +37,18 @@ public class ExpenseCategoryController {
     @Consumes(MediaType.APPLICATION_JSON)
     public List<ExpenseCategoryModel> getAllExpCat(@RequestHeader("Authorization") String jwtString){
 
-        //May only get periods assigned to the user
+        final String methodName = "getAllExpCat() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<ExpenseCategoryModel> result;
         result = dao.getAllExpCats(userId);
-
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
@@ -45,32 +57,41 @@ public class ExpenseCategoryController {
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity adminGetAllExpCat(@RequestHeader("Authorization") String jwtString){
 
-        //Only Admin may get item
+        final String methodName = "adminGetAllExpCat() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
             List<ExpenseCategoryModel> result;
             result = dao.adminGetAllExpCats();
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
 
-    @GetMapping("/getExpCatByIdById")
+    @GetMapping("/getExpCatById")
     @Consumes(MediaType.APPLICATION_JSON)
     public List<ExpenseCategoryModel> getExpCatById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int categoryId){
-        //May only get categories assigned to the user
+
+        final String methodName = "getExpCatById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<ExpenseCategoryModel> result;
-
         result = dao.getExpCatById(categoryId, userId);
-
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
@@ -80,19 +101,20 @@ public class ExpenseCategoryController {
     public ResponseEntity adminGetExpCatById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int id){
 
-        //Only Admin may get item
+        final String methodName = "adminGetExpCatById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin may access any expense category
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
-
             List<ExpenseCategoryModel> result;
-
             result = dao.adminGetExpCatById(id);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
@@ -100,19 +122,23 @@ public class ExpenseCategoryController {
     @PostMapping("/addExpCatRetId")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity addExpCatRetId(
-            @RequestHeader("Authorization") String jwtString, @RequestBody ExpenseCategoryModel expCat ) throws ServletException, IOException {
+            @RequestHeader("Authorization") String jwtString, @RequestBody ExpenseCategoryModel expCat )
+            throws ServletException, IOException {
 
-        //Only admin or assigned user may post
+        final String methodName = "addExpCatRetId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        ///Check user auth: Only admin or assigned user may post
         int requestUserId = expCat.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
             List<ReturnIdModel> returnedId = dao.addExpCatReturnId(expCat);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }
     }

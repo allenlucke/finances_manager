@@ -14,17 +14,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @Service
 public class BudgetExpenseCategoryDao {
+
+    private static final String CLASS_NAME = "BudgetExpenseCategoryDao --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    //User may only access budget expense categories assigned to the user
     public List<BudgetExpenseCategoryModel> getAllBudgetExpCats(final int usersId) {
+
+        final String methodName = "getAllBudgetExpCats() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"budget_expenseCategory\" WHERE \"users_id\" = ?;";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId} );
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<BudgetExpenseCategoryModel> result = new ArrayList<BudgetExpenseCategoryModel>();
         for(Map<String, Object> row:rows){
             BudgetExpenseCategoryModel budgExpCat = new BudgetExpenseCategoryModel();
@@ -36,13 +48,20 @@ public class BudgetExpenseCategoryDao {
 
             result.add(budgExpCat);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access all budget expense categories
     public List<BudgetExpenseCategoryModel> adminGetAllBudgetExpCats() {
+
+        final String methodName = "adminGetAllBudgetExpCats() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"budget_expenseCategory\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<BudgetExpenseCategoryModel> result = new ArrayList<BudgetExpenseCategoryModel>();
         for(Map<String, Object> row:rows){
             BudgetExpenseCategoryModel budgExpCat = new BudgetExpenseCategoryModel();
@@ -54,35 +73,51 @@ public class BudgetExpenseCategoryDao {
 
             result.add(budgExpCat);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //User may only access budget expense categories assigned to the user
     public List<BudgetExpenseCategoryModel> getBudgetExpCatById(final int budgExpCatId, final int usersId){
-        String sql = "SELECT * FROM \"budget_expenseCategory\" WHERE \"id\" = ? AND \"users_id\" = ?;";
 
+        final String methodName = "getBudgetExpCatById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"budget_expenseCategory\" WHERE \"id\" = ? AND \"users_id\" = ?;";
         BudgetExpenseCategoryModel budgetExpCat = jdbcTemplate.queryForObject(
                 sql, new Object[]{budgExpCatId, usersId}, new BudgetExpenseCategoryRowMapper());
 
         List<BudgetExpenseCategoryModel> result = new ArrayList<BudgetExpenseCategoryModel>();
-
         result.add(budgetExpCat);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access any budget expense category
     public List<BudgetExpenseCategoryModel> adminGetBudgetExpCatById(int id){
-        String sql = "SELECT * FROM \"budget_expenseCategory\" WHERE \"id\" = ?;";
 
-        BudgetExpenseCategoryModel budgetExpCat = jdbcTemplate.queryForObject( sql, new Object[]{id}, new BudgetExpenseCategoryRowMapper());
+        final String methodName = "adminGetBudgetExpCatById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"budget_expenseCategory\" WHERE \"id\" = ?;";
+        BudgetExpenseCategoryModel budgetExpCat = jdbcTemplate.queryForObject(
+                sql, new Object[]{id}, new BudgetExpenseCategoryRowMapper());
 
         List<BudgetExpenseCategoryModel> result = new ArrayList<BudgetExpenseCategoryModel>();
-
         result.add(budgetExpCat);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Only Admin or the User to whom the income category will be assigned
+    //may use this post call
     public List<ReturnIdModel> addBudgetExpCatReturnId(final BudgetExpenseCategoryModel budgetExpCat) {
+
+        final String methodName = "addBudgetExpCatReturnId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "INSERT INTO \"budget_expenseCategory\"\n" +
                 "\t(\"budget_id\", \"expenseCategory_id\", \"amountBudgeted\" )\n" +
                 "VALUES\n" +
@@ -108,6 +143,7 @@ public class BudgetExpenseCategoryDao {
 
         result.add(idObject);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 }

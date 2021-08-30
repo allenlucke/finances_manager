@@ -12,8 +12,14 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @RestController
 public class AccountBalanceSheetController {
+
+    private static final String CLASS_NAME = "AccountBalanceSheetController --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -24,7 +30,6 @@ public class AccountBalanceSheetController {
     @Autowired
     AccountBalanceSheetLogic mgr;
 
-
     @Autowired
     AuthorizationFilter authorizationFilter;
 
@@ -34,12 +39,18 @@ public class AccountBalanceSheetController {
             @RequestHeader("Authorization") String jwtString,
             @QueryParam("acctId") int acctId, @QueryParam("periodId") int periodId){
 
-        //Only assigned user may get balance sheet
+        final String methodName = "getBalanceSheetByPeriodNAcctType() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
         int userIdFromToken = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<AccountBalanceSheetModel> result;
-        result = mgr.balanceManager(acctId, periodId, userIdFromToken );
-
+        result = mgr.accountBalanceSheetManager(acctId, periodId, userIdFromToken );
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 

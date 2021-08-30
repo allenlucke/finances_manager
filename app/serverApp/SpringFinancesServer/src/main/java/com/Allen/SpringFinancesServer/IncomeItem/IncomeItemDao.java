@@ -16,17 +16,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @Service
 public class IncomeItemDao {
+
+    private static final String CLASS_NAME = "IncomeItemDao --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    //Admin only, may access all income items
     public List<IncomeItemModel> adminGetAllIncomeItems() {
-        String sql = "SELECT * FROM \"incomeItem\";";
 
+        final String methodName = "adminGetAllIncomeItems() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"incomeItem\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<IncomeItemModel> result = new ArrayList<IncomeItemModel>();
         for(Map<String, Object> row:rows){
             IncomeItemModel incomeItem = new IncomeItemModel();
@@ -41,16 +52,21 @@ public class IncomeItemDao {
 
             result.add(incomeItem);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
-
+    //User may only access income items assigned to the user
     public List<IncomeItemModel> getAllIncomeItems(final int usersId) {
-        String sql = "SELECT * FROM \"incomeItem\" WHERE \"users_id\" = ?;";
 
+        final String methodName = "getAllIncomeItems() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"incomeItem\" WHERE \"users_id\" = ?;";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId} );
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<IncomeItemModel> result = new ArrayList<IncomeItemModel>();
         for(Map<String, Object> row:rows){
             IncomeItemModel incomeItem = new IncomeItemModel();
@@ -65,34 +81,50 @@ public class IncomeItemDao {
 
             result.add(incomeItem);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //User may only access income items assigned to the user
     public List<IncomeItemModel> getIncomeItemById(final int itemId, final int usersId){
-        String sql = "SELECT * FROM \"incomeItem\" WHERE \"id\" = ? AND \"users_id\" = ?;";
 
-        IncomeItemModel incomeItem = jdbcTemplate.queryForObject( sql, new Object[]{itemId, usersId}, new IncomeItemRowMapper());
+        final String methodName = "getIncomeItemById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"incomeItem\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+        IncomeItemModel incomeItem = jdbcTemplate.queryForObject(
+                sql, new Object[]{itemId, usersId}, new IncomeItemRowMapper());
 
         List<IncomeItemModel> result = new ArrayList<IncomeItemModel>();
-
         result.add(incomeItem);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access any periods
     public List<IncomeItemModel> adminGetIncomeItemById(final int itemId){
-        String sql = "SELECT * FROM \"incomeItem\" WHERE \"id\" = ?;";
 
+        final String methodName = "adminGetPeriodById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"incomeItem\" WHERE \"id\" = ?;";
         IncomeItemModel incomeItem = jdbcTemplate.queryForObject( sql, new Object[]{itemId}, new IncomeItemRowMapper());
 
         List<IncomeItemModel> result = new ArrayList<IncomeItemModel>();
-
         result.add(incomeItem);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Only Admin or the User to whom the income item will be assigned
+    //may use this post call
     public List<ReturnIdModel> addIncomeItemReturnId(final IncomeItemModel incomeItem) {
+
+        final String methodName = "addIncomeItemReturnId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "INSERT INTO \"incomeItem\"\n" +
                 "\t(\"budget_incomeCategory_id\", \"name\", \"receivedDate\", \n" +
                 "\t \"amountExpected\", \"amountReceived\",\"account_id\", \"users_id\")\n" +
@@ -122,6 +154,7 @@ public class IncomeItemDao {
 
         result.add(idObject);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 }

@@ -14,16 +14,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @Service
 public class PeriodDao {
+
+    private static final String CLASS_NAME = "PeriodDao --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    //Admin only, may access all periods
     public List<PeriodModel> adminGetAllPeriods(){
+
+        final String methodName = "adminGetAllPeriods() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"period\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<PeriodModel> result = new ArrayList<PeriodModel>();
         for(Map<String, Object> row:rows){
             PeriodModel period = new PeriodModel();
@@ -35,15 +47,21 @@ public class PeriodDao {
 
             result.add(period);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //User may only access periods assigned to the user
     public List<PeriodModel> getAllPeriods(int usersId){
-        String sql = "SELECT * FROM \"period\" WHERE \"users_id\" = ?;";
 
+        final String methodName = "getAllPeriods() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"period\" WHERE \"users_id\" = ?;";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId} );
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<PeriodModel> result = new ArrayList<PeriodModel>();
         for(Map<String, Object> row:rows){
             PeriodModel period = new PeriodModel();
@@ -55,56 +73,49 @@ public class PeriodDao {
 
             result.add(period);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access any periods
     public List<PeriodModel> adminGetPeriodById(int id){
-        String sql = "SELECT * FROM \"period\" WHERE \"id\" = ?;";
 
+        final String methodName = "adminGetPeriodById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"period\" WHERE \"id\" = ?;";
         PeriodModel period = jdbcTemplate.queryForObject( sql, new Object[]{id}, new PeriodRowMapper());
 
         List<PeriodModel> result = new ArrayList<PeriodModel>();
-
         result.add(period);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //User may only access periods assigned to the user
     public List<PeriodModel> getPeriodById(int periodId, int usersId){
-        String sql = "SELECT * FROM \"period\" WHERE \"id\" = ? AND \"users_id\" = ?;";
 
+        final String methodName = "adminGetPeriodById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"period\" WHERE \"id\" = ? AND \"users_id\" = ?;";
         PeriodModel period = jdbcTemplate.queryForObject( sql, new Object[]{periodId, usersId}, new PeriodRowMapper());
 
         List<PeriodModel> result = new ArrayList<PeriodModel>();
-
         result.add(period);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
-//    public int addPeriodReturnId(final PeriodModel period) {
-//        String sql = "INSERT INTO \"period\"\n" +
-//                "\t(\"name\", \"startDate\", \"endDate\", \"users_id\")\n" +
-//                "VALUES\n" +
-//                "\t(?, ?, ?, ?) returning \"id\";";
-//
-//        KeyHolder holder = new GeneratedKeyHolder();
-//        jdbcTemplate.update(connection -> {
-//            PreparedStatement ps = connection.prepareStatement(sql,
-//                    Statement.RETURN_GENERATED_KEYS);
-//
-//            ps.setString(1, period.getName());
-//            ps.setTimestamp(2, period.getStartDate());
-//            ps.setTimestamp(3, period.getEndDate());
-//            ps.setInt(4, period.getUsers_id());
-//
-//            return ps;
-//        },holder);
-//        return (int) holder.getKey();
-//
-//    }
-
+    //Only Admin or the User to whom the period will be assigned
+    //may use this post call
     public List<ReturnIdModel> addPeriodReturnId(final PeriodModel period) {
+
+        final String methodName = "addPeriodReturnId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "INSERT INTO \"period\"\n" +
                 "\t(\"name\", \"startDate\", \"endDate\", \"users_id\")\n" +
                 "VALUES\n" +
@@ -130,6 +141,7 @@ public class PeriodDao {
 
         result.add(idObject);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
 
     }

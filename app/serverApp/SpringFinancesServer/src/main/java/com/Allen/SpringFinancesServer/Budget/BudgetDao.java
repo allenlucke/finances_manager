@@ -14,17 +14,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @Service
 public class BudgetDao {
+
+    private static final String CLASS_NAME = "BudgetDao --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    //User may only access budgets assigned to the user
     public List<BudgetModel> getAllBudgets(final int usersId){
+
+        final String methodName = "getAllBudgets() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"budget\" WHERE \"users_id\" = ?;";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId} );
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<BudgetModel> result = new ArrayList<BudgetModel>();
         for(Map<String, Object> row:rows){
             BudgetModel budget = new BudgetModel();
@@ -36,13 +48,20 @@ public class BudgetDao {
 
             result.add(budget);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access all budgets
     public List<BudgetModel> adminGetAllBudgets(){
+
+        final String methodName = "adminGetAllBudgets() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"budget\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<BudgetModel> result = new ArrayList<BudgetModel>();
         for(Map<String, Object> row:rows){
             BudgetModel budget = new BudgetModel();
@@ -54,30 +73,40 @@ public class BudgetDao {
 
             result.add(budget);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //User may only access budgets assigned to the user
     public List<BudgetModel> getBudgetById(final int budgetId, final int usersId){
-        String sql = "SELECT * FROM \"budget\" WHERE \"id\" = ? AND \"users_id\" = ?;";
 
-        BudgetModel budget = jdbcTemplate.queryForObject( sql, new Object[]{budgetId, usersId}, new BudgetRowMapper());
+        final String methodName = "getBudgetById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"budget\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+        BudgetModel budget = jdbcTemplate.queryForObject(
+                sql, new Object[]{budgetId, usersId}, new BudgetRowMapper());
 
         List<BudgetModel> result = new ArrayList<BudgetModel>();
-
         result.add(budget);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access any budget
     public List<BudgetModel> adminGetBudgetById(int id){
-        String sql = "SELECT * FROM \"budget\" WHERE \"id\" = ?;";
 
+        final String methodName = "adminGetBudgetById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"budget\" WHERE \"id\" = ?;";
         BudgetModel budget = jdbcTemplate.queryForObject( sql, new Object[]{id}, new BudgetRowMapper());
 
         List<BudgetModel> result = new ArrayList<BudgetModel>();
-
         result.add(budget);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
@@ -101,7 +130,13 @@ public class BudgetDao {
 //
 //    }
 
+    //Only Admin or the User to whom the budget will be assigned
+    //may use this post call
     public List<ReturnIdModel> addBudgetReturnId(final BudgetModel budget) {
+
+        final String methodName = "addBudgetReturnId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "INSERT INTO \"budget\"\n" +
                 "\t(\"name\", \"period_id\", \"users_id\")\n" +
                 "VALUES\n" +
@@ -127,7 +162,7 @@ public class BudgetDao {
 
         result.add(idObject);
 
-    //    return (int) holder.getKey();
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 }

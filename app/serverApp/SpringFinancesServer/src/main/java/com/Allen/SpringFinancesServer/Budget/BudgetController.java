@@ -15,8 +15,14 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @RestController
 public class BudgetController {
+
+    private static final String CLASS_NAME = "BudgetController --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -31,12 +37,18 @@ public class BudgetController {
     @Consumes(MediaType.APPLICATION_JSON)
     public List<BudgetModel> getAllBudgets(@RequestHeader("Authorization") String jwtString){
 
-        //May only get periods assigned to the user
+        final String methodName = "getAllBudgets() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<BudgetModel> result;
         result = dao.getAllBudgets(userId);
-
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
@@ -45,17 +57,20 @@ public class BudgetController {
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity adminGetAllBudgets(@RequestHeader("Authorization") String jwtString){
 
-        //Only Admin may get item
+        final String methodName = "adminGetAllBudgets() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
             List<BudgetModel> result;
             result = dao.adminGetAllBudgets();
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
@@ -65,12 +80,19 @@ public class BudgetController {
     public List<BudgetModel> getBudgetById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int budgetId){
 
-        //May only get categories assigned to the user
-        int userId = authorizationFilter.getUserIdFromToken(jwtString);
-        List<BudgetModel> result;
+        final String methodName = "getBudgetById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
+        int userId = authorizationFilter.getUserIdFromToken(jwtString);
+
+        List<BudgetModel> result;
         result = dao.getBudgetById(budgetId, userId);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
@@ -80,18 +102,20 @@ public class BudgetController {
     public ResponseEntity adminGetBudgetById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int id){
 
-        //Only Admin may get item
+        final String methodName = "adminGetBudgetById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin may access any budget
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
             List<BudgetModel> result;
-
             result = dao.adminGetBudgetById(id);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
@@ -102,17 +126,20 @@ public class BudgetController {
             @RequestHeader("Authorization") String jwtString, @RequestBody BudgetModel budget)
             throws ServletException, IOException {
 
-        //Only admin or assigned user may post
+        final String methodName = "addBudgetRetId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        ///Check user auth: Only admin or assigned user may post
         int requestUserId = budget.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
             List<ReturnIdModel> returnedId = dao.addBudgetReturnId(budget);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }
     }

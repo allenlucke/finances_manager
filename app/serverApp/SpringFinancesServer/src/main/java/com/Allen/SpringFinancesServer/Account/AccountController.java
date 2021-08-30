@@ -15,8 +15,14 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @RestController
 public class AccountController {
+
+    private static final String CLASS_NAME = "AccountController --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -31,11 +37,18 @@ public class AccountController {
     @Consumes(MediaType.APPLICATION_JSON)
     public List<AccountModel> getAllAccounts(@RequestHeader("Authorization") String jwtString){
 
-        //May only get periods assigned to the user
+        final String methodName = "getAllAccounts() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
+
         List<AccountModel> result;
         result = dao.getAllAccounts(userId);
-
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
@@ -44,17 +57,20 @@ public class AccountController {
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity adminGetAllAccounts(@RequestHeader("Authorization") String jwtString){
 
-        //Only Admin may get item
+        final String methodName = "adminGetAllAccounts() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
             List<AccountModel> result;
             result = dao.adminGetAllAccounts();
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
@@ -64,12 +80,19 @@ public class AccountController {
     public List<AccountModel> getAccountById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int acctId){
 
-        //May only get categories assigned to the user
-        int userId = authorizationFilter.getUserIdFromToken(jwtString);
-        List<AccountModel> result;
+        final String methodName = "getAccountById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
+        int userId = authorizationFilter.getUserIdFromToken(jwtString);
+
+        List<AccountModel> result;
         result = dao.getAccountById(acctId, userId);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
@@ -79,18 +102,20 @@ public class AccountController {
     public ResponseEntity adminGetAccountById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int acctId){
 
-        //Only Admin may get item
+        final String methodName = "adminGetAccountById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin may access any account
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
             List<AccountModel> result;
-
             result = dao.adminGetAccountById(acctId);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
@@ -101,17 +126,20 @@ public class AccountController {
             @RequestHeader("Authorization") String jwtString, @RequestBody AccountModel acct)
             throws ServletException, IOException {
 
-        //Only admin or assigned user may post
+        final String methodName = "addAccountReturningId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        ///Check user auth: Only admin or assigned user may post
         int requestUserId = acct.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
             List<ReturnIdModel> returnedId = dao.addAccountReturningId(acct);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }
     }

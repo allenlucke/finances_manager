@@ -11,7 +11,8 @@ import { Expense } from '../expense';
 export class RestApiService {
 
    // Define API
-   apiURL = 'http://localhost:8080/Finances';
+  //  apiURL = 'http://localhost:8080/Finances';
+   apiURL = 'http://localhost:8080/';
    
 
   constructor(private http: HttpClient) { }

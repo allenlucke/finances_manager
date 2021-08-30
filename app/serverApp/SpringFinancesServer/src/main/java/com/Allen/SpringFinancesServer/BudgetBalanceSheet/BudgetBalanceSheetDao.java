@@ -9,15 +9,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @Service
 public class BudgetBalanceSheetDao {
+
+    private static final String CLASS_NAME = "BudgetBalanceSheetDao --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
 
     //Get budget expense categories by period
+    //User may only access budget expense categories assigned to the user
     public List<BudgetBalanceSheetModel> getBudgetExpCatsByPeriod(int periodId, final int usersId){
+
+        final String methodName = "getBudgetExpCatsByPeriod() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT \"expenseCategory\".id AS \"expenseCategoryId\",\n" +
                 "\"expenseCategory\".name AS \"expenseCategoryName\", \"expenseCategory\".\"users_id\" AS \"usersId\",\n" +
                 "\"budget_expenseCategory\".id AS \"budgetExpenseCategoryId\", \"budget\".id AS \"budgetId\",\n" +
@@ -28,14 +39,13 @@ public class BudgetBalanceSheetDao {
                 "JOIN \"budget\" ON \"budget_expenseCategory\".\"budget_id\" = \"budget\".id\n" +
                 "WHERE \"budget\".\"period_id\" = ?\n" +
                 "AND \"budget\".\"users_id\" = ?;";
-
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {periodId, usersId} );
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<BudgetBalanceSheetModel> result = new ArrayList<BudgetBalanceSheetModel>();
         for(Map<String, Object> row:rows){
             BudgetBalanceSheetModel budgExpCats = new BudgetBalanceSheetModel();
-
             budgExpCats.setExpenseCategoryId((int)row.get("expenseCategoryId"));
             budgExpCats.setExpenseCategoryName((String)row.get("expenseCategoryName"));
             budgExpCats.setUsersId((int)row.get("usersId"));
@@ -48,6 +58,7 @@ public class BudgetBalanceSheetDao {
             result.add(budgExpCats);
 
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 

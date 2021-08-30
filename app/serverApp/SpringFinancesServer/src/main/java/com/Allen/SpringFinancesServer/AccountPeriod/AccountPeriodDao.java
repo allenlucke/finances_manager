@@ -14,17 +14,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @Service
 public class AccountPeriodDao {
+
+    private static final String CLASS_NAME = "AccountPeriodDao --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    //User may only access account periods assigned to the user
     public List<AccountPeriodModel> getAllAccountPeriods(final int usersId){
+
+        final String methodName = "getAllAccountPeriods() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"accountPeriod\" WHERE \"users_id\" = ?;";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId} );
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<AccountPeriodModel> result = new ArrayList<AccountPeriodModel>();
         for(Map<String, Object> row:rows){
             AccountPeriodModel acctPeriod = new AccountPeriodModel();
@@ -37,13 +49,20 @@ public class AccountPeriodDao {
 
             result.add(acctPeriod);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access all account periods
     public List<AccountPeriodModel> adminGetAllAccountPeriods(){
+
+        final String methodName = "adminGetAllAccountPeriods() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"accountPeriod\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<AccountPeriodModel> result = new ArrayList<AccountPeriodModel>();
         for(Map<String, Object> row:rows){
             AccountPeriodModel acctPeriod = new AccountPeriodModel();
@@ -56,35 +75,51 @@ public class AccountPeriodDao {
 
             result.add(acctPeriod);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //User may only access account periods assigned to the user
     public List<AccountPeriodModel> getAcctPeriodById(final int acctPeriodId, final int usersId){
-        String sql = "SELECT * FROM \"accountPeriod\" WHERE \"id\" = ? AND \"users_id\" = ?;";
 
+        final String methodName = "getAcctPeriodById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"accountPeriod\" WHERE \"id\" = ? AND \"users_id\" = ?;";
         AccountPeriodModel acctPeriod = jdbcTemplate.queryForObject(
                 sql, new Object[]{acctPeriodId, usersId}, new AccountPeriodRowMapper());
 
         List<AccountPeriodModel> result = new ArrayList<AccountPeriodModel>();
-
         result.add(acctPeriod);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access any account period
     public List<AccountPeriodModel> adminGetAcctPeriodById(int id){
-        String sql = "SELECT * FROM \"accountPeriod\" WHERE \"id\" = ?;";
 
-        AccountPeriodModel acctPeriod = jdbcTemplate.queryForObject( sql, new Object[]{id}, new AccountPeriodRowMapper());
+        final String methodName = "adminGetAcctPeriodById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"accountPeriod\" WHERE \"id\" = ?;";
+        AccountPeriodModel acctPeriod = jdbcTemplate.queryForObject(
+                sql, new Object[]{id}, new AccountPeriodRowMapper());
 
         List<AccountPeriodModel> result = new ArrayList<AccountPeriodModel>();
-
         result.add(acctPeriod);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Only Admin or the User to whom the account period will be assigned
+    //may use this post call
     public List<ReturnIdModel> addAcctPeriodReturningId(final AccountPeriodModel acctPeriod) {
+
+        final String methodName = "addAcctPeriodReturningId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "INSERT INTO \"accountPeriod\"\n" +
                 "\t(\"account_id\", \"period_id\",\t\"users_id\")\n" +
                 "VALUES\n" +
@@ -111,6 +146,7 @@ public class AccountPeriodDao {
 
         result.add(idObject);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 }

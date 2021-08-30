@@ -15,8 +15,14 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @RestController
 public class PeriodController {
+
+    private static final String CLASS_NAME = "PeriodController --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -32,18 +38,20 @@ public class PeriodController {
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity adminGetAllPeriods(@RequestHeader("Authorization") String jwtString){
 
-        //Only admin may getAllPeriods
+        final String methodName = "adminGetAllPeriods() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
-
             List<PeriodModel> result;
             result = dao.adminGetAllPeriods();
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
@@ -52,47 +60,61 @@ public class PeriodController {
     @Consumes(MediaType.APPLICATION_JSON)
     public List<PeriodModel> getAllPeriods(@RequestHeader("Authorization") String jwtString){
 
-        //May only get periods assigned to the user
+        final String methodName = "getAllPeriods() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<PeriodModel> result;
         result = dao.getAllPeriods(userId);
-
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
     //Admin Only
-    @GetMapping("/Admin/getPeriod")
+    @GetMapping("/Admin/getPeriodById")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity adminGetPeriodById(@RequestHeader("Authorization") String jwtString, @QueryParam("id") int id){
 
-        //Only Admin may get period
+        final String methodName = "adminGetPeriodById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin may access any periods
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
-
             List<PeriodModel> result;
             result = dao.adminGetPeriodById(id);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
 
-    @GetMapping("/getPeriod")
+    @GetMapping("/getPeriodById")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity getPeriodById(@RequestHeader("Authorization") String jwtString, @QueryParam("id") int periodId){
 
-        //Only assigned user may get period
+        final String methodName = "getPeriodById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
         int userIdFromToken = authorizationFilter.getUserIdFromToken(jwtString);
 
-            List<PeriodModel> result;
-            result = dao.getPeriodById(periodId, userIdFromToken);
-            return new ResponseEntity(result, HttpStatus.OK);
-
+        List<PeriodModel> result;
+        result = dao.getPeriodById(periodId, userIdFromToken);
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     @PostMapping("/addPeriodRetId")
@@ -100,18 +122,20 @@ public class PeriodController {
     public ResponseEntity addPeriodRetId(
             @RequestHeader("Authorization") String jwtString, @RequestBody PeriodModel period) throws ServletException, IOException {
 
-        //Only admin or assigned user may post
+        final String methodName = "addPeriodRetId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin or assigned user may post
         int requestUserId = period.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
-
             List<ReturnIdModel> returnedId = dao.addPeriodReturnId(period);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }
     }

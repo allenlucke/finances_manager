@@ -26,6 +26,7 @@ public class UserDao {
 
 
     public String getUserFirstName(int id){
+
         final String methodName = "getUserFirstName() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
@@ -37,6 +38,7 @@ public class UserDao {
 
     //Admin ONLY!
     public List<UserModel> getAllUsers(){
+
         final String methodName = "getAllUsers() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
@@ -64,6 +66,7 @@ public class UserDao {
     }
 
     public List<UserModel> getUserById(int id){
+
         final String methodName = "getUserById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
@@ -80,6 +83,7 @@ public class UserDao {
     }
 
     public int addUserReturnId(final UserModel usr) {
+
         final String methodName = "addUserReturnId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
@@ -109,6 +113,7 @@ public class UserDao {
 
     //Used by JWTAuthenticationController - No Auth required
     public UserModel getUserByUsername(final String username){
+
         final String methodName = "getUserByUsername() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
@@ -124,6 +129,7 @@ public class UserDao {
     //Used by JWTAuthenticationController? - No Auth required
     //Method uses longhand style instead of row mapper
     public UserModel addUserReturnUser(final UserModel usr) {
+
         final String methodName = "addUserReturnUser() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 

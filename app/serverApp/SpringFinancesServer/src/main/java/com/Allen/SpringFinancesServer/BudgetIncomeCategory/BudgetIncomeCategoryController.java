@@ -15,8 +15,14 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @RestController
 public class BudgetIncomeCategoryController {
+
+    private static final String CLASS_NAME = "BudgetIncomeCategoryController --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -31,12 +37,18 @@ public class BudgetIncomeCategoryController {
     @Consumes(MediaType.APPLICATION_JSON)
     public List<BudgetIncomeCategoryModel> getAllBudgetIncomeCats(@RequestHeader("Authorization") String jwtString){
 
-        //May only get periods assigned to the user
+        final String methodName = "getAllBudgetIncomeCats() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<BudgetIncomeCategoryModel> result;
         result = dao.getAllBudgetIncomeCats(userId);
-
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
@@ -45,17 +57,20 @@ public class BudgetIncomeCategoryController {
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity adminGetAllBudgetIncomeCats(@RequestHeader("Authorization") String jwtString){
 
-        //Only Admin may get item
+        final String methodName = "adminGetAllBudgetIncomeCats() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
             List<BudgetIncomeCategoryModel> result;
             result = dao.adminGetAllBudgetIncomeCats();
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
@@ -65,12 +80,18 @@ public class BudgetIncomeCategoryController {
     public List<BudgetIncomeCategoryModel> getBudgetIncomeCatById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int budIncCatid){
 
-        //May only get categories assigned to the user
+        final String methodName = "getBudgetIncomeCatById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
+
         List<BudgetIncomeCategoryModel> result;
-
         result = dao.getBudgetIncomeCatById(budIncCatid, userId);
-
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
@@ -80,20 +101,20 @@ public class BudgetIncomeCategoryController {
     public ResponseEntity adminGetBudgetIncomeCatById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int id){
 
-        //Only Admin may get item
+        final String methodName = "adminGetBudgetIncomeCatById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth: Only admin may access any budget income category
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
-
-
             List<BudgetIncomeCategoryModel> result;
-
             result = dao.adminGetBudgetIncomeCatById(id);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
     }
@@ -103,17 +124,20 @@ public class BudgetIncomeCategoryController {
     public ResponseEntity addBudgetIncomeCatReturnId(
             @RequestHeader("Authorization") String jwtString, @RequestBody BudgetIncomeCategoryModel budgetIncomeCat) throws ServletException, IOException {
 
-        //Only admin or assigned user may post
+        final String methodName = "addBudgetIncomeCatReturnId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        ///Check user auth: Only admin or assigned user may post
         int requestUserId = budgetIncomeCat.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
-
         if(!confirmAuthorization) {
-            System.out.println("Auth Status: " + confirmAuthorization);
-
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+        //If authorized make call to dao
         else {
             List<ReturnIdModel> returnedId = dao.addBudgetIncomeCatReturnId(budgetIncomeCat);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }
     }

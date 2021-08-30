@@ -15,17 +15,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
+
 @Service
 public class ExpenseItemDao {
+
+    private static final String CLASS_NAME = "ExpenseItemDao --- ";
+    private static final String METHOD_ENTERING = "Entering:  ";
+    private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    //User may only access expense items assigned to the user
     public List<ExpenseItemModel> getAllExpItems(final int usersId) {
+
+        final String methodName = "getAllExpItems() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"expenseItem\" WHERE \"users_id\" = ?;";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId} );
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<ExpenseItemModel> result = new ArrayList<ExpenseItemModel>();
         for(Map<String, Object> row:rows){
             ExpenseItemModel expItem = new ExpenseItemModel();
@@ -42,13 +54,20 @@ public class ExpenseItemDao {
 
             result.add(expItem);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access all expense items
     public List<ExpenseItemModel> adminGetAllExpItems() {
+
+        final String methodName = "adminGetAllExpItems() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT * FROM \"expenseItem\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<ExpenseItemModel> result = new ArrayList<ExpenseItemModel>();
         for(Map<String, Object> row:rows){
             ExpenseItemModel expItem = new ExpenseItemModel();
@@ -65,34 +84,49 @@ public class ExpenseItemDao {
 
             result.add(expItem);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //User may only access expense items assigned to the user
     public List<ExpenseItemModel> getExpItemById(final int itemId, final int usersId){
-        String sql = "SELECT * FROM \"expenseItem\" WHERE \"id\" = ? AND \"users_id\" = ?;";
 
-        ExpenseItemModel expenseItem = jdbcTemplate.queryForObject( sql, new Object[]{itemId, usersId}, new ExpenseItemRowMapper());
+        final String methodName = "getExpItemById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"expenseItem\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+        ExpenseItemModel expenseItem = jdbcTemplate.queryForObject(
+                sql, new Object[]{itemId, usersId}, new ExpenseItemRowMapper());
 
         List<ExpenseItemModel> result = new ArrayList<ExpenseItemModel>();
-
         result.add(expenseItem);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Admin only, may access any expense item
     public List<ExpenseItemModel> adminGetExpItemById(int id){
-        String sql = "SELECT * FROM \"expenseItem\" WHERE \"id\" = ?;";
 
+        final String methodName = "adminGetExpItemById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"expenseItem\" WHERE \"id\" = ?;";
         ExpenseItemModel expenseItem = jdbcTemplate.queryForObject( sql, new Object[]{id}, new ExpenseItemRowMapper());
 
         List<ExpenseItemModel> result = new ArrayList<ExpenseItemModel>();
-
         result.add(expenseItem);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //User may only access expense items assigned to the user
     public List<ExpenseItemModel> getExpItemByPeriod(int periodId, final int usersId){
+
+        final String methodName = "getExpItemByPeriod() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"budget_expenseCategory_id\", \"expenseItem\".name,\n" +
                 "\"expenseItem\".\"transactionDate\", \"expenseItem\".\"amount\", \"expenseItem\".\"paidWithCredit\",\n" +
                 "\"expenseItem\".\"paymentToCreditAccount\", \"expenseItem\".\"interestPaymentToCreditAccount\",\n" +
@@ -101,10 +135,10 @@ public class ExpenseItemDao {
                 "JOIN \"budget\" ON \"budget_expenseCategory\".\"budget_id\" = \"budget\".id\n" +
                 "WHERE \"budget\".\"period_id\" = ?\n" +
                 "AND \"budget\".\"users_id\" = ?;";
-
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {periodId, usersId} );
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<ExpenseItemModel> result = new ArrayList<ExpenseItemModel>();
         for(Map<String, Object> row:rows){
             ExpenseItemModel expItem = new ExpenseItemModel();
@@ -121,10 +155,17 @@ public class ExpenseItemDao {
 
             result.add(expItem);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 
+    //Only Admin or the User to whom the income category will be assigned
+    //may use this post call
     public List<ReturnIdModel> addExpItemReturnId(final ExpenseItemModel expenseItem) {
+
+        final String methodName = "addExpItemReturnId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
         String sql = "INSERT INTO \"expenseItem\"\n" +
                 "\t(\"budget_expenseCategory_id\", \"name\", \"transactionDate\", \n" +
                 "\t \"amount\", \"paidWithCredit\", \"paymentToCreditAccount\", \n" +
@@ -157,6 +198,7 @@ public class ExpenseItemDao {
 
         result.add(idObject);
 
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
 }
