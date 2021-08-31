@@ -6,14 +6,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.ws.rs.Consumes;
+import javax.ws.rs.core.MediaType;
+
 
 @SpringBootApplication
 @RestController
+//@CrossOrigin("http://localhost:4200")
 public class SpringFinancesServerApplication {
 
 	@Autowired
@@ -38,11 +45,16 @@ public class SpringFinancesServerApplication {
 
 
 	@GetMapping("/hello")
-	public String sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
+	@Consumes(MediaType.APPLICATION_JSON)
+	public ResponseEntity sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
 		final String methodName = "sayHello() ";
 		LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+		SayHelloModel hello = new SayHelloModel();
+		hello.setHelloText("Hello "+ name);
+
 		LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-		return String.format("Hello %s!", name);
+		return new ResponseEntity(hello, HttpStatus.OK);
 	}
 
 }
