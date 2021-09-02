@@ -1,13 +1,15 @@
-<!-- <div class="container"> -->
-  <h1 class="title" >{{title}}<h1>
+<!-- nav -->
+<nav class="navbar navbar-expand navbar-dark bg-dark" *ngIf="currentUser">
+  <div class="navbar-nav">
+      <a class="nav-item nav-link" routerLink="/">Home</a>
+      <a class="nav-item nav-link" (click)="logout()">Logout</a>
+  </div>
+</nav>
 
-    <!-- <div>
-    </div> -->
-  
-  
+<!-- main app container -->
+<div class="container">
+  <router-outlet></router-outlet>
+  <!-- <app-hello></app-hello> -->
+</div>
 
-<!-- <router-outlet></router-outlet> -->
-<!-- <app-expenses></app-expenses> -->
-<app-hello></app-hello>
 
-<!-- </div> -->

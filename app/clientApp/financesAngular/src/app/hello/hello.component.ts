@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { first } from 'rxjs/operators';
 import { RestApiService } from "../service/rest-api.service";
+import { AuthenticationService } from '../service/authentication.service';
 
 @Component({
   selector: 'app-hello',
@@ -7,7 +9,7 @@ import { RestApiService } from "../service/rest-api.service";
   styleUrls: ['./hello.component.css']
 })
 export class HelloComponent implements OnInit {
-
+  loading = false;
   Hello: any = [];
 
   constructor(
@@ -15,6 +17,7 @@ export class HelloComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    this.loading = true;
     console.log("In hello component ng on init")
     this.loadHello();
   }
@@ -23,6 +26,8 @@ export class HelloComponent implements OnInit {
   loadHello() {
     return this.restApi.getHello().subscribe((data: {}) => {
       console.log("Hello response: " + JSON.stringify(data))
+      this.loading = false;
+      this.Hello = [data];
     })
   }
 }
