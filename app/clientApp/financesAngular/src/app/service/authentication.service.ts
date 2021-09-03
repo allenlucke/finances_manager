@@ -30,6 +30,18 @@ export class AuthenticationService {
             }));
     }
 
+    register(firstName: string, lastName: string, userName: string, password: string, securityLevel: number, 
+        email: string, role: string) {
+        return this.http.post<any>(`${environment.apiUrl}/register`, { firstName, lastName, userName, 
+            password, securityLevel, email, role })
+            .pipe(map(user => {
+                // store user details and jwt token in local storage to keep user logged in between page refreshes
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                this.currentUserSubject.next(user);
+                return user;
+            }));
+    }
+
     logout() {
         // remove user from local storage to log user out
         localStorage.removeItem('currentUser');
