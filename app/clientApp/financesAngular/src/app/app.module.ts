@@ -9,13 +9,17 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { JwtInterceptor } from 'src/app/_helpers/jwt.interceptor';
 import { ErrorInterceptor } from 'src/app/_helpers/error.interceptor';
-import { HelloComponent } from './hello/hello.component';
+import { HelloComponent } from './component/hello/hello.component';
 import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
-import { HomeComponent } from './home/home.component';
-import { LoginComponent } from './login/login.component';
+import { HomeComponent } from './component/home/home.component';
+import { LoginComponent } from './component/login/login.component';
 import { AppRoutingModule } from './app-routing.module';
-import { RegisterComponent } from './register/register.component';
+import { RegisterComponent } from './component/register/register.component';
+import { BudgetBalanceSheetComponent } from './component/budget-balance-sheet/budget-balance-sheet.component';
+import { TestBalSheetComponent } from './component/test-bal-sheet/test-bal-sheet.component';
+
+
 
 @NgModule({
   declarations: [
@@ -25,7 +29,9 @@ import { RegisterComponent } from './register/register.component';
     FooterComponent,
     HomeComponent,
     LoginComponent,
-    RegisterComponent
+    RegisterComponent,
+    BudgetBalanceSheetComponent,
+    TestBalSheetComponent
   ],
   imports: [
     BrowserModule,

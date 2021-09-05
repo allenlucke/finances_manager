@@ -1,0 +1,43 @@
+<div class="card mt-4">
+    <h4 class="card-header">Budget Balance Sheet</h4>
+    <div class="card-body">
+        <h6>Budget Balance Sheet</h6>
+        <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
+        <table class="table table-bordered table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Expense Category Id</th>
+                    <th>Expense Category Name</th>
+                    <th>User Id</th>
+                    <th>Budget Expense Category Id</th>
+                    <th>Budget Id</th>
+                    <th>Period Id</th>
+                    <th>Amount Budgeted</th>
+                    <th>expenseItems</th>
+                    <th>Amount Spent</th>
+                    <th>Amount Remaining</th>
+                    <th>Is Closed</th>
+                </tr>
+            </thead>
+              <tbody>
+                    <tr *ngFor="let item of balanceSheetItems">
+
+                        <td>{{item.expenseCategoryId}}</td>
+                        <td>{{item.expenseCategoryName}}</td>
+                        <td>{{item.usersId}}</td>
+                        <td>{{item.budgetExpenseCategoryId}}</td>
+                        <td>{{item.budgetId}}</td>
+                        <td>{{item.periodId}}</td>
+                        <td>{{item.amountBudgeted | currency: '$'}}</td>
+                        <td>{{item.expenseItems}}</td>
+                        <td>{{item.amountSpent | currency: '$'}}</td>
+                        <td>{{item.amountRemaining | currency: '$'}}</td>
+                        <td>{{item.closed}}</td>
+
+                    
+                    </tr>
+                </tbody>
+            </table>
+
+    </div>
+</div>

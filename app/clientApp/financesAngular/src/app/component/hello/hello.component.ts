@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { first } from 'rxjs/operators';
-import { RestApiService } from "../service/rest-api.service";
-import { AuthenticationService } from '../service/authentication.service';
+import { RestApiService } from "../../service/rest-api.service";
+import { AuthenticationService } from '../../service/authentication.service';
 
 @Component({
   selector: 'app-hello',
