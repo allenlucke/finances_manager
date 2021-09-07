@@ -79,3 +79,4 @@ target
 secrets.yml
 .gradletasknamecache
 *.log
+*.gz

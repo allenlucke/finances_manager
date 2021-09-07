@@ -1,43 +1,82 @@
-<div class="card mt-4">
-    <h4 class="card-header">Budget Balance Sheet</h4>
-    <div class="card-body">
-        <h6>Budget Balance Sheet</h6>
-        <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
-        <table class="table table-bordered table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>Expense Category Id</th>
-                    <th>Expense Category Name</th>
-                    <th>User Id</th>
-                    <th>Budget Expense Category Id</th>
-                    <th>Budget Id</th>
-                    <th>Period Id</th>
-                    <th>Amount Budgeted</th>
-                    <th>expenseItems</th>
-                    <th>Amount Spent</th>
-                    <th>Amount Remaining</th>
-                    <th>Is Closed</th>
-                </tr>
-            </thead>
-              <tbody>
-                    <tr *ngFor="let item of balanceSheetItems">
+<div class="card mt-4">  
+    <h3 class="card-header" align="center" >Budget Balance Sheet</h3>
+    <div class="card-body"></div> 
+    <h4 align="center">Currently Viewing Period: {{currentPeriodArray[0].name}} ({{currentPeriodArray[0].startDate | date: 'MM/dd/yyyy'}} - {{currentPeriodArray[0].endDate | date: 'MM/dd/yyyy'}})</h4>
 
-                        <td>{{item.expenseCategoryId}}</td>
-                        <td>{{item.expenseCategoryName}}</td>
-                        <td>{{item.usersId}}</td>
-                        <td>{{item.budgetExpenseCategoryId}}</td>
-                        <td>{{item.budgetId}}</td>
-                        <td>{{item.periodId}}</td>
-                        <td>{{item.amountBudgeted | currency: '$'}}</td>
-                        <td>{{item.expenseItems}}</td>
-                        <td>{{item.amountSpent | currency: '$'}}</td>
-                        <td>{{item.amountRemaining | currency: '$'}}</td>
-                        <td>{{item.closed}}</td>
+    <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
+    <div align="center">
+        <label >Change Period: </label>
+        <select (change)="getSelectedPeriodBalanceSheet($event)">
+          <option></option>
+          <option value = {{period.id}} *ngFor="let period of availablePeriodsArray">{{period.name}}: {{ period.startDate | date: 'MM/dd/yyyy' }} - {{ period.endDate | date: 'MM/dd/yyyy' }}</option>
+        </select>
+      </div>
+    <table class="table table-bordered table-striped table-hover">
+        <thead>  
+            <tr>  
+                <th> </th>  
+                <th width="50">Art.No  
+                <th>Expense Category Name</th>
+                <th>User Id</th>
+                <th>Budget Expense Category Id</th>
+                <th>Budget Id</th>
+                <th>Period Id</th>
+                <th>Amount Budgeted</th>
+                <th>Amount Spent</th>
+                <th>Amount Remaining</th>
+                <th>Is Closed</th>
+            </tr>  
+        </thead>  
+        <tbody *ngFor="let item of balanceSheetItems; let i = index">  
 
-                    
-                    </tr>
-                </tbody>
-            </table>
-
-    </div>
-</div>
+            <tr>  
+                <td align="center">  
+                    <a class="expand-row" *ngIf="!newHideMe[i]" (click)="getExpenseItems(i)">  
+                        <img src="../../assets/Images/plus.png" />  
+                    </a>  
+                        <a class="expand-row" *ngIf="newHideMe[i]" (click)="newHideMe[i] = !newHideMe[i]">  
+                        <img src="../../assets/Images/minus.png" />  
+                    </a>  
+                </td>
+                <td align="center">{{item.expenseCategoryId}}</td>  
+                <td>{{item.expenseCategoryName}}</td>
+                <td>{{item.usersId}}</td>
+                <td>{{item.budgetExpenseCategoryId}}</td>
+                <td>{{item.budgetId}}</td>
+                <td>{{item.periodId}}</td>
+                <td>{{item.amountBudgeted | currency: '$'}}</td>
+                <td>{{item.amountSpent | currency: '$'}}</td>
+                <td>{{item.amountRemaining | currency: '$'}}</td>
+                <td>{{item.closed}}</td>  
+            </tr>  
+            <tr [hidden]="!newHideMe[i]" class="sub-table no-bg">  
+                <td align="center"> </td>  
+                <td colspan="15" class="p-0">  
+                    <table class="table table-bordered table-striped table-hover"> 
+                        <thead >  
+                            <tr>  
+                                <th>Name</th>  
+                                <th>Transaction Date</th> 
+                                <th>Amount</th>  
+                                <th>Paid With Credit</th>  
+                                <th>Payment To Credit Account</th>  
+                                <th>Interest Payment To Credit Account</th>  
+                            </tr>  
+                        </thead>  
+                        <tbody> 
+                            <tr>
+                            <tr *ngFor="let expItem of balanceSheetItems[i].expenseItems">  
+                                <td>{{expItem.name}}</td>
+                                <td>{{expItem.transactionDate | date: 'MM/dd/yyyy' }}</td>
+                                <td>{{expItem.amount}}</td>
+                                <td>{{expItem.paidWithCredit}}</td>
+                                <td>{{expItem.paymentToCreditAccount}}</td>
+                                <td>{{expItem.interestPaymentToCreditAccount}}</td>        
+                            </tr>  
+                        </tbody>  
+                    </table>  
+                </td>  
+            </tr>  
+        </tbody>  
+    </table>  
+</div> 

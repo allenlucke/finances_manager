@@ -75,6 +75,25 @@ public class PeriodController {
         return result;
     }
 
+    @GetMapping("/getCurrentPeriod")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public ResponseEntity getCurrentPeriod(@RequestHeader("Authorization") String jwtString){
+
+        final String methodName = "getCurrentPeriod() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
+        int userIdFromToken = authorizationFilter.getUserIdFromToken(jwtString);
+
+        List<PeriodModel> result;
+        result = dao.getCurrentPeriod(userIdFromToken);
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return new ResponseEntity(result, HttpStatus.OK);
+    }
+
     //Admin Only
     @GetMapping("/Admin/getPeriodById")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -98,7 +117,7 @@ public class PeriodController {
         }
     }
 
-    @GetMapping("/getPeriodById")
+    @GetMapping()
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity getPeriodById(@RequestHeader("Authorization") String jwtString, @QueryParam("id") int periodId){
 

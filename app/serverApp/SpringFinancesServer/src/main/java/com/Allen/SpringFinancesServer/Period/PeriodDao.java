@@ -77,6 +77,25 @@ public class PeriodDao {
         return result;
     }
 
+    //User only may access current period assigned to user
+    public List<PeriodModel> getCurrentPeriod(int usersId){
+
+        final String methodName = "getCurrentPeriod() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"period\"\n" +
+                "WHERE \"period\".\"startDate\" <= now()\n" +
+                "AND \"period\".\"endDate\" >= now()\n" +
+                "AND \"period\".\"users_id\" = ?;";
+        PeriodModel period = jdbcTemplate.queryForObject( sql, new Object[]{usersId}, new PeriodRowMapper());
+
+        List<PeriodModel> result = new ArrayList<PeriodModel>();
+        result.add(period);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
     //Admin only, may access any periods
     public List<PeriodModel> adminGetPeriodById(int id){
 
@@ -96,7 +115,7 @@ public class PeriodDao {
     //User may only access periods assigned to the user
     public List<PeriodModel> getPeriodById(int periodId, int usersId){
 
-        final String methodName = "adminGetPeriodById() ";
+        final String methodName = "getPeriodById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
         String sql = "SELECT * FROM \"period\" WHERE \"id\" = ? AND \"users_id\" = ?;";

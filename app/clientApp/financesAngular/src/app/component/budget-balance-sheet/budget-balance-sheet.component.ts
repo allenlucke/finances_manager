@@ -1,37 +1,83 @@
-import { Component, OnInit, ViewChild, ViewChildren, QueryList, ChangeDetectorRef } from '@angular/core';
-import { animate, state, style, transition, trigger } from '@angular/animations';
-import { MatSort } from '@angular/material/sort';
-import { MatTableDataSource, MatTable } from '@angular/material/table';
+import { Component, OnInit } from '@angular/core';
 import { first } from 'rxjs/operators';
 
 import { BudgetBalanceSheet } from 'src/app/_models/budget-balance-sheet';
 import { BudgetBalanceSheetService } from 'src/app/service/budget-balance-sheet.service';
-import { AuthenticationService } from 'src/app/service/authentication.service';
+import { ExpenseItem } from 'src/app/_models/expense-item';
+import { Period } from 'src/app/_models/period';
 
 @Component({
   selector: 'app-budget-balance-sheet',
   templateUrl: './budget-balance-sheet.component.html',
   styleUrls: ['./budget-balance-sheet.component.css'],
 })
-export class BudgetBalanceSheetComponent {
+export class BudgetBalanceSheetComponent implements OnInit{
   loading = false;
-  expandedTable = false;
   balanceSheetItems!: BudgetBalanceSheet[];
-
-
-  expandTable(){
-    this.expandedTable = true;
-  }
+  expenseItems! : ExpenseItem[];
+  newHideMe : boolean[] = [];
+  Index: any;
+  balanceSheetItemsLength = 0;
+  currentPeriodArray! : Period[];
+  currentPeriodId!: number;
+  availablePeriodsArray! : Period[];
 
   constructor(private balanceService: BudgetBalanceSheetService) { }
 
   ngOnInit(){
     this.loading = true;
 
-    this.balanceService.getBudgetBalanceSheetByPeriod().pipe(first()).subscribe(balanceSheetItems => {
-      this.loading = false;
-      this.balanceSheetItems = balanceSheetItems;
+    this.balanceService.getCurrentPeriod().pipe(first()).subscribe(currentPeriodArray => {
+      this.currentPeriodArray = currentPeriodArray
+      this.currentPeriodId = currentPeriodArray[0].id;
+      console.log('Period id: ' + this.currentPeriodId);
+
+      this.balanceService.getBudgetBalanceSheetByPeriod(this.currentPeriodId).pipe(first()).subscribe(balanceSheetItems => {
+        this.loading = false;
+        this.balanceSheetItems = balanceSheetItems;
+  
+        this.populateNewHideMe(this.balanceSheetItemsLength);
+      })
     })
+
+    this.balanceService.getAllPeriods().pipe(first()).subscribe(availablePeriodsArray => {
+      this.availablePeriodsArray = availablePeriodsArray;
+    })
+
   }
 
+  public getExpenseItems(i: number ){
+    console.log('In getExpenseItems()')
+    this.newHideMe[i] = !this.newHideMe[i];
+    this.Index = i;
+    this.expenseItems = this.balanceSheetItems[i].expenseItems;
+  }
+
+  public populateNewHideMe(balanceSheetItemsLength: number){
+    for (var i = 0; i < this.balanceSheetItems.length; i++) {
+      console.log(this.balanceSheetItems[i]);
+      if(this.newHideMe[i] != false){
+        this.newHideMe.push(false);
+        console.log(this.newHideMe[i]);
+      }
+    }
+  }
+
+  public getSelectedPeriodBalanceSheet(event: any){
+    
+    this.currentPeriodId = event.target.value;
+
+    this.balanceService.getPeriodById(this.currentPeriodId).pipe(first()).subscribe(currentPeriodArray => {
+      this.currentPeriodArray = currentPeriodArray
+      // this.currentPeriodId = currentPeriodArray[0].id;
+      console.log('Period id: ' + this.currentPeriodId);
+    })
+
+    this.balanceService.getBudgetBalanceSheetByPeriod(this.currentPeriodId).pipe(first()).subscribe(balanceSheetItems => {
+      this.loading = false;
+      this.balanceSheetItems = balanceSheetItems;
+
+      this.populateNewHideMe(this.balanceSheetItemsLength);
+    })
+  }
 }
