@@ -13,13 +13,13 @@ import { Period } from 'src/app/_models/period';
 })
 export class BudgetBalanceSheetComponent implements OnInit{
   loading = false;
-  balanceSheetItems!: BudgetBalanceSheet[];
+  balanceSheetItems! : BudgetBalanceSheet[];
   expenseItems! : ExpenseItem[];
   newHideMe : boolean[] = [];
   Index: any;
   balanceSheetItemsLength = 0;
   currentPeriodArray! : Period[];
-  currentPeriodId!: number;
+  currentPeriodId! : number;
   availablePeriodsArray! : Period[];
 
   constructor(private balanceService: BudgetBalanceSheetService) { }
@@ -32,6 +32,7 @@ export class BudgetBalanceSheetComponent implements OnInit{
       this.currentPeriodId = currentPeriodArray[0].id;
       console.log('Period id: ' + this.currentPeriodId);
 
+      //Load current period by default
       this.balanceService.getBudgetBalanceSheetByPeriod(this.currentPeriodId).pipe(first()).subscribe(balanceSheetItems => {
         this.loading = false;
         this.balanceSheetItems = balanceSheetItems;

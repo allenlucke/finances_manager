@@ -10,13 +10,13 @@
 </nav>
 <nav class="navbar navbar-expand navbar-dark bg-dark" *ngIf="!currentUser">
   <div class="navbar-nav">
+      <a class="nav-item nav-link" routerLink="/login">Login</a>
       <a class="nav-item nav-link" routerLink="/register">Register</a>
   </div>
 </nav>
 <!-- main app container -->
 <div class="container">
   <router-outlet></router-outlet>
-  <!-- <app-hello></app-hello> -->
 </div>
 
 

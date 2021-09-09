@@ -1,10 +1,51 @@
 <div class="card mt-4">
-    <h4 class="card-header">Account Component</h4>
+    <h3 class="card-header" align="center" >Account Balance Sheet</h3>
     <div class="card-body">
-        <h6>Account Balance Sheet</h6>
+        <h6>Viewing Account: {{displayedAccount[0].name}}</h6>
+        <h6>Viewing Period: {{displayedPeriod[0].name}}: ({{displayedPeriod[0].startDate | date: 'MM/dd/yyyy'}} - {{displayedPeriod[0].endDate | date: 'MM/dd/yyyy'}})</h6>
+        <!-- <h4 align="center">Currently Viewing Period: {{allPeriods[selectedPeriodId].name}} ({{allPeriods[0].startDate | date: 'MM/dd/yyyy'}} - {{allPeriods[0].endDate | date: 'MM/dd/yyyy'}})</h4> -->
+        <label class="form_spacing_left">Account:</label>
+        <select [(ngModel)] = "selectedAccountId" >
+          <option></option>
+          <option *ngFor="let account of allAccounts" value = "{{account.id}}">{{account.name}}</option>
+        </select>
+        <label class="form_spacing" >Period:</label>
+        <select [(ngModel)] = "selectedPeriodId" >
+          <option></option>
+          <option *ngFor="let period of allPeriods" value = "{{period.id}}">{{period.name}}</option>
+        </select>
+        <!-- <div> -->
+            <button class="form_spacing" (click)="getAcctBalanceSheet()">Get Account Balance Sheet</button>
+        <!-- </div> -->
+
         <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
-        <ul *ngIf="users">
-            <li *ngFor="let user of users">{{user.firstName}} {{user.lastName}}</li>
-        </ul>
+        <table class="table table-bordered table-striped table-hover">
+            <thead>  
+                <tr>  
+                    <th>Transaction Date</th>
+                    <th>Account Name</th>
+                    <th>Expense Item Name</th>
+                    <th>Income Item Name</th>
+                    <th>Amount</th>
+                    <th>Pre Balance</th>
+                    <th>New Balance</th>
+                </tr>  
+            </thead>  
+            <tbody *ngFor="let item of accountBalanceSheetItems; let i = index">  
+                <tr>  
+                    <td>{{item.transactionDate | date: 'MM/dd/yyyy' }}</td>
+                    <td>{{item.accountName}}</td>
+                    <td>{{item.expenseItemName}}</td>
+                    <td>{{item.incomeItemName}}</td>
+                    <td>{{item.amount | currency: '$'}}</td>
+                    <td>{{item.preBalance | currency: '$'}}</td>
+                    <td>{{item.postBalance | currency: '$'}}</td> 
+
+                </tr>   
+            </tbody>  
+        </table>  
+
     </div>
 </div>
+
+

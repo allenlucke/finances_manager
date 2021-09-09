@@ -117,7 +117,7 @@ public class PeriodController {
         }
     }
 
-    @GetMapping()
+    @GetMapping("/getPeriodById")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity getPeriodById(@RequestHeader("Authorization") String jwtString, @QueryParam("id") int periodId){
 

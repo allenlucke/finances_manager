@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 
 // HttpClient module for RESTful API
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
@@ -34,6 +35,7 @@ import { AccountBalanceSheetComponent } from './component/account-balance-sheet/
   ],
   imports: [
     BrowserModule,
+    FormsModule,
     HttpClientModule,
     ReactiveFormsModule,
     AppRoutingModule
