@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { first } from 'rxjs/operators';
 
 import { BudgetBalanceSheet } from 'src/app/_models/budget-balance-sheet';
@@ -12,6 +13,7 @@ import { Period } from 'src/app/_models/period';
   styleUrls: ['./budget-balance-sheet.component.css'],
 })
 export class BudgetBalanceSheetComponent implements OnInit{
+  form!: FormGroup;
   loading = false;
   balanceSheetItems! : BudgetBalanceSheet[];
   expenseItems! : ExpenseItem[];
@@ -22,7 +24,10 @@ export class BudgetBalanceSheetComponent implements OnInit{
   currentPeriodId! : number;
   availablePeriodsArray! : Period[];
 
-  constructor(private balanceService: BudgetBalanceSheetService) { }
+  constructor(
+    private balanceService: BudgetBalanceSheetService,
+    private formBuilder: FormBuilder
+    ) { }
 
   ngOnInit(){
     this.loading = true;

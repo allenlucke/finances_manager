@@ -31,7 +31,7 @@ public class ExpenseCategoryDao {
         final String methodName = "getAllExpCats() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
-        String sql = "SELECT * FROM \"expenseCategory\" WHERE \"users_id\" =1;";
+        String sql = "SELECT * FROM \"expenseCategory\" WHERE \"users_id\" = ?;";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId} );
 

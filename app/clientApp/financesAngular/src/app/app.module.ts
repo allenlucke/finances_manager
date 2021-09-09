@@ -19,6 +19,8 @@ import { AppRoutingModule } from './app-routing.module';
 import { RegisterComponent } from './component/register/register.component';
 import { BudgetBalanceSheetComponent } from './component/budget-balance-sheet/budget-balance-sheet.component';
 import { AccountBalanceSheetComponent } from './component/account-balance-sheet/account-balance-sheet.component';
+import { ExpensesComponent } from './component/expenses/expenses.component';
+import { IncomeComponent } from './component/income/income.component';
 
 
 @NgModule({
@@ -32,6 +34,8 @@ import { AccountBalanceSheetComponent } from './component/account-balance-sheet/
     RegisterComponent,
     BudgetBalanceSheetComponent,
     AccountBalanceSheetComponent,
+    ExpensesComponent,
+    IncomeComponent,
   ],
   imports: [
     BrowserModule,

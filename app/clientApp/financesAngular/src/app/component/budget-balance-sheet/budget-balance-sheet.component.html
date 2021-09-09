@@ -4,11 +4,12 @@
     <h4 align="center">Currently Viewing Period: {{currentPeriodArray[0].name}} ({{currentPeriodArray[0].startDate | date: 'MM/dd/yyyy'}} - {{currentPeriodArray[0].endDate | date: 'MM/dd/yyyy'}})</h4>
 
     <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
-    <div align="center">
-        <label >Change Period: </label>
-        <select (change)="getSelectedPeriodBalanceSheet($event)">
-          <option></option>
-          <option value = {{period.id}} *ngFor="let period of availablePeriodsArray">{{period.name}}: {{ period.startDate | date: 'MM/dd/yyyy' }} - {{ period.endDate | date: 'MM/dd/yyyy' }}</option>
+    <div class="select_spacing">
+        <!-- <label >Change Period: </label> -->
+        <select class="custom-select" (change)="getSelectedPeriodBalanceSheet($event)">
+          <option value="" >Select A Different Period</option>
+          <option value = {{period.id}} *ngFor="let period of availablePeriodsArray">
+              {{period.name}}: {{ period.startDate | date: 'MM/dd/yyyy' }} - {{ period.endDate | date: 'MM/dd/yyyy' }}</option>
         </select>
       </div>
     <table class="table table-bordered table-striped table-hover">

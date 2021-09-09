@@ -1,9 +1,9 @@
 <div class="card mt-4">
-    <h3 class="card-header" align="center" >Account Balance Sheet</h3>
+    <h3 class="card-header" align="center" >Expenses</h3>
     <div class="card-body">
-        <h6>Viewing Account: {{displayedAccount[0].name}}</h6>
-        <h6>Viewing Period: {{displayedPeriod[0].name}}: ({{displayedPeriod[0].startDate | date: 'MM/dd/yyyy'}} - {{displayedPeriod[0].endDate | date: 'MM/dd/yyyy'}})</h6>
-        <div class="group gap select_spacing">
+        <!-- <h6>Viewing Account: {{displayedAccount[0].name}}</h6> -->
+        <!-- <h6>Viewing Period: {{displayedPeriod[0].name}}: ({{displayedPeriod[0].startDate | date: 'MM/dd/yyyy'}} - {{displayedPeriod[0].endDate | date: 'MM/dd/yyyy'}})</h6> -->
+        <!-- <div class="group gap select_spacing">
                 <select class="custom-select select_spacing" [(ngModel)] = "selectedAccountId" >
                     <option value="" >Select A Different Account</option>
                     <option *ngFor="let account of allAccounts" value = "{{account.id}}">{{account.name}}</option>
@@ -13,35 +13,28 @@
                     <option *ngFor="let period of allPeriods" value = "{{period.id}}">{{period.name}}</option>
                 </select>
                 <button class="select_spacing" class="btn btn-primary" (click)="getAcctBalanceSheet()">Get Account Balance Sheet</button>
-        </div>
+        </div> -->
         <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
         <table class="table table-bordered table-striped table-hover">
             <thead>  
                 <tr>  
-                    <th>Transaction Date</th>
-                    <th>Account Name</th>
-                    <th>Expense Item Name</th>
-                    <th>Income Item Name</th>
+                    <th>ID</th>
+                    <th>Category</th>
+                    <th>User's ID</th>
+                    <!-- <th>Income Item Name</th>
                     <th>Amount</th>
                     <th>Pre Balance</th>
-                    <th>New Balance</th>
+                    <th>New Balance</th> -->
                 </tr>  
             </thead>  
-            <tbody *ngFor="let item of accountBalanceSheetItems; let i = index">  
+            <tbody *ngFor="let category of allExpCategories; let i = index">  
                 <tr>  
-                    <td>{{item.transactionDate | date: 'MM/dd/yyyy' }}</td>
-                    <td>{{item.accountName}}</td>
-                    <td>{{item.expenseItemName}}</td>
-                    <td>{{item.incomeItemName}}</td>
-                    <td>{{item.amount | currency: '$'}}</td>
-                    <td>{{item.preBalance | currency: '$'}}</td>
-                    <td>{{item.postBalance | currency: '$'}}</td> 
-
+                    <td>{{category.id}}</td>
+                    <td>{{category.name}}</td>
+                    <td>{{category.usersId}}</td> 
                 </tr>   
             </tbody>  
         </table>  
 
     </div>
 </div>
-
-
