@@ -152,7 +152,17 @@ public class AccountBalanceSheetLogic {
             BigDecimal beginningBalance = begginingBalanceList.get(0).getBeginningBalance();
 
             LOGGER.debug(CLASS_NAME + methodName + ": Beginning Balance : " + beginningBalance);
-            return beginningBalance;
+
+            //Check to see if beginning balance is null
+            if(beginningBalance != null){
+                LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+                return beginningBalance;
+            }
+            //If if beginning balance is null, return beginning balance of 0.00
+            else {
+                LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+                return NO_BEGINNING_BALANCE;
+            }
         }
         catch (EmptyResultDataAccessException e) {
             LOGGER.debug(CLASS_NAME + methodName + ": Beginning Balance : " + beginningBalance);

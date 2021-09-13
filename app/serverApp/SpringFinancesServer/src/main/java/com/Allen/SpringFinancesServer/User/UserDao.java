@@ -82,6 +82,25 @@ public class UserDao {
         return result;
     }
 
+    //Used for application Client for local storage user data
+    public List<ClientLocalStorageUser> getUserByToken(int id){
+
+        final String methodName = "getUserByToken() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT \"id\", \"firstName\", \"lastName\", \"username\",\n" +
+                "\"email\", \"role\" FROM \"users\" WHERE \"id\" = ?;";
+
+        ClientLocalStorageUser usr = jdbcTemplate.queryForObject( sql, new Object[]{id}, new ClientLocalStorageUserRowMapper());
+        List<ClientLocalStorageUser> result = new ArrayList<ClientLocalStorageUser>();
+
+        LOGGER.info(CLASS_NAME + methodName + "Adding result set to list");
+        result.add(usr);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
     public int addUserReturnId(final UserModel usr) {
 
         final String methodName = "addUserReturnId() ";

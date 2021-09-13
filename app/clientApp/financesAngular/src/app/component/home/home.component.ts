@@ -11,7 +11,9 @@ export class HomeComponent {
     loading = false;
     users!: User[];
 
-    constructor(private userService: UserService) { }
+    constructor(private userService: UserService,
+                private authService: AuthenticationService
+        ) { }
 
     ngOnInit() {
         this.loading = true;
@@ -19,5 +21,8 @@ export class HomeComponent {
             this.loading = false;
             this.users = users;
         });
+
+        console.log(localStorage.getItem('currentUserId'));
+
     }
 }
