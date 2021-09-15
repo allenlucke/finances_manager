@@ -16,6 +16,7 @@ export class ExpensesComponent implements OnInit {
   allExpCategories! : ExpenseCategory[]; 
   error = '';
   currentUserId! : number;
+  returnedId! : number;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -49,21 +50,25 @@ export class ExpensesComponent implements OnInit {
   onSubmit() {
     this.submitted = true;
 
-
-    console.log("In on submit()")
     // stop here if form is invalid
     if (this.newCategoryForm!.invalid) {
         return;
     }
 
-    this.loading = true;
+    // this.loading = true;
     this.postExpenseCategory(this.f.name.value)
+
+    this.getAllExpenseCategories();
+    this.newCategoryForm.reset();
+    this.f.name.untouched;
+
+    this.submitted = false;
   }
 
   postExpenseCategory(name: string){
-    this.expensesService.addExpCatRetId(name, this.currentUserId)
-      // .pipe(first()).subscribe()
-      this.getAllExpenseCategories;
+    this.expensesService.addExpCatRetId(name, this.currentUserId).pipe(first()).subscribe(returnedId => {
+          this.returnedId = returnedId;
+      })
+      this.getAllExpenseCategories();
   }
-
 }

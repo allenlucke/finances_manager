@@ -1,19 +1,6 @@
 <div class="card mt-4">
     <h3 class="card-header" align="center" >Expenses</h3>
     <div class="card-body">
-        <!-- <h6>Viewing Account: {{displayedAccount[0].name}}</h6> -->
-        <!-- <h6>Viewing Period: {{displayedPeriod[0].name}}: ({{displayedPeriod[0].startDate | date: 'MM/dd/yyyy'}} - {{displayedPeriod[0].endDate | date: 'MM/dd/yyyy'}})</h6> -->
-        <!-- <div class="group gap select_spacing">
-                <select class="custom-select select_spacing" [(ngModel)] = "selectedAccountId" >
-                    <option value="" >Select A Different Account</option>
-                    <option *ngFor="let account of allAccounts" value = "{{account.id}}">{{account.name}}</option>
-                </select>
-                <select class="custom-select select_spacing" [(ngModel)] = "selectedPeriodId" >
-                    <option value="" >Select A Different Period</option>
-                    <option *ngFor="let period of allPeriods" value = "{{period.id}}">{{period.name}}</option>
-                </select>
-                <button class="select_spacing" class="btn btn-primary" (click)="getAcctBalanceSheet()">Get Account Balance Sheet</button>
-        </div> -->
         <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
         <table class="table table-bordered table-striped table-hover">
             <thead>  
@@ -21,10 +8,6 @@
                     <th>ID</th>
                     <th>Category</th>
                     <th>User's ID</th>
-                    <!-- <th>Income Item Name</th>
-                    <th>Amount</th>
-                    <th>Pre Balance</th>
-                    <th>New Balance</th> -->
                 </tr>  
             </thead>  
             <tbody *ngFor="let category of allExpCategories; let i = index">  
@@ -35,7 +18,6 @@
                 </tr>   
             </tbody>  
         </table>  
-
     </div>
     <div class="card">
         <h4 class="card-header">Add an expense category</h4>
@@ -48,16 +30,9 @@
                         <div *ngIf="f.name.errors.required">name is required</div>
                     </div>
                 </div>
-                <!-- <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" formControlName="password" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.password.errors }" />
-                    <div *ngIf="submitted && f.password.errors" class="invalid-feedback">
-                        <div *ngIf="f.password.errors.required">Password is required</div>
-                    </div>
-                </div> -->
                 <button [disabled]="loading" class="btn btn-primary">
                     <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
-                    Login
+                    Submit
                 </button>
                 <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
             </form>
