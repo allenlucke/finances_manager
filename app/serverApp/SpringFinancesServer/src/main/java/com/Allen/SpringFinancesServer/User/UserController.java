@@ -81,6 +81,29 @@ public class UserController {
         }
     }
 
+    @GetMapping("/getUserByName")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public ResponseEntity getUserByName(
+            @RequestHeader("Authorization") String jwtString, @QueryParam("id") int id) throws ServletException, IOException {
+
+        final String methodName = "getUserById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Check user auth
+        boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, id);
+        if(!confirmAuthorization) {
+            LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
+            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+        }
+        //If authorized make call to dao
+        else {
+            List<UserModel> result;
+            result = dao.getUserById(id);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+            return new ResponseEntity(result, HttpStatus.OK);
+        }
+    }
+
     //Admin only service
     @GetMapping("/Admin/getAllUsers")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -104,6 +127,28 @@ public class UserController {
         }
     }
 
+    //Used for application Client for local storage user data
+    @GetMapping("/getUserByToken")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public ResponseEntity getUserByToken(
+            @RequestHeader("Authorization") String jwtString) throws ServletException, IOException {
+
+        final String methodName = "getUserByToken() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
+        int userIdFromToken = authorizationFilter.getUserIdFromToken(jwtString);
+            List< ClientLocalStorageUser> result;
+            result = dao.getUserByToken(userIdFromToken);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+            return new ResponseEntity(result, HttpStatus.OK);
+        }
+    }
+
+
     //
     //BELOW METHODS TEMPORARILY COMMENTED OUT, need to add encryption to password, etc
     //
@@ -121,4 +166,4 @@ public class UserController {
 //        UserModel user = dao.addUserReturnUser(usr);
 //        return user;
 //    }
-}
+

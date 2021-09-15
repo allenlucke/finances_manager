@@ -15,5 +15,8 @@ export class ExpensesService {
     return this.http.get<ExpenseCategory[]>(`${environment.apiUrl}/getAllExpCat`);
   }
 
-  
+  addExpCatRetId(name: string, usersId: number ) {
+    return this.http.post<any>(`${environment.apiUrl}/addExpCatRetId`, { name, usersId })
+  }
+
 }

@@ -1,8 +1,10 @@
 <div class="card mt-4">
     <h3 class="card-header" align="center" >Account Balance Sheet</h3>
     <div class="card-body">
-        <h6>Viewing Account: {{displayedAccount[0].name}}</h6>
-        <h6>Viewing Period: {{displayedPeriod[0].name}}: ({{displayedPeriod[0].startDate | date: 'MM/dd/yyyy'}} - {{displayedPeriod[0].endDate | date: 'MM/dd/yyyy'}})</h6>
+        <h4 align="center">Viewing Account: {{displayedAccount[0].name}}</h4>
+        <h4 align="center">Viewing Period: {{displayedPeriod[0].name}}: ({{displayedPeriod[0].startDate | date: 'MM/dd/yyyy'}} - {{displayedPeriod[0].endDate | date: 'MM/dd/yyyy'}})</h4>
+        
+        <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
         <div class="group gap select_spacing">
                 <select class="custom-select select_spacing" [(ngModel)] = "selectedAccountId" >
                     <option value="" >Select A Different Account</option>
@@ -12,9 +14,9 @@
                     <option value="" >Select A Different Period</option>
                     <option *ngFor="let period of allPeriods" value = "{{period.id}}">{{period.name}}</option>
                 </select>
-                <button class="select_spacing" class="btn btn-primary" (click)="getAcctBalanceSheet()">Get Account Balance Sheet</button>
+                <button class="custom-select select_spacing" class="btn btn-primary" (click)="getAcctBalanceSheet()">Get Account Balance Sheet</button>
         </div>
-        <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
+        <!-- <div *ngIf="loading" class="spinner-border spinner-border-sm"></div> -->
         <table class="table table-bordered table-striped table-hover">
             <thead>  
                 <tr>  
