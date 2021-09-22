@@ -201,4 +201,25 @@ public class ExpenseItemDao {
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
+
+    //User may only delete expense items assigned to the user
+    public boolean deleteExpItemById(int itemId, int usersId) {
+        final String methodName = "deleteExpItemById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "DELETE FROM \"expenseItem\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+        int status = jdbcTemplate.update(sql, itemId, usersId);
+        boolean wasDeleted;
+
+        if(status != 0) {
+            LOGGER.info(CLASS_NAME + methodName + ": expenseItem with id of " + itemId + " has been deleted successfully.");
+            wasDeleted = true;
+        }else{
+            LOGGER.info(CLASS_NAME + methodName + ": expenseItem with id of " + itemId + " cannot be found, no expenseItem will be deleted.");
+            wasDeleted = false;
+        }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return wasDeleted;
+    }
+
 }

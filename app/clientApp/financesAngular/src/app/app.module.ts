@@ -3,6 +3,10 @@ import { BrowserModule } from '@angular/platform-browser';
 import { ReactiveFormsModule } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
 // HttpClient module for RESTful API
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 
@@ -21,6 +25,7 @@ import { BudgetBalanceSheetComponent } from './component/budget-balance-sheet/bu
 import { AccountBalanceSheetComponent } from './component/account-balance-sheet/account-balance-sheet.component';
 import { ExpensesComponent } from './component/expenses/expenses.component';
 import { IncomeComponent } from './component/income/income.component';
+import { ModalComponent } from './component/modal/modal.component';
 
 
 @NgModule({
@@ -36,18 +41,23 @@ import { IncomeComponent } from './component/income/income.component';
     AccountBalanceSheetComponent,
     ExpensesComponent,
     IncomeComponent,
+    ModalComponent,
   ],
   imports: [
     BrowserModule,
     FormsModule,
     HttpClientModule,
     ReactiveFormsModule,
+    BrowserAnimationsModule,
+    MatButtonModule,
+    MatDialogModule,
     AppRoutingModule
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true }
   ],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
+  entryComponents: [ModalComponent]
 })
 export class AppModule { }
