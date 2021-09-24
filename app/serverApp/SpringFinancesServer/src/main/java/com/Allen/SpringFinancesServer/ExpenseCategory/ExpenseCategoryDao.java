@@ -140,4 +140,24 @@ public class ExpenseCategoryDao {
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
+
+    //User may only delete expense categories assigned to the user
+    public boolean deleteExpCatById(int catId, int usersId) {
+        final String methodName = "deleteExpCatById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "DELETE FROM \"expenseCategory\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+        int status = jdbcTemplate.update(sql, catId, usersId);
+        boolean wasDeleted;
+
+        if(status != 0) {
+            LOGGER.info(CLASS_NAME + methodName + ": expenseCategory with id of " + catId + " has been deleted successfully.");
+            wasDeleted = true;
+        }else{
+            LOGGER.info(CLASS_NAME + methodName + ": expenseCategory with id of " + catId + " cannot be found, no expenseCategory will be deleted.");
+            wasDeleted = false;
+        }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return wasDeleted;
+    }
 }
