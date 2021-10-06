@@ -1,7 +1,5 @@
 package com.Allen.SpringFinancesServer.IncomeCategory;
 
-import com.Allen.SpringFinancesServer.ExpenseCategory.ExpenseCategoryModel;
-import com.Allen.SpringFinancesServer.ExpenseCategory.ExpenseCategoryRowMapper;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -140,5 +138,25 @@ public class IncomeCategoryDao {
 
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
+    }
+
+    //User may only delete income categories assigned to the user
+    public boolean deleteIncomeCatById(int catId, int usersId) {
+        final String methodName = "deleteIncomeCatById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "DELETE FROM \"incomeCategory\" WHERE \"id\" = ? AND \"users_id\" = ?;";
+        int status = jdbcTemplate.update(sql, catId, usersId);
+        boolean wasDeleted;
+
+        if(status != 0) {
+            LOGGER.info(CLASS_NAME + methodName + ": incomeCategory with id of " + catId + " has been deleted successfully.");
+            wasDeleted = true;
+        }else{
+            LOGGER.info(CLASS_NAME + methodName + ": incomeCategory with id of " + catId + " cannot be found, no incomeCategory will be deleted.");
+            wasDeleted = false;
+        }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return wasDeleted;
     }
 }

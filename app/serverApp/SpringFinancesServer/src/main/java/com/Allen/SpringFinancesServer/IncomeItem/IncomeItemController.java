@@ -146,4 +146,27 @@ public class IncomeItemController {
         }
     }
 
+    @DeleteMapping("deleteIncomeItemById")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public ResponseEntity deleteIncomeItemById(
+            @RequestHeader("Authorization") String jwtString, @QueryParam("id") int itemId) {
+
+        final String methodName = "deleteIncomeItemById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a delete request is made for data associated with a user other than
+        //the user making the call, the dao will not delete the item
+        int userId = authorizationFilter.getUserIdFromToken(jwtString);
+
+        boolean wasDeleted = dao.deleteIncomeItemById(itemId, userId);
+        if(!wasDeleted) {
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        else {
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
+    }
 }
