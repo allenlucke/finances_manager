@@ -6,6 +6,7 @@ import { ExpensesComponent } from './component/expenses/expenses.component';
 import { HelloComponent } from './component/hello/hello.component';
 import { HomeComponent } from './component/home/home.component';
 import { IncomeComponent } from './component/income/income.component';
+import { PeriodComponent } from './component/period/period.component';
 import { LoginComponent } from './component/login/login.component';
 import { RegisterComponent } from './component/register/register.component';
 import { AuthGuard } from './_helpers/auth.guard';
@@ -20,6 +21,7 @@ const routes: Routes = [
   { path: 'accountBalanceSheet', component: AccountBalanceSheetComponent, canActivate:[AuthGuard]},
   { path: 'income', component: IncomeComponent, canActivate:[AuthGuard]},
   { path: 'expenses', component: ExpensesComponent, canActivate:[AuthGuard]},
+  { path: 'period', component: PeriodComponent, canActivate: [AuthGuard]},
 
   // otherwise redirect to home
   { path: '**', redirectTo: '' }

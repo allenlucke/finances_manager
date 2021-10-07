@@ -1,0 +1,22 @@
+<div class="card mt-4">
+    <h3 class="card-header" align="center" >Periods</h3>
+    <div class="card-body">
+        <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
+        <table class="table table-bordered table-striped table-hover">
+            <thead>  
+                <tr>  
+                    <th>Name</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                </tr>  
+            </thead>  
+            <tbody *ngFor="let period of allPeriods; let i = index">  
+                <tr>  
+                    <td>{{period.name}}</td>
+                    <td>{{period.startDate  | date: 'MM/dd/yyyy' }}</td>
+                    <td>{{period.endDate | date: 'MM/dd/yyyy' }}</td> 
+                </tr>   
+            </tbody>  
+        </table>  
+    </div>
+</div>
