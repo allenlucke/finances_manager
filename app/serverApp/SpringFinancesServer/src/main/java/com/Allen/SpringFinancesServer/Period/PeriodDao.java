@@ -128,6 +128,30 @@ public class PeriodDao {
         return result;
     }
 
+    //User may only access periods assigned to the user
+    public List<PeriodModel> getOverlappingPeriods(PeriodModel period, int usersId) {
+
+        final String methodName = "getOverlappingPeriods() ";
+
+        Timestamp startDate = period.getStartDate();
+        Timestamp endDate = period.getEndDate();
+
+        String sql = "SELECT * FROM period WHERE \"users_id\" = ?\n" +
+                "AND \"period\".\"startDate\" >= ? --startdate\n" +
+                "AND \"period\".\"endDate\" <= ? --endate\n" +
+                "\n" +
+                "OR \"period\".\"startDate\" <= ? --endate\n" +
+                "AND \"period\".\"endDate\" >= ? --startdate\n" +
+                ";";
+        PeriodModel overlappingPeriod = jdbcTemplate.queryForObject( sql, new Object[]{usersId, startDate, endDate, endDate, startDate}, new PeriodRowMapper());
+
+        List<PeriodModel> result = new ArrayList<PeriodModel>();
+        result.add(overlappingPeriod);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
     //Only Admin or the User to whom the period will be assigned
     //may use this post call
     public List<ReturnIdModel> addPeriodReturnId(final PeriodModel period) {

@@ -31,6 +31,9 @@ public class PeriodController {
     PeriodDao dao;
 
     @Autowired
+    PeriodLogic mgr;
+
+    @Autowired
     AuthorizationFilter authorizationFilter;
 
     //Admin Only
@@ -153,9 +156,16 @@ public class PeriodController {
         }
         //If authorized make call to dao
         else {
-            List<ReturnIdModel> returnedId = dao.addPeriodReturnId(period);
-            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-            return new ResponseEntity(returnedId, HttpStatus.OK);
+
+            //Check to see if Period to be added will overlap with an existing period
+            boolean isOverlapping = mgr.checkForExistingPeriod(period, requestUserId);
+            if(!isOverlapping) {
+                List<ReturnIdModel> returnedId = dao.addPeriodReturnId(period);
+                LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+                return new ResponseEntity(returnedId, HttpStatus.OK);
+            }
+            LOGGER.warn(CLASS_NAME + methodName + "This request overlaps/conflicts with a previously existing period.");
+            return new ResponseEntity("Unauthorized", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
         }
     }
 }
