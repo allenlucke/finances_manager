@@ -30,7 +30,7 @@ export class ExpensesComponent implements OnInit {
 
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
 
-    console.log(localStorage.getItem('currentUserId'));
+    // console.log(localStorage.getItem('currentUserId'));
 
     this.newCategoryForm = this.formBuilder.group({
       name: ['', Validators.required]
@@ -55,7 +55,6 @@ export class ExpensesComponent implements OnInit {
         return;
     }
 
-    // this.loading = true;
     this.postExpenseCategory(this.f.name.value)
 
     this.getAllExpenseCategories();

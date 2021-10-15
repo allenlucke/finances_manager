@@ -15,7 +15,7 @@ export class PeriodService {
     return this.http.get<Period[]>(`${environment.apiUrl}/getAllPeriods`);
   }
 
-  addPeriodRetId(period: Period) {
-    return this.http.post<Period>(`${environment.apiUrl}/addPeriodRetId`, { period })
+  addPeriodRetId(name: string, startDate: Date, endDate: Date, usersId: number) {
+    return this.http.post<any>(`${environment.apiUrl}/addPeriodRetId`, { name, startDate, endDate, usersId })
   }
 }

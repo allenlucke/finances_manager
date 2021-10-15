@@ -2,6 +2,7 @@ package com.Allen.SpringFinancesServer.Period;
 
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -129,9 +130,10 @@ public class PeriodDao {
     }
 
     //User may only access periods assigned to the user
-    public List<PeriodModel> getOverlappingPeriods(PeriodModel period, int usersId) {
+    public List<PeriodModel> getOverlappingPeriods(PeriodModel period, int usersId) throws EmptyResultDataAccessException {
 
         final String methodName = "getOverlappingPeriods() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
         Timestamp startDate = period.getStartDate();
         Timestamp endDate = period.getEndDate();
@@ -143,11 +145,22 @@ public class PeriodDao {
                 "OR \"period\".\"startDate\" <= ? --endate\n" +
                 "AND \"period\".\"endDate\" >= ? --startdate\n" +
                 ";";
-        PeriodModel overlappingPeriod = jdbcTemplate.queryForObject( sql, new Object[]{usersId, startDate, endDate, endDate, startDate}, new PeriodRowMapper());
 
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {usersId, startDate, endDate, endDate, startDate} );
+
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<PeriodModel> result = new ArrayList<PeriodModel>();
-        result.add(overlappingPeriod);
+        for(Map<String, Object> row:rows){
+            PeriodModel overlappingPeriod = new PeriodModel();
+            overlappingPeriod.setId((int)row.get("id"));
+            overlappingPeriod.setName((String)row.get("name"));
+            overlappingPeriod.setStartDate((Timestamp)row.get("startDate"));
+            overlappingPeriod.setEndDate((Timestamp)row.get("endDate"));
+            overlappingPeriod.setUsersId((int)row.get("users_id"));
 
+            result.add(overlappingPeriod);
+        }
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
@@ -158,6 +171,8 @@ public class PeriodDao {
 
         final String methodName = "addPeriodReturnId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        System.out.println("name: " + period.getName());
 
         String sql = "INSERT INTO \"period\"\n" +
                 "\t(\"name\", \"startDate\", \"endDate\", \"users_id\")\n" +
