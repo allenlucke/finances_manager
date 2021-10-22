@@ -1,9 +1,11 @@
 package com.Allen.SpringFinancesServer.AccountBalanceSheet;
 
+import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 
 import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
 
@@ -12,6 +14,8 @@ public class OldestUnclosedPeriodRowMapper implements RowMapper<OldestUnclosedPe
     private static final String CLASS_NAME = "OldestUnclosedPeriodRowMapper --- ";
     private static final String METHOD_ENTERING = "Entering:  ";
     private static final String METHOD_EXITING = "Exiting:  ";
+
+    private TimestampManager timeMgr = new TimestampManager();
 
     @Override
     public OldestUnclosedPeriodModel mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -23,8 +27,10 @@ public class OldestUnclosedPeriodRowMapper implements RowMapper<OldestUnclosedPe
 
         unclosedPer.setPeriodId(rs.getInt("periodId"));
         unclosedPer.setPeriodName(rs.getString("periodName"));
-        unclosedPer.setStartDate(rs.getTimestamp("startDate"));
-        unclosedPer.setEndDate(rs.getTimestamp("endDate"));
+        Timestamp outputStartDate = rs.getTimestamp("startDate");
+        unclosedPer.setStartDate(timeMgr.timestampToStringParser(outputStartDate));
+        Timestamp outputEndDate = rs.getTimestamp("endDate");
+        unclosedPer.setEndDate(timeMgr.timestampToStringParser(outputEndDate));
         unclosedPer.setUsersId(rs.getInt("usersId"));
         unclosedPer.setBudgetId(rs.getInt("budgetId"));
         unclosedPer.setBudgetName(rs.getString("budgetName"));

@@ -6,8 +6,8 @@ public class OldestUnclosedPeriodModel {
 
     private int periodId;
     private String periodName;
-    private Timestamp startDate;
-    private Timestamp endDate;
+    private String startDate;
+    private String endDate;
     private int usersId;
     private int budgetId;
     private String budgetName;
@@ -31,19 +31,19 @@ public class OldestUnclosedPeriodModel {
         this.periodName = periodName;
     }
 
-    public Timestamp getStartDate() {
+    public String getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(Timestamp startDate) {
+    public void setStartDate(String startDate) {
         this.startDate = startDate;
     }
 
-    public Timestamp getEndDate() {
+    public String getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(Timestamp endDate) {
+    public void setEndDate(String endDate) {
         this.endDate = endDate;
     }
 

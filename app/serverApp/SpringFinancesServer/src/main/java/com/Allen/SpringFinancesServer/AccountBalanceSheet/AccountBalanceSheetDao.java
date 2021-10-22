@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.AccountBalanceSheet;
 
+import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,6 +23,8 @@ public class AccountBalanceSheetDao {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    private TimestampManager timeMgr = new TimestampManager();
 
     //Get expense item by period and acct type
     //User may only access expense items assigned to the user
@@ -53,7 +56,8 @@ public class AccountBalanceSheetDao {
         for(Map<String, Object> row:rows){
             AccountBalanceSheetModel expItem = new AccountBalanceSheetModel();
             expItem.setExpenseItemId((int)row.get("id"));
-            expItem.setTransactionDate((Timestamp)row.get("transactionDate"));
+            Timestamp transactionDate = (Timestamp) row.get("transactionDate");
+            expItem.setTransactionDate((String) timeMgr.timestampToStringParser(transactionDate));
             expItem.setAccountName((String)row.get("accountName"));
             expItem.setPeriodId((int)row.get("periodId"));
             expItem.setExpenseItemName((String)row.get("expenseItemName"));
@@ -70,10 +74,13 @@ public class AccountBalanceSheetDao {
     //Get expense item by date range and acct type
     //User may only access expense items assigned to the user
     public List<AccountBalanceSheetModel> getExpItemByDatesNAcctType(
-            int acctId, Timestamp startDate, Timestamp dayAfterEndDate, final int usersId){
+            int acctId, String startDate, String dayAfterEndDate, final int usersId){
 
         final String methodName = "getExpItemByDatesNAcctType() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        Timestamp startDateAsTimestamp = timeMgr.stringToTimestampParser(startDate);
+        Timestamp dayAfterEndDateAsTimestamp = timeMgr.stringToTimestampParser(dayAfterEndDate);
 
         String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
@@ -92,14 +99,15 @@ public class AccountBalanceSheetDao {
                 "AND \"expenseItem\".\"users_id\" = ?\n" +
                 "ORDER BY \"expenseItem\".\"transactionDate\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
-                new Object[] {acctId, startDate, dayAfterEndDate, usersId} );
+                new Object[] {acctId, startDateAsTimestamp, dayAfterEndDateAsTimestamp, usersId} );
 
         LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<AccountBalanceSheetModel> result = new ArrayList<AccountBalanceSheetModel>();
         for(Map<String, Object> row:rows){
             AccountBalanceSheetModel expItem = new AccountBalanceSheetModel();
             expItem.setExpenseItemId((int)row.get("id"));
-            expItem.setTransactionDate((Timestamp)row.get("transactionDate"));
+            Timestamp transactionDate = (Timestamp) row.get("transactionDate");
+            expItem.setTransactionDate((String) timeMgr.timestampToStringParser(transactionDate));
             expItem.setAccountName((String)row.get("accountName"));
             expItem.setPeriodId((int)row.get("periodId"));
             expItem.setExpenseItemName((String)row.get("expenseItemName"));
@@ -116,10 +124,12 @@ public class AccountBalanceSheetDao {
     //Get the startDate etc of the oldest unclosed period
     //User may only access periods assigned to the user
     public OldestUnclosedPeriodModel getLastUnclosedPeriod(
-            Timestamp targetPeriod, final int usersId) throws EmptyResultDataAccessException {
+            String targetPeriod, final int usersId) throws EmptyResultDataAccessException {
 
         final String methodName = "getLastUnclosedPeriod() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        Timestamp targetPeriodAsTimestamp = timeMgr.stringToTimestampParser(targetPeriod);
 
         String sql = "SELECT \"period\".\"id\" as \"periodId\", \"period\".\"name\" AS \"periodName\",\n" +
                 "\"period\".\"startDate\" AS \"startDate\", \"period\".\"endDate\" AS \"endDate\",\n" +
@@ -132,7 +142,7 @@ public class AccountBalanceSheetDao {
                 "ORDER BY \"period\".\"startDate\" ASC\n" +
                 "LIMIT 1;";
         OldestUnclosedPeriodModel oldestUnclosedPeriod = jdbcTemplate.queryForObject(
-                sql, new Object[]{targetPeriod, usersId}, new OldestUnclosedPeriodRowMapper());
+                sql, new Object[]{targetPeriodAsTimestamp, usersId}, new OldestUnclosedPeriodRowMapper());
 
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return oldestUnclosedPeriod;
@@ -141,10 +151,13 @@ public class AccountBalanceSheetDao {
     //Get income items by date range and acct type
     //User may only access income items assigned to the user
     public List<AccountBalanceSheetModel> getIncomeItemByDatesNAcctType(
-            int acctId, Timestamp startDate, Timestamp dayAfterEndDate, final int usersId){
+            int acctId, String startDate, String dayAfterEndDate, final int usersId){
 
         final String methodName = "getIncomeItemByDatesNAcctType() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        Timestamp startDateAsTimestamp = timeMgr.stringToTimestampParser(startDate);
+        Timestamp dayAfterEndDateAsTimestamp = timeMgr.stringToTimestampParser(dayAfterEndDate);
 
         String sql = "SELECT \"incomeItem\".id, \"incomeItem\".\"receivedDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
@@ -163,14 +176,15 @@ public class AccountBalanceSheetDao {
                 "AND \"incomeItem\".\"users_id\" = ?\n" +
                 "ORDER BY \"incomeItem\".\"receivedDate\";";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
-                new Object[] {acctId, startDate, dayAfterEndDate, usersId} );
+                new Object[] {acctId, startDateAsTimestamp, dayAfterEndDateAsTimestamp, usersId} );
 
         LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<AccountBalanceSheetModel> result = new ArrayList<AccountBalanceSheetModel>();
         for(Map<String, Object> row:rows){
             AccountBalanceSheetModel incomeItem = new AccountBalanceSheetModel();
             incomeItem.setIncomeItemId((int)row.get("id"));
-            incomeItem.setTransactionDate((Timestamp)row.get("receivedDate"));
+            Timestamp receivedDate = (Timestamp) row.get("receivedDate");
+            incomeItem.setTransactionDate((String) timeMgr.timestampToStringParser(receivedDate));
             incomeItem.setAccountName((String)row.get("accountName"));
             incomeItem.setPeriodId((int)row.get("periodId"));
             incomeItem.setIncomeItemName((String)row.get("incomeItemName"));
@@ -214,7 +228,8 @@ public class AccountBalanceSheetDao {
         for(Map<String, Object> row:rows){
             AccountBalanceSheetModel incomeItem = new AccountBalanceSheetModel();
             incomeItem.setIncomeItemId((int)row.get("id"));
-            incomeItem.setTransactionDate((Timestamp)row.get("receivedDate"));
+            Timestamp receivedDate = (Timestamp) row.get("receivedDate");
+            incomeItem.setTransactionDate((String) timeMgr.timestampToStringParser(receivedDate));
             incomeItem.setAccountName((String)row.get("accountName"));
             incomeItem.setPeriodId((int)row.get("periodId"));
             incomeItem.setIncomeItemName((String)row.get("incomeItemName"));

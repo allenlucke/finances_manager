@@ -1,9 +1,11 @@
 package com.Allen.SpringFinancesServer.ExpenseItem;
 
+import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 
 import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
 
@@ -12,6 +14,8 @@ public class ExpenseItemRowMapper implements RowMapper<ExpenseItemModel>{
     private static final String CLASS_NAME = "ExpenseItemRowMapper --- ";
     private static final String METHOD_ENTERING = "Entering:  ";
     private static final String METHOD_EXITING = "Exiting:  ";
+
+    private TimestampManager timeMgr = new TimestampManager();
 
     @Override
     public ExpenseItemModel mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -24,7 +28,8 @@ public class ExpenseItemRowMapper implements RowMapper<ExpenseItemModel>{
         expItem.setId(rs.getInt("id"));
         expItem.setBudgetExpenseCategoryId(rs.getInt("budget_expenseCategory_id"));
         expItem.setName(rs.getString("name"));
-        expItem.setTransactionDate(rs.getTimestamp("transactionDate"));
+        Timestamp outputTransactionDate = rs.getTimestamp("transactionDate");
+        expItem.setTransactionDate(timeMgr.timestampToStringParser(outputTransactionDate));
         expItem.setAmount(rs.getBigDecimal("amount"));
         expItem.setPaidWithCredit(rs.getBoolean("paidWithCredit"));
         expItem.setPaymentToCreditAccount(rs.getBoolean("paymentToCreditAccount"));

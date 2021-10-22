@@ -1,6 +1,7 @@
 package com.Allen.SpringFinancesServer.Period;
 
 import com.Allen.SpringFinancesServer.ReturnIdModel;
+import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -11,8 +12,14 @@ import org.springframework.stereotype.Service;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
@@ -26,6 +33,8 @@ public class PeriodDao {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    private TimestampManager timeMgr = new TimestampManager();
 
     //Admin only, may access all periods
     public List<PeriodModel> adminGetAllPeriods(){
@@ -42,8 +51,10 @@ public class PeriodDao {
             PeriodModel period = new PeriodModel();
             period.setId((int)row.get("id"));
             period.setName((String)row.get("name"));
-            period.setStartDate((Timestamp)row.get("startDate"));
-            period.setEndDate((Timestamp)row.get("endDate"));
+            Timestamp startDate = (Timestamp) row.get("startDate");
+            period.setStartDate((String) timeMgr.timestampToStringParser(startDate));
+            Timestamp endDate = (Timestamp) row.get("endDate");
+            period.setEndDate((String) timeMgr.timestampToStringParser(endDate));
             period.setUsersId((int)row.get("users_id"));
 
             result.add(period);
@@ -58,7 +69,8 @@ public class PeriodDao {
         final String methodName = "getAllPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
-        String sql = "SELECT * FROM \"period\" WHERE \"users_id\" = ?;";
+        String sql = "SELECT * FROM \"period\" WHERE \"users_id\" = ?\n" +
+                "ORDER BY \"period\".\"startDate\" ASC;";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId} );
 
@@ -68,8 +80,10 @@ public class PeriodDao {
             PeriodModel period = new PeriodModel();
             period.setId((int)row.get("id"));
             period.setName((String)row.get("name"));
-            period.setStartDate((Timestamp)row.get("startDate"));
-            period.setEndDate((Timestamp)row.get("endDate"));
+            Timestamp startDate = (Timestamp) row.get("startDate");
+            period.setStartDate((String) timeMgr.timestampToStringParser(startDate));
+            Timestamp endDate = (Timestamp) row.get("endDate");
+            period.setEndDate((String) timeMgr.timestampToStringParser(endDate));
             period.setUsersId((int)row.get("users_id"));
 
             result.add(period);
@@ -135,16 +149,16 @@ public class PeriodDao {
         final String methodName = "getOverlappingPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
-        Timestamp startDate = period.getStartDate();
-        Timestamp endDate = period.getEndDate();
+        Timestamp startDate = timeMgr.stringToTimestampParser(period.getStartDate());
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName + "STARTDATE = " + startDate);
+        Timestamp endDate = timeMgr.stringToTimestampParser(period.getEndDate());
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName + "ENDDATE = " + endDate);
 
         String sql = "SELECT * FROM period WHERE \"users_id\" = ?\n" +
-                "AND \"period\".\"startDate\" >= ? --startdate\n" +
-                "AND \"period\".\"endDate\" <= ? --endate\n" +
-                "\n" +
-                "OR \"period\".\"startDate\" <= ? --endate\n" +
-                "AND \"period\".\"endDate\" >= ? --startdate\n" +
-                ";";
+                "AND \"period\".\"startDate\" >= ?\n" +
+                "AND \"period\".\"endDate\" <= ?\n" +
+                "OR \"period\".\"startDate\" <= ?\n" +
+                "AND \"period\".\"endDate\" >= ? ;";
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId, startDate, endDate, endDate, startDate} );
@@ -155,8 +169,10 @@ public class PeriodDao {
             PeriodModel overlappingPeriod = new PeriodModel();
             overlappingPeriod.setId((int)row.get("id"));
             overlappingPeriod.setName((String)row.get("name"));
-            overlappingPeriod.setStartDate((Timestamp)row.get("startDate"));
-            overlappingPeriod.setEndDate((Timestamp)row.get("endDate"));
+            Timestamp outputStartDate = (Timestamp) row.get("startDate");
+            overlappingPeriod.setStartDate(timeMgr.timestampToStringParser(outputStartDate));
+            Timestamp outputEndDate = (Timestamp) row.get("endDate");
+            overlappingPeriod.setEndDate(timeMgr.timestampToStringParser(outputEndDate));
             overlappingPeriod.setUsersId((int)row.get("users_id"));
 
             result.add(overlappingPeriod);
@@ -185,8 +201,10 @@ public class PeriodDao {
                     Statement.RETURN_GENERATED_KEYS);
 
             ps.setString(1, period.getName());
-            ps.setTimestamp(2, period.getStartDate());
-            ps.setTimestamp(3, period.getEndDate());
+            Timestamp startDateAsTimestamp = timeMgr.stringToTimestampParser(period.getStartDate());
+            ps.setTimestamp(2, startDateAsTimestamp);
+            Timestamp endDateAsTimestamp = timeMgr.stringToTimestampParser(period.getEndDate());
+            ps.setTimestamp(3, endDateAsTimestamp);
             ps.setInt(4, period.getUsersId());
 
             return ps;
@@ -203,4 +221,5 @@ public class PeriodDao {
         return result;
 
     }
+
 }

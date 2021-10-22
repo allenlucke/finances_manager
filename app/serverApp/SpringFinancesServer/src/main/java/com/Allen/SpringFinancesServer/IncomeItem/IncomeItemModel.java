@@ -8,7 +8,7 @@ public class IncomeItemModel {
     private int id;
     private int budgetIncomeCategoryId;
     private String name;
-    private Timestamp receivedDate;
+    private String receivedDate;
     private BigDecimal amountExpected;
     private BigDecimal amountReceived;
     private int accountId;
@@ -40,11 +40,11 @@ public class IncomeItemModel {
         this.name = name;
     }
 
-    public Timestamp getReceivedDate() {
+    public String getReceivedDate() {
         return receivedDate;
     }
 
-    public void setReceivedDate(Timestamp receivedDate) {
+    public void setReceivedDate(String receivedDate) {
         this.receivedDate = receivedDate;
     }
 

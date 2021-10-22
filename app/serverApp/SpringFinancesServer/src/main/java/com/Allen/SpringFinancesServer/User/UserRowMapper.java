@@ -1,6 +1,5 @@
 package com.Allen.SpringFinancesServer.User;
 
-import com.Allen.SpringFinancesServer.Period.PeriodModel;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;

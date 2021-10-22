@@ -2,6 +2,7 @@ package com.Allen.SpringFinancesServer.IncomeItem;
 
 import com.Allen.SpringFinancesServer.Period.PeriodModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
+import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -28,6 +29,8 @@ public class IncomeItemDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    private TimestampManager timeMgr = new TimestampManager();
+
     //Admin only, may access all income items
     public List<IncomeItemModel> adminGetAllIncomeItems() {
 
@@ -44,7 +47,8 @@ public class IncomeItemDao {
             incomeItem.setId((int)row.get("id"));
             incomeItem.setBudgetIncomeCategoryId((int)row.get("budget_incomeCategory_id"));
             incomeItem.setName((String)row.get("name"));
-            incomeItem.setReceivedDate((Timestamp)row.get("receivedDate"));
+            Timestamp receivedDate = (Timestamp) row.get("startDate");
+            incomeItem.setReceivedDate((String) timeMgr.timestampToStringParser(receivedDate));
             incomeItem.setAmountExpected((BigDecimal)row.get("amountExpected"));
             incomeItem.setAmountReceived((BigDecimal)row.get("amountReceived"));
             incomeItem.setAccountId((int)row.get("account_id"));
@@ -73,7 +77,8 @@ public class IncomeItemDao {
             incomeItem.setId((int)row.get("id"));
             incomeItem.setBudgetIncomeCategoryId((int)row.get("budget_incomeCategory_id"));
             incomeItem.setName((String)row.get("name"));
-            incomeItem.setReceivedDate((Timestamp)row.get("receivedDate"));
+            Timestamp receivedDate = (Timestamp) row.get("receivedDate");
+            incomeItem.setReceivedDate((String) timeMgr.timestampToStringParser(receivedDate));
             incomeItem.setAmountExpected((BigDecimal)row.get("amountExpected"));
             incomeItem.setAmountReceived((BigDecimal)row.get("amountReceived"));
             incomeItem.setAccountId((int)row.get("account_id"));
@@ -138,7 +143,8 @@ public class IncomeItemDao {
 
             ps.setInt(1, incomeItem.getBudgetIncomeCategoryId());
             ps.setString(2,incomeItem.getName());
-            ps.setTimestamp(3, incomeItem.getReceivedDate());
+            Timestamp receivedDateAsTimestamp = timeMgr.stringToTimestampParser(incomeItem.getReceivedDate());
+            ps.setTimestamp(3, receivedDateAsTimestamp);
             ps.setBigDecimal(4, incomeItem.getAmountExpected());
             ps.setBigDecimal(5, incomeItem.getAmountReceived());
             ps.setInt(6, incomeItem.getAccountId());

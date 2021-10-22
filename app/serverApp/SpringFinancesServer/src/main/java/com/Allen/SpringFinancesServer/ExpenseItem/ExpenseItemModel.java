@@ -8,7 +8,7 @@ public class ExpenseItemModel {
     private int id;
     private int budgetExpenseCategoryId;
     private String name;
-    private Timestamp transactionDate;
+    private String transactionDate;
     private BigDecimal amount;
     private Boolean paidWithCredit;
     private Boolean paymentToCreditAccount;
@@ -42,11 +42,11 @@ public class ExpenseItemModel {
         this.name = name;
     }
 
-    public Timestamp getTransactionDate() {
+    public String getTransactionDate() {
         return transactionDate;
     }
 
-    public void setTransactionDate(Timestamp transactionDate) {
+    public void setTransactionDate(String transactionDate) {
         this.transactionDate = transactionDate;
     }
 

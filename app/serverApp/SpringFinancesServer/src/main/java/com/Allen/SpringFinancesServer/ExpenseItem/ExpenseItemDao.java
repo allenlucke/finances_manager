@@ -1,6 +1,7 @@
 package com.Allen.SpringFinancesServer.ExpenseItem;
 
 import com.Allen.SpringFinancesServer.ReturnIdModel;
+import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -27,6 +28,8 @@ public class ExpenseItemDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    private TimestampManager timeMgr = new TimestampManager();
+
     //User may only access expense items assigned to the user
     public List<ExpenseItemModel> getAllExpItems(final int usersId) {
 
@@ -44,7 +47,8 @@ public class ExpenseItemDao {
             expItem.setId((int)row.get("id"));
             expItem.setBudgetExpenseCategoryId((int)row.get("budget_expenseCategory_id"));
             expItem.setName((String)row.get("name"));
-            expItem.setTransactionDate((Timestamp)row.get("transactionDate"));
+            Timestamp transactionDate = (Timestamp) row.get("transactionDate");
+            expItem.setTransactionDate((String) timeMgr.timestampToStringParser(transactionDate));
             expItem.setAmount((BigDecimal)row.get("amount"));
             expItem.setPaidWithCredit((Boolean)row.get("paidWithCredit"));
             expItem.setPaymentToCreditAccount((Boolean)row.get("paymentToCreditAccount"));
@@ -74,7 +78,9 @@ public class ExpenseItemDao {
             expItem.setId((int)row.get("id"));
             expItem.setBudgetExpenseCategoryId((int)row.get("budget_expenseCategory_id"));
             expItem.setName((String)row.get("name"));
-            expItem.setTransactionDate((Timestamp)row.get("transactionDate"));
+            Timestamp receivedDate = (Timestamp) row.get("startDate");
+            Timestamp transactionDate = (Timestamp) row.get("transactionDate");
+            expItem.setTransactionDate((String) timeMgr.timestampToStringParser(transactionDate));
             expItem.setAmount((BigDecimal)row.get("amount"));
             expItem.setPaidWithCredit((Boolean)row.get("paidWithCredit"));
             expItem.setPaymentToCreditAccount((Boolean)row.get("paymentToCreditAccount"));
@@ -145,7 +151,8 @@ public class ExpenseItemDao {
             expItem.setId((int)row.get("id"));
             expItem.setBudgetExpenseCategoryId((int)row.get("budget_expenseCategory_id"));
             expItem.setName((String)row.get("name"));
-            expItem.setTransactionDate((Timestamp)row.get("transactionDate"));
+            Timestamp transactionDate = (Timestamp) row.get("transactionDate");
+            expItem.setTransactionDate((String) timeMgr.timestampToStringParser(transactionDate));
             expItem.setAmount((BigDecimal)row.get("amount"));
             expItem.setPaidWithCredit((Boolean)row.get("paidWithCredit"));
             expItem.setPaymentToCreditAccount((Boolean)row.get("paymentToCreditAccount"));
@@ -180,7 +187,8 @@ public class ExpenseItemDao {
 
             ps.setInt(1, expenseItem.getBudgetExpenseCategoryId());
             ps.setString(2, expenseItem.getName());
-            ps.setTimestamp(3, expenseItem.getTransactionDate());
+            Timestamp transactionDateAsTimestamp = timeMgr.stringToTimestampParser(expenseItem.getTransactionDate());
+            ps.setTimestamp(3, transactionDateAsTimestamp);
             ps.setBigDecimal(4, expenseItem.getAmount());
             ps.setBoolean(5, expenseItem.getPaidWithCredit());
             ps.setBoolean(6, expenseItem.getPaymentToCreditAccount());

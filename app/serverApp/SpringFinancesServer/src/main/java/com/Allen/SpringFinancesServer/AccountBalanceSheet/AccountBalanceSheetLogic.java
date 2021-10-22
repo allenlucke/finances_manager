@@ -65,7 +65,7 @@ public class AccountBalanceSheetLogic {
         //Get startDate of desiredPeriod
         LOGGER.info(CLASS_NAME + methodName + ": Getting startDate of desired period.");
         List<PeriodModel> desiredPeriod = periodDao.getPeriodById(periodId, usersId);
-        final Timestamp desiredPeriodStartDate = desiredPeriod.get(0).getStartDate();
+        final String desiredPeriodStartDate = desiredPeriod.get(0).getStartDate();
         LOGGER.debug(CLASS_NAME + methodName + ": Desired period startDate: " + desiredPeriodStartDate);
 
         int lastUnclosedPeriod = 0;
@@ -95,7 +95,7 @@ public class AccountBalanceSheetLogic {
 
             //Get startdate for oldest unclosed period
             LOGGER.info(CLASS_NAME + methodName + ": Getting startdate for oldest unclosed period.");
-            Timestamp oldestUnclosedPerStartDate = oldestUnclosedPeriod.getStartDate();
+            String oldestUnclosedPerStartDate = oldestUnclosedPeriod.getStartDate();
 
             //Get ID for oldest unclosed period
             LOGGER.info(CLASS_NAME + methodName + ": Getting startdate for oldest unclosed period.");
@@ -172,7 +172,7 @@ public class AccountBalanceSheetLogic {
     }
 
     //Get data of oldest unclosed period
-    private OldestUnclosedPeriodModel getOldestUnclosedPeriod(Timestamp desiredPeriodStartDate, final int usersId) {
+    private OldestUnclosedPeriodModel getOldestUnclosedPeriod(String desiredPeriodStartDate, final int usersId) {
 
         final String methodName = "getOldestUnclosedPeriod() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

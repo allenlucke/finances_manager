@@ -7,7 +7,7 @@ public class AccountBalanceSheetModel {
 
     private int expenseItemId;
     private int incomeItemId;
-    private Timestamp transactionDate;
+    private String transactionDate;
     private String accountName;
     private int periodId;
     private String expenseItemName;
@@ -35,11 +35,11 @@ public class AccountBalanceSheetModel {
         this.incomeItemId = incomeItemId;
     }
 
-    public Timestamp getTransactionDate() {
+    public String getTransactionDate() {
         return transactionDate;
     }
 
-    public void setTransactionDate(Timestamp transactionDate) {
+    public void setTransactionDate(String transactionDate) {
         this.transactionDate = transactionDate;
     }
 
@@ -109,7 +109,7 @@ public class AccountBalanceSheetModel {
 
 
     public AccountBalanceSheetModel(int expenseItemId, int incomeItemId,
-                                    Timestamp transactionDate, String accountName,
+                                    String transactionDate, String accountName,
                                     int periodId, String expenseItemName,
                                     String incomeItemName, int accountId,
                                     BigDecimal amount, BigDecimal preBalance,
