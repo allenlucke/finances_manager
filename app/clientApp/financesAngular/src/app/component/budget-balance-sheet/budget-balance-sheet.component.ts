@@ -75,7 +75,6 @@ export class BudgetBalanceSheetComponent implements OnInit{
 
     this.balanceService.getPeriodById(this.currentPeriodId).pipe(first()).subscribe(currentPeriodArray => {
       this.currentPeriodArray = currentPeriodArray
-      // this.currentPeriodId = currentPeriodArray[0].id;
       console.log('Period id: ' + this.currentPeriodId);
     })
 

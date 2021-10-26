@@ -154,7 +154,12 @@ public class BudgetDao {
             return ps;
         },holder);
 
-        int id = (int) holder.getKey();
+        int id;
+        if (holder.getKeys().size() > 1){
+            id = (int) holder.getKeys().get("id");
+        } else {
+            id = (int) holder.getKey();
+        }
 
         List<ReturnIdModel> result = new ArrayList<ReturnIdModel>();
         ReturnIdModel idObject = new ReturnIdModel();

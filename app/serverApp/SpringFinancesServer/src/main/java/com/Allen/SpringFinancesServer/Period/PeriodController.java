@@ -154,18 +154,11 @@ public class PeriodController {
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
-        //If authorized make call to dao
+        //If authorized make call to logic class
         else {
-
-            //Check to see if Period to be added will overlap with an existing period
-            boolean isOverlapping = mgr.checkForExistingPeriod(period, requestUserId);
-            if(!isOverlapping) {
-                List<ReturnIdModel> returnedId = dao.addPeriodReturnId(period);
-                LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-                return new ResponseEntity(returnedId, HttpStatus.OK);
-            }
-            LOGGER.warn(CLASS_NAME + methodName + "This request overlaps/conflicts with a previously existing period.");
-            return new ResponseEntity("Unauthorized", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+            ResponseEntity responseEntity = mgr.addPeriodRetId(period, requestUserId);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+            return responseEntity;
         }
     }
 }

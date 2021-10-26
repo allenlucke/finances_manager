@@ -10,6 +10,7 @@ import { PeriodComponent } from './component/period/period.component';
 import { LoginComponent } from './component/login/login.component';
 import { RegisterComponent } from './component/register/register.component';
 import { AuthGuard } from './_helpers/auth.guard';
+import { BudgetComponent } from './component/budget/budget.component';
 
 
 const routes: Routes = [
@@ -22,6 +23,7 @@ const routes: Routes = [
   { path: 'income', component: IncomeComponent, canActivate:[AuthGuard]},
   { path: 'expenses', component: ExpensesComponent, canActivate:[AuthGuard]},
   { path: 'period', component: PeriodComponent, canActivate: [AuthGuard]},
+  { path: 'budgets', component: BudgetComponent, canActivate: [AuthGuard]},
 
   // otherwise redirect to home
   { path: '**', redirectTo: '' }

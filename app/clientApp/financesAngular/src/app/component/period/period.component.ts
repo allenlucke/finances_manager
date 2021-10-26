@@ -20,7 +20,7 @@ export class PeriodComponent implements OnInit {
   returnedId! : number;
 
   constructor(
-    private formBuilder: FormBuilder,
+    private formBuilder : FormBuilder,
     private periodService : PeriodService
   ) { }
 

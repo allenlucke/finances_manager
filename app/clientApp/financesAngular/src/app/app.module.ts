@@ -27,6 +27,7 @@ import { ExpensesComponent } from './component/expenses/expenses.component';
 import { IncomeComponent } from './component/income/income.component';
 import { ModalComponent } from './component/modal/modal.component';
 import { PeriodComponent } from './component/period/period.component';
+import { BudgetComponent } from './component/budget/budget.component';
 
 
 @NgModule({
@@ -44,6 +45,7 @@ import { PeriodComponent } from './component/period/period.component';
     IncomeComponent,
     ModalComponent,
     PeriodComponent,
+    BudgetComponent,
   ],
   imports: [
     BrowserModule,
