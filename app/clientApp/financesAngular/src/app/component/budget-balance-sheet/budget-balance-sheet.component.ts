@@ -35,7 +35,7 @@ export class BudgetBalanceSheetComponent implements OnInit{
     this.balanceService.getCurrentPeriod().pipe(first()).subscribe(currentPeriodArray => {
       this.currentPeriodArray = currentPeriodArray
       this.currentPeriodId = currentPeriodArray[0].id;
-      console.log('Period id: ' + this.currentPeriodId);
+      // console.log('Period id: ' + this.currentPeriodId);
 
       //Load current period by default
       this.balanceService.getBudgetBalanceSheetByPeriod(this.currentPeriodId).pipe(first()).subscribe(balanceSheetItems => {
@@ -53,7 +53,7 @@ export class BudgetBalanceSheetComponent implements OnInit{
   }
 
   public getExpenseItems(i: number ){
-    console.log('In getExpenseItems()')
+    // console.log('In getExpenseItems()')
     this.newHideMe[i] = !this.newHideMe[i];
     this.Index = i;
     this.expenseItems = this.balanceSheetItems[i].expenseItems;
@@ -64,7 +64,7 @@ export class BudgetBalanceSheetComponent implements OnInit{
       console.log(this.balanceSheetItems[i]);
       if(this.newHideMe[i] != false){
         this.newHideMe.push(false);
-        console.log(this.newHideMe[i]);
+        // console.log(this.newHideMe[i]);
       }
     }
   }

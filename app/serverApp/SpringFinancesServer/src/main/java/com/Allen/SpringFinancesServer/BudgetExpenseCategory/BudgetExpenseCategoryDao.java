@@ -146,4 +146,32 @@ public class BudgetExpenseCategoryDao {
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
+
+    //User may only access budget expense categories assigned to the user
+    public List<BudgetExpenseCategoryModel> getBudgetExpCatByExpCat(final int budgetId, final int usersId){
+
+        final String methodName = "getBudgetExpCatByExpCatNUsersId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"budget_expenseCategory\" WHERE \n" +
+                "\"budget_expenseCategory\".\"budget_id\" = ?\n" +
+                "AND \"budget_expenseCategory\".\"users_id\" = ?;";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {budgetId, usersId} );
+
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
+        List<BudgetExpenseCategoryModel> result = new ArrayList<BudgetExpenseCategoryModel>();
+        for(Map<String, Object> row:rows){
+            BudgetExpenseCategoryModel budgExpCat = new BudgetExpenseCategoryModel();
+            budgExpCat.setId((int)row.get("id"));
+            budgExpCat.setBudgetId((int)row.get("budget_id"));
+            budgExpCat.setExpenseCategoryId((int)row.get("expenseCategory_id"));
+            budgExpCat.setAmountBudgeted((BigDecimal)row.get("amountBudgeted"));
+            budgExpCat.setUsersId((int)row.get("users_id"));
+
+            result.add(budgExpCat);
+        }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
 }
