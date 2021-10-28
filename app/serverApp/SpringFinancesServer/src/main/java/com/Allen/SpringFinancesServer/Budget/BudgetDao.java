@@ -32,7 +32,11 @@ public class BudgetDao {
         final String methodName = "getAllBudgets() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
-        String sql = "SELECT * FROM \"budget\" WHERE \"users_id\" = ?;";
+        String sql = "SELECT \"budget\".\"id\", \"budget\".\"name\", \"budget\".\"period_id\", \n" +
+                "\"budget\".\"isClosed\", \"budget\".\"users_id\" FROM \"budget\"\n" +
+                "JOIN \"period\" ON \"budget\".\"period_id\" = \"period\".\"id\"\n" +
+                "WHERE \"budget\".\"users_id\" = ?\n" +
+                "ORDER BY \"period\".\"startDate\" ASC;";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId} );
 
@@ -109,26 +113,6 @@ public class BudgetDao {
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
-
-//    public int addBudgetReturnId(final BudgetModel budget) {
-//        String sql = "INSERT INTO \"budget\"\n" +
-//                "\t(\"name\", \"period_id\")\n" +
-//                "VALUES\n" +
-//                "\t(?, ?) RETURNING \"id\";";
-//
-//        KeyHolder holder = new GeneratedKeyHolder();
-//        jdbcTemplate.update(connection -> {
-//            PreparedStatement ps = connection.prepareStatement(sql,
-//                    Statement.RETURN_GENERATED_KEYS);
-//
-//            ps.setString(1, budget.getName());
-//            ps.setInt(2, budget.getPeriod_id());
-//
-//            return ps;
-//        },holder);
-//        return (int) holder.getKey();
-//
-//    }
 
     //Only Admin or the User to whom the budget will be assigned
     //may use this post call

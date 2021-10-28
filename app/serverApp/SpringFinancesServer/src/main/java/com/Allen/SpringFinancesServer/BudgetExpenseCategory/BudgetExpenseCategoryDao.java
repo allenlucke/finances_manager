@@ -119,9 +119,8 @@ public class BudgetExpenseCategoryDao {
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
         String sql = "INSERT INTO \"budget_expenseCategory\"\n" +
-                "\t(\"budget_id\", \"expenseCategory_id\", \"amountBudgeted\" )\n" +
-                "VALUES\n" +
-                "\t(?, ?, ? ) RETURNING \"id\";";
+                "(\"budget_id\", \"expenseCategory_id\", \"amountBudgeted\", \"users_id\" )\n" +
+                "VALUES(?, ?, ?, ? ) RETURNING \"id\";";
 
         KeyHolder holder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -135,7 +134,13 @@ public class BudgetExpenseCategoryDao {
 
             return ps;
         },holder);
-        int id = (int) holder.getKey();
+
+        int id;
+        if (holder.getKeys().size() > 1){
+            id = (int) holder.getKeys().get("id");
+        } else {
+            id = (int) holder.getKey();
+        }
 
         List<ReturnIdModel> result = new ArrayList<ReturnIdModel>();
         ReturnIdModel idObject = new ReturnIdModel();

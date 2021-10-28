@@ -64,10 +64,10 @@ public class CloneOrEditBudgetController {
         return result;
     }
 
-    @PostMapping("test/CloneBudget")
+    @PostMapping("cloneBudget")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity cloneBudget(@RequestBody BudgetModel newBudget,
-            @RequestHeader("Authorization") String jwtString, @QueryParam("id") int templateBudgetId) throws ServletException, IOException {
+            @RequestHeader("Authorization") String jwtString, @QueryParam("templateBudgetId") int templateBudgetId) throws ServletException, IOException {
 
         final String methodName = "cloneBudget() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -79,16 +79,10 @@ public class CloneOrEditBudgetController {
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
-        //If authorized make call to dao
-//        else {
-//            List<ReturnIdModel> returnedId = dao.addBudgetReturnId(budget);
-//            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-//            return new ResponseEntity(returnedId, HttpStatus.OK);
-//        }
         else{
-            List<BudgetExpenseCategoryModel> matchingExpCats = mgr.cloneBudget(templateBudgetId, requestUserId, newBudget);
+            List<ReturnIdModel> newBudgetReturnedIdList = mgr.cloneBudget(templateBudgetId, requestUserId, newBudget);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-            return new ResponseEntity(matchingExpCats, HttpStatus.OK);
+            return new ResponseEntity(newBudgetReturnedIdList, HttpStatus.OK);
         }
     }
 }

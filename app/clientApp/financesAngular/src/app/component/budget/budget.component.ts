@@ -14,11 +14,14 @@ import { Period } from 'src/app/_models/period';
 export class BudgetComponent implements OnInit {
 
   newBudgetForm!: FormGroup;
+  cloneBudgetForm!: FormGroup;
   loading = false;
   submitted = false;
+  submittedClone = false;
   allBudgets! : Budget[];
   allPeriods! : Period[];
   error = '';
+  errorClone = '';
   currentUserId! : number;
   returnedId! : number;
 
@@ -39,19 +42,18 @@ export class BudgetComponent implements OnInit {
     this.newBudgetForm = this.formBuilder.group({
       name: ['', Validators.required],
       periodId: ['', Validators.required]
-  });
+    });
+
+    this.cloneBudgetForm = this.formBuilder.group({
+      name: ['', Validators.required],
+      periodId: ['', Validators.required],
+      templateBudgetId: ['', Validators.required]
+    });
   }
 
   // convenience getter for easy access to form fields
   get f() { return this.newBudgetForm.controls; }
-
-  getAllBudgets() {
-    this.budgetService.getAllBudgets().pipe(first()).subscribe(allBudgets => {
-      this.allBudgets = allBudgets;
-      this.loading = false;
-      console.log(allBudgets);
-    })
-  }
+  get cF() { return this.cloneBudgetForm.controls; }
 
   onSubmit(){
     this.submitted = true;
@@ -59,7 +61,7 @@ export class BudgetComponent implements OnInit {
       // stop here if form is invalid
       if (this.newBudgetForm!.invalid) {
         return;
-    }
+      }
 
     this.postBudget(this.f.name.value, this.f.periodId.value, this.currentUserId);
 
@@ -67,6 +69,30 @@ export class BudgetComponent implements OnInit {
     this.newBudgetForm.reset();
 
     this.submitted = false;
+  }
+
+  onSubmitClone(){
+    this.submittedClone = true;
+
+        // stop here if form is invalid
+        if (this.cloneBudgetForm!.invalid) {
+          return;
+        }
+
+        this.cloneBudget(this.cF.templateBudgetId.value ,this.cF.name.value, this.cF.periodId.value, this.currentUserId);
+
+        this.getAllBudgets();
+        this.cloneBudgetForm.reset();
+
+        this.submittedClone = false;
+  }
+
+
+  getAllBudgets() {
+    this.budgetService.getAllBudgets().pipe(first()).subscribe(allBudgets => {
+      this.allBudgets = allBudgets;
+      this.loading = false;
+    })
   }
 
   postBudget(name: string, periodId: number, usersId: number){
@@ -81,6 +107,13 @@ export class BudgetComponent implements OnInit {
       this.allPeriods = allPeriods;
       this.loading = false;
     })
+  }
+
+  cloneBudget(templateBudgetId : number, name: string, periodId: number, usersId: number){
+    this.budgetService.cloneBudget(templateBudgetId, name, periodId, usersId).pipe(first()).subscribe(returnedId => {
+      this.returnedId = returnedId;
+    })
+    this.getAllBudgets();
   }
 
 }
