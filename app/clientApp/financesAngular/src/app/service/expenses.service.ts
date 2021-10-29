@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 
 import { environment } from 'src/environments/environment';
 import { ExpenseCategory } from '../_models/expense-category';
+import { BudgetExpenseCategory } from '../_models/budget-expense-category';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +14,10 @@ export class ExpensesService {
 
   getAllExpCat() {
     return this.http.get<ExpenseCategory[]>(`${environment.apiUrl}/getAllExpCat`);
+  }
+
+  getBudgetExpCatsBtDate(date: Date) {
+    return this.http.get<BudgetExpenseCategory[]>(`${environment.apiUrl}/getBudgetExpCatsBtDate?date=` + date);
   }
 
   addExpCatRetId(name: string, usersId: number ) {

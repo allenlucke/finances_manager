@@ -75,6 +75,27 @@ public class BudgetExpenseCategoryController {
         }
     }
 
+    //Returns all budget expense categories from the period the date falls within
+    @GetMapping("/getBudgetExpCatsBtDate")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public List<BudgetExpenseCategoryModel> getBudgetExpCatsBtDate(
+            @RequestHeader("Authorization") String jwtString, @QueryParam("date") String date){
+
+        final String methodName = "getBudgetExpCatsBtDate() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
+        int userId = authorizationFilter.getUserIdFromToken(jwtString);
+
+        List<BudgetExpenseCategoryModel> result;
+        result = dao.getBudgetExpCatsBtDate(date, userId);
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
     @GetMapping("/getBudgetExpCatById")
     @Consumes(MediaType.APPLICATION_JSON)
     public List<BudgetExpenseCategoryModel> getBudgetExpCatById(
