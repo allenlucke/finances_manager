@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.Period;
 
+import com.Allen.SpringFinancesServer.Account.AccountModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,6 +111,26 @@ public class PeriodDao {
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
+
+    //User may only access accounts assigned to the user
+    public List<PeriodModel> getPeriodByDate(String date, int usersId){
+
+        final String methodName = "getPeriodByDate() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        Timestamp dateToSearch = timeMgr.stringToTimestampParser(date);
+        String sql = "SELECT * FROM \"period\" WHERE ? >= \"startDate\"\n" +
+                "AND ? <= \"endDate\"\n" +
+                "AND \"users_id\" = ?;";
+        PeriodModel period = jdbcTemplate.queryForObject( sql, new Object[]{dateToSearch, dateToSearch, usersId}, new PeriodRowMapper());
+
+        List<PeriodModel> result = new ArrayList<PeriodModel>();
+        result.add(period);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
 
     //Admin only, may access any periods
     public List<PeriodModel> adminGetPeriodById(int id){

@@ -38,7 +38,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="endDate">Period Start Date</label>
+                    <label for="endDate">Period End Date</label>
                     <input type="date" formControlName="endDate" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.endDate.errors }" />
                     <div *ngIf="submitted && f.endDate.errors" class="invalid-feedback">
                         <div *ngIf="f.endDate.errors.required">End Date is required</div>

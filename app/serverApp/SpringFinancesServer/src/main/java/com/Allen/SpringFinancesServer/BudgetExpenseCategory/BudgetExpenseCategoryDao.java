@@ -1,6 +1,7 @@
 package com.Allen.SpringFinancesServer.BudgetExpenseCategory;
 
 import com.Allen.SpringFinancesServer.ReturnIdModel;
+import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,8 @@ public class BudgetExpenseCategoryDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    private TimestampManager timeMgr = new TimestampManager();
+
     //User may only access budget expense categories assigned to the user
     public List<BudgetExpenseCategoryModel> getAllBudgetExpCats(final int usersId) {
 
@@ -35,6 +39,42 @@ public class BudgetExpenseCategoryDao {
         String sql = "SELECT * FROM \"budget_expenseCategory\" WHERE \"users_id\" = ?;";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
                 new Object[] {usersId} );
+
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
+        List<BudgetExpenseCategoryModel> result = new ArrayList<BudgetExpenseCategoryModel>();
+        for(Map<String, Object> row:rows){
+            BudgetExpenseCategoryModel budgExpCat = new BudgetExpenseCategoryModel();
+            budgExpCat.setId((int)row.get("id"));
+            budgExpCat.setBudgetId((int)row.get("budget_id"));
+            budgExpCat.setExpenseCategoryId((int)row.get("expenseCategory_id"));
+            budgExpCat.setAmountBudgeted((BigDecimal)row.get("amountBudgeted"));
+            budgExpCat.setUsersId((int)row.get("users_id"));
+
+            result.add(budgExpCat);
+        }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //Returns all budget expense categories from the period the date falls within
+    //User may only access budget expense categories assigned to the user
+    public List<BudgetExpenseCategoryModel> getBudgetExpCatsBtDate(final String date, final int usersId) {
+
+        final String methodName = "getBudgetExpCatsBtDate() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        Timestamp dateToSearch = timeMgr.stringToTimestampParser(date);
+
+        String sql = "SELECT \"budget_expenseCategory\".\"id\", \"budget_expenseCategory\".\"budget_id\",\n" +
+                "\"budget_expenseCategory\".\"expenseCategory_id\", \"budget_expenseCategory\".\"amountBudgeted\", \n" +
+                "\"budget_expenseCategory\".\"users_id\" FROM \"budget_expenseCategory\"\n" +
+                "JOIN \"budget\" ON \"budget_expenseCategory\".\"budget_id\" = \"budget\".\"id\"\n" +
+                "JOIN \"period\" ON \"budget\".\"period_id\" = \"period\".\"id\"\n" +
+                "WHERE ? >= \"startDate\"\n" +
+                "AND ? <= \"endDate\"\n" +
+                "AND \"budget_expenseCategory\".\"users_id\" = ?;";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {dateToSearch, dateToSearch, usersId} );
 
         LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<BudgetExpenseCategoryModel> result = new ArrayList<BudgetExpenseCategoryModel>();

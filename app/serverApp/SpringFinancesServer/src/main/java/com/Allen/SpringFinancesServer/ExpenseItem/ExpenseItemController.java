@@ -138,13 +138,21 @@ public class ExpenseItemController {
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
-        //If authorized make call to dao
+        //If authorized make call to logic class
         else {
-            //Check to see if account type is credit
-            expItem = logic.setPaidWithCredit(expItem);
-            List<ReturnIdModel> returnedId = dao.addExpItemReturnId(expItem);
-            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-            return new ResponseEntity(returnedId, HttpStatus.OK);
+            List<ReturnIdModel> returnedId = logic.addExpItemReturnId(expItem);
+
+            //See if post was rejected by logic class
+            if(returnedId.size() > 0) {
+                LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+                return new ResponseEntity(returnedId, HttpStatus.OK);
+            }
+            else{
+                LOGGER.warn(CLASS_NAME + methodName + " Desired transaction date has no matching budget expense item categories" +
+                        ". The item will not be posted");
+                LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+                return new ResponseEntity(returnedId, HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+            }
         }
     }
 

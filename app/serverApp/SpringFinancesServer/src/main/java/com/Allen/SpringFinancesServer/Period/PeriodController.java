@@ -139,6 +139,25 @@ public class PeriodController {
         return new ResponseEntity(result, HttpStatus.OK);
     }
 
+    @GetMapping("/getPeriodByDate")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public ResponseEntity getPeriodByDate(@RequestHeader("Authorization") String jwtString, @QueryParam("searchDate") String searchDate){
+
+        final String methodName = "getPeriodByDate() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
+        int userIdFromToken = authorizationFilter.getUserIdFromToken(jwtString);
+
+        List<PeriodModel> result;
+        result = dao.getPeriodByDate(searchDate, userIdFromToken);
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return new ResponseEntity(result, HttpStatus.OK);
+    }
+
     @PostMapping("/addPeriodRetId")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity addPeriodRetId(
