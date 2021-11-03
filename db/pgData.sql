@@ -81,9 +81,21 @@ VALUES
 	(1, 1, 10000.00, 1);
 
 INSERT INTO "accountPeriod"
+	("account_id", "period_id",	"beginningBalance", "users_id")
+VALUES
+	(2, 1, 0.00, 1),
+	(3, 1, 50000.00, 1)	;
+
+INSERT INTO "accountPeriod"
 	("account_id", "period_id", "users_id")
 VALUES
 	(1, 2, 1);
+
+INSERT INTO "accountPeriod"
+	("account_id", "period_id", "users_id")
+VALUES
+	(2, 2, 1),
+	(3, 2, 1);
 
 --incomeCat test data
 INSERT INTO "incomeCategory"

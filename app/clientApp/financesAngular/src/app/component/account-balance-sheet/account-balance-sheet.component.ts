@@ -68,6 +68,7 @@ export class AccountBalanceSheetComponent implements OnInit {
 
     this.balanceService.getAcctBalSheet(this.selectedAccountId, this.selectedPeriodId).pipe(first()).subscribe(accountBalanceSheetItems => {
       this.loading = false;
+      console.log(JSON.stringify(this.accountBalanceSheetItems))
       this.accountBalanceSheetItems = accountBalanceSheetItems;
 
       this.getDisplayedAccount(this.selectedAccountId);

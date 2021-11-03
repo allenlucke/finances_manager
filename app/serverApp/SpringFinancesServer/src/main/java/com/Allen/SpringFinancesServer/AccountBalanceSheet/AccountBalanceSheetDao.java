@@ -33,7 +33,7 @@ public class AccountBalanceSheetDao {
         final String methodName = "getExpItemByPeriodNAcctType() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
-        String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
+        String sql = "SELECT DISTINCT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \n" +
                 "\"expenseItem\".amount FROM \"expenseItem\"\n" +
@@ -82,7 +82,7 @@ public class AccountBalanceSheetDao {
         Timestamp startDateAsTimestamp = timeMgr.stringToTimestampParser(startDate);
         Timestamp dayAfterEndDateAsTimestamp = timeMgr.stringToTimestampParser(dayAfterEndDate);
 
-        String sql = "SELECT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
+        String sql = "SELECT DISTINCT \"expenseItem\".id, \"expenseItem\".\"transactionDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"expenseItem\".name AS \"expenseItemName\", \"account\".id AS \"accountId\", \n" +
                 "\"expenseItem\".amount FROM \"expenseItem\"\n" +
@@ -159,7 +159,7 @@ public class AccountBalanceSheetDao {
         Timestamp startDateAsTimestamp = timeMgr.stringToTimestampParser(startDate);
         Timestamp dayAfterEndDateAsTimestamp = timeMgr.stringToTimestampParser(dayAfterEndDate);
 
-        String sql = "SELECT \"incomeItem\".id, \"incomeItem\".\"receivedDate\", \n" +
+        String sql = "SELECT DISTINCT \"incomeItem\".id, \"incomeItem\".\"receivedDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"incomeItem\".name AS \"incomeItemName\", \"account\".id AS \"accountId\", \n" +
                 "\"incomeItem\".\"amountReceived\" FROM \"incomeItem\"\n" +
@@ -205,7 +205,7 @@ public class AccountBalanceSheetDao {
         final String methodName = "getIncomeItemByPeriodNAcctType() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
-        String sql = "SELECT \"incomeItem\".id, \"incomeItem\".\"receivedDate\", \n" +
+        String sql = "SELECT DISTINCT \"incomeItem\".id, \"incomeItem\".\"receivedDate\", \n" +
                 "\"account\".name AS \"accountName\" , \"period\".id AS \"periodId\", \n" +
                 "\"incomeItem\".name AS \"incomeItemName\", \"account\".id AS \"accountId\", \n" +
                 "\"incomeItem\".\"amountReceived\" FROM \"incomeItem\"\n" +

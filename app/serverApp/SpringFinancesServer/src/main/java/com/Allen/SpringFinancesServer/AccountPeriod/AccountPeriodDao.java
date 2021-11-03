@@ -2,6 +2,7 @@ package com.Allen.SpringFinancesServer.AccountPeriod;
 
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -96,6 +97,27 @@ public class AccountPeriodDao {
         return result;
     }
 
+    //User may only access account periods assigned to the user
+    public List<AccountPeriodModel> getAccountPeriodByAccountNPeriod(
+            final int accountId, final int periodId, final int usersId) throws EmptyResultDataAccessException {
+
+        final String methodName = "getAccountPeriodByAccountNPeriod() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"accountPeriod\" \n" +
+                "WHERE \"account_id\" = ? \n" +
+                "AND \"period_id\" = ?\n" +
+                "AND \"users_id\" = ?;";
+        AccountPeriodModel acctPeriod = jdbcTemplate.queryForObject(
+                sql, new Object[]{accountId, periodId, usersId}, new AccountPeriodRowMapper());
+
+        List<AccountPeriodModel> result = new ArrayList<AccountPeriodModel>();
+        result.add(acctPeriod);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
     //Admin only, may access any account period
     public List<AccountPeriodModel> adminGetAcctPeriodById(int id){
 
@@ -112,6 +134,7 @@ public class AccountPeriodDao {
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
+
 
     //Only Admin or the User to whom the account period will be assigned
     //may use this post call
@@ -138,7 +161,12 @@ public class AccountPeriodDao {
             return ps;
         },holder);
 
-        int id = (int) holder.getKey();
+        int id;
+        if (holder.getKeys().size() > 1){
+            id = (int) holder.getKeys().get("id");
+        } else {
+            id = (int) holder.getKey();
+        }
 
         List<ReturnIdModel> result = new ArrayList<ReturnIdModel>();
         ReturnIdModel idObject = new ReturnIdModel();

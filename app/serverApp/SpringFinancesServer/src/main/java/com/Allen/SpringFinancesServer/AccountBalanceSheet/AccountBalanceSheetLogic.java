@@ -43,13 +43,16 @@ public class AccountBalanceSheetLogic {
         final String methodName = "accountBalanceSheetManager() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
+        //Get accountPeriodId for desired balance sheet
+        final int accountPeriodId = getAccountPeriodId(acctId, periodId, usersId);
+
         //Get expense item data for desired period
         LOGGER.info(CLASS_NAME + methodName + ": Getting expense item data for desired period.");
         List<AccountBalanceSheetModel>  desiredPeriodExpenseData =
                 acctBalDao.getExpItemByPeriodNAcctType(acctId, periodId, usersId);
 
         for( AccountBalanceSheetModel exp : desiredPeriodExpenseData) {
-            LOGGER.debug(CLASS_NAME + methodName + ": Desired period exp amount: " + exp.getAmount());
+            LOGGER.info(CLASS_NAME + methodName + ": Desired period exp amount: " + exp.getAmount());
         }
 
         //Get income item data for desired period
@@ -58,22 +61,22 @@ public class AccountBalanceSheetLogic {
                 acctBalDao.getIncomeItemByPeriodNAcctType(acctId, periodId, usersId);
 
         for( AccountBalanceSheetModel income : desiredPeriodIncomeData) {
-            LOGGER.debug(CLASS_NAME + methodName + ": Desired period income amount: " + income.getAmount());
+            LOGGER.info(CLASS_NAME + methodName + ": Desired period income amount: " + income.getAmount());
         }
 
         //Get startDate of desiredPeriod
         LOGGER.info(CLASS_NAME + methodName + ": Getting startDate of desired period.");
         List<PeriodModel> desiredPeriod = periodDao.getPeriodById(periodId, usersId);
         final String desiredPeriodStartDate = desiredPeriod.get(0).getStartDate();
-        LOGGER.debug(CLASS_NAME + methodName + ": Desired period startDate: " + desiredPeriodStartDate);
+        LOGGER.info(CLASS_NAME + methodName + ": Desired period startDate: " + desiredPeriodStartDate);
 
         int lastUnclosedPeriod = 0;
 
         //Check to see if the desired period has a beginning balance
-        LOGGER.info(CLASS_NAME + methodName + ": Checking to see if the desired period has a beginning balance.");
-        if(!getBeginningBalance(periodId, usersId).equals(NO_BEGINNING_BALANCE)){
-            beginningBalance = getBeginningBalance(periodId, usersId);
-            LOGGER.debug(CLASS_NAME + methodName +
+        LOGGER.info(CLASS_NAME + methodName + ": Checking to see if the desired account period has a beginning balance.");
+        if(!getBeginningBalance(accountPeriodId, usersId).equals(NO_BEGINNING_BALANCE)){
+            beginningBalance = getBeginningBalance(accountPeriodId, usersId);
+            LOGGER.info(CLASS_NAME + methodName +
                     ": DesiredPeriod has a beginning balance, beginning balance is: " + beginningBalance);
 
             //Get Balance Sheet
@@ -95,17 +98,21 @@ public class AccountBalanceSheetLogic {
             //Get startdate for oldest unclosed period
             LOGGER.info(CLASS_NAME + methodName + ": Getting startdate for oldest unclosed period.");
             String oldestUnclosedPerStartDate = oldestUnclosedPeriod.getStartDate();
+            LOGGER.info(CLASS_NAME + methodName +
+                    ": Startdate of oldest unclosed period is: " + oldestUnclosedPerStartDate);
 
             //Get ID for oldest unclosed period
-            LOGGER.info(CLASS_NAME + methodName + ": Getting startdate for oldest unclosed period.");
+            LOGGER.info(CLASS_NAME + methodName + ": Getting ID for oldest unclosed period.");
             int oldestUnclosedPeriodId = oldestUnclosedPeriod.getPeriodId();
-            LOGGER.debug(CLASS_NAME + methodName +
-                    ": Startdate of oldest unclosed period is: " + oldestUnclosedPerStartDate);
+
+            //Get accountPeriodId for oldest unclosed period
+            LOGGER.info(CLASS_NAME + methodName + ": Getting accountPeriodId for oldest unclosed period.");
+            int oldestUnclosedAccountPeriodId = getAccountPeriodId(acctId, oldestUnclosedPeriodId, usersId);
 
             //Get beginning balance for oldest unclosed period
             LOGGER.info(CLASS_NAME + methodName + ": Getting beginning balance for oldest unclosed period.");
-            BigDecimal oldestUnclosedPerBegBal = getBeginningBalance(oldestUnclosedPeriodId, usersId);
-            LOGGER.debug(CLASS_NAME + methodName +
+            BigDecimal oldestUnclosedPerBegBal = getBeginningBalance(oldestUnclosedAccountPeriodId, usersId);
+            LOGGER.info(CLASS_NAME + methodName +
                     ": Beginning balance of oldest unclosed period is: " + oldestUnclosedPerBegBal);
 
             //Get expense and income items from start of oldest unclosed period up to day prior to desired period
@@ -126,7 +133,7 @@ public class AccountBalanceSheetLogic {
             LOGGER.info(CLASS_NAME + methodName + ": Getting desired period's starting balance.");
             beginningBalance = getEndingBalance(
                     oldestUnclosedPerBegBal, expItemsPriorToDesiredPeriodList, incomeItemsPriorToDesiredPeriodList);
-            LOGGER.debug(CLASS_NAME + methodName + ": Desired period beginning Balance: " + beginningBalance);
+            LOGGER.info(CLASS_NAME + methodName + ": Desired period beginning Balance: " + beginningBalance);
 
             //Get Account Balance Sheet
             LOGGER.info(CLASS_NAME + methodName + ": Getting Account Balance Sheet.");
@@ -139,7 +146,7 @@ public class AccountBalanceSheetLogic {
     }
 
     //Get beginning balance of a period
-    private BigDecimal getBeginningBalance(final int periodId, final int usersId) {
+    private BigDecimal getBeginningBalance(final int acctPeriodId, final int usersId) {
 
         final String methodName = "getBeginningBalance() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -147,10 +154,10 @@ public class AccountBalanceSheetLogic {
         try {
             //Check desired period for beginning balance
             LOGGER.info(CLASS_NAME + methodName + ": Checking desired period for beginning balance.");
-            List<AccountPeriodModel> begginingBalanceList = acctPeriodDao.getAcctPeriodById(periodId, usersId);
-            BigDecimal beginningBalance = begginingBalanceList.get(0).getBeginningBalance();
+            List<AccountPeriodModel> beginingBalanceList = acctPeriodDao.getAcctPeriodById(acctPeriodId, usersId);
+            BigDecimal beginningBalance = beginingBalanceList.get(0).getBeginningBalance();
 
-            LOGGER.debug(CLASS_NAME + methodName + ": Beginning Balance : " + beginningBalance);
+            LOGGER.info(CLASS_NAME + methodName + ": Beginning Balance : " + beginningBalance);
 
             //Check to see if beginning balance is null
             if(beginningBalance != null){
@@ -164,7 +171,7 @@ public class AccountBalanceSheetLogic {
             }
         }
         catch (EmptyResultDataAccessException e) {
-            LOGGER.debug(CLASS_NAME + methodName + ": Beginning Balance : " + beginningBalance);
+            LOGGER.info(CLASS_NAME + methodName + ": Beginning Balance : " + beginningBalance);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return NO_BEGINNING_BALANCE;
         }
@@ -183,8 +190,8 @@ public class AccountBalanceSheetLogic {
             oldestUnclosedPeriodList = acctBalDao.getLastUnclosedPeriod(desiredPeriodStartDate, usersId);
             int oldestUnclosedPeriod = oldestUnclosedPeriodList.getPeriodId();
 
-            LOGGER.debug(CLASS_NAME + methodName + ": Last unclosed period id: " + oldestUnclosedPeriod);
-            LOGGER.debug(CLASS_NAME + methodName +
+            LOGGER.info(CLASS_NAME + methodName + ": Last unclosed period id: " + oldestUnclosedPeriod);
+            LOGGER.info(CLASS_NAME + methodName +
                     ": Last unclosed period start date: " + oldestUnclosedPeriodList.getStartDate());
             return oldestUnclosedPeriodList;
         } catch (EmptyResultDataAccessException e) {
@@ -209,21 +216,21 @@ public class AccountBalanceSheetLogic {
                 mergeAndOrderBalanceListByDate(expenseItemList, incomeItemList);
 
         for( AccountBalanceSheetModel balanceItem : orderedBalanceSheetList) {
-            LOGGER.debug(CLASS_NAME + methodName + ": Balance: " +  startingBalance);
-            LOGGER.debug(CLASS_NAME + methodName + ": Balance item to String; " + balanceItem.toString());
+            LOGGER.info(CLASS_NAME + methodName + ": Balance: " +  startingBalance);
+            LOGGER.info(CLASS_NAME + methodName + ": Balance item to String; " + balanceItem.toString());
             //Check to see if balance item has income id
             if(balanceItem.getIncomeItemId() == 0) {
-                LOGGER.debug(CLASS_NAME + methodName + ": Expense amount: " + balanceItem.getAmount());
+                LOGGER.info(CLASS_NAME + methodName + ": Expense amount: " + balanceItem.getAmount());
 
                 startingBalance = startingBalance.subtract(balanceItem.getAmount());
-                LOGGER.debug(CLASS_NAME + methodName + ": New Balance: " + startingBalance);
+                LOGGER.info(CLASS_NAME + methodName + ": New Balance: " + startingBalance);
             }
             //If not must be an expense item
             else {
-                LOGGER.debug(CLASS_NAME + methodName + ": Income amount: " + balanceItem.getAmount());
+                LOGGER.info(CLASS_NAME + methodName + ": Income amount: " + balanceItem.getAmount());
 
                 startingBalance = startingBalance.add(balanceItem.getAmount());
-                LOGGER.debug(CLASS_NAME + methodName + ": New Balance: " + startingBalance);
+                LOGGER.info(CLASS_NAME + methodName + ": New Balance: " + startingBalance);
             }
         }
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
@@ -246,22 +253,22 @@ public class AccountBalanceSheetLogic {
         List<AccountBalanceSheetModel>  result = new ArrayList<AccountBalanceSheetModel>();;
         for( AccountBalanceSheetModel balanceItem : orderedBalanceSheetList) {
 
-            LOGGER.debug(CLASS_NAME + methodName + ": Balance: " +  startingBalance);
+            LOGGER.info(CLASS_NAME + methodName + ": Balance: " +  startingBalance);
             balanceItem.setPreBalance(startingBalance);
             //Check to see if balance item has income id
             if(balanceItem.getIncomeItemId() == 0) {
-                LOGGER.debug(CLASS_NAME + methodName + ": Expense amount: " + balanceItem.getAmount());
+                LOGGER.info(CLASS_NAME + methodName + ": Expense amount: " + balanceItem.getAmount());
 
                 startingBalance = startingBalance.subtract(balanceItem.getAmount());
-                LOGGER.debug(CLASS_NAME + methodName + ": New Balance: " + startingBalance);
+                LOGGER.info(CLASS_NAME + methodName + ": New Balance: " + startingBalance);
                 balanceItem.setPostBalance(startingBalance);
             }
             //If not must be an expense item
             else {
-                LOGGER.debug(CLASS_NAME + methodName + ": Income amount: " + balanceItem.getAmount());
+                LOGGER.info(CLASS_NAME + methodName + ": Income amount: " + balanceItem.getAmount());
 
                 startingBalance = startingBalance.add(balanceItem.getAmount());
-                LOGGER.debug(CLASS_NAME + methodName + ": New Balance: " + startingBalance);
+                LOGGER.info(CLASS_NAME + methodName + ": New Balance: " + startingBalance);
                 balanceItem.setPostBalance(startingBalance);
             }
             result.add(balanceItem);
@@ -290,5 +297,16 @@ public class AccountBalanceSheetLogic {
 
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return orderedBalanceSheetList;
+    }
+
+    private int getAccountPeriodId(int accountId, int periodId, int usersId){
+        final String methodName = "getAccountPeriodId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<AccountPeriodModel> accountPeriod = acctPeriodDao.getAccountPeriodByAccountNPeriod(accountId, periodId, usersId);
+        int accountPeriodId = accountPeriod.get(0).getId();
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return accountPeriodId;
     }
 }
