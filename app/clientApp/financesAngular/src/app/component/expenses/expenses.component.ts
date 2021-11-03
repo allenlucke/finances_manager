@@ -4,6 +4,8 @@ import { first } from 'rxjs/operators';
 import { AccountService } from 'src/app/service/account.service';
 import { ExpensesService } from 'src/app/service/expenses.service';
 import { Account } from 'src/app/_models/account';
+import { BudgetExpenseCategory } from 'src/app/_models/budget-expense-category';
+import { BudgetExpenseCategoryWithName } from 'src/app/_models/budget-expense-category-with-name';
 import { ExpenseCategory } from 'src/app/_models/expense-category';
 
 @Component({
@@ -23,6 +25,7 @@ export class ExpensesComponent implements OnInit {
   errorExpItem = '';
   currentUserId! : number;
   returnedId! : number;
+  postItemAvailableBudgExpCats! : BudgetExpenseCategoryWithName[];
 
   constructor(
     private formBuilder: FormBuilder,
@@ -35,6 +38,8 @@ export class ExpensesComponent implements OnInit {
 
     this.getAllExpenseCategories();
 
+    this.getAllAccounts();
+
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
 
     this.newCategoryForm = this.formBuilder.group({
@@ -46,11 +51,13 @@ export class ExpensesComponent implements OnInit {
       name: ['', Validators.required],
       transactionDate: ['', Validators.required],
       amount: ['', Validators.required],
-      paidWithCredit: ['', Validators.required],
-      paymentToCreditAccount: ['', Validators.required],
-      interestPaymentToCreditAccount: ['', Validators.required],
+      // paidWithCredit: ['', Validators.required],
+      // paymentToCreditAccount: ['', Validators.required],
+      // interestPaymentToCreditAccount: ['', Validators.required],
       accountId: ['', Validators.required]
     });
+
+    this.onDateInputChange();
   }
 
   // convenience getter for easy access to form fields
@@ -78,7 +85,7 @@ export class ExpensesComponent implements OnInit {
     this.submittedItem = true;
 
     // stop here if form is invalid
-    if (this.newCategoryForm!.invalid) {
+    if (this.newItemForm!.invalid) {
       return;
     }
 
@@ -87,14 +94,29 @@ export class ExpensesComponent implements OnInit {
       this.iF.name.value, 
       this.iF.transactionDate.value, 
       this.iF.amount.value, 
-      this.iF.paymentToCreditAccount.value, 
-      this.iF.interestPaymentToCreditAccount.value, 
+      false,
+      false,
+      // this.iF.paymentToCreditAccount.value, 
+      // this.iF.interestPaymentToCreditAccount.value, 
       this.iF.accountId.value, 
       this.currentUserId)
 
       this.newItemForm.reset();
       this.iF.untouched;
       this.submittedItem = false;
+  }
+
+  // onChangeTest()
+
+  onDateInputChange(): void {
+  
+    this.newItemForm.get('transactionDate')?.valueChanges.subscribe(val => {
+      console.log('Tracking change to date. Date: ' + val);
+      this.getBudgetExpCatsWithNameByDate(val);
+      // console.log(this.postItemAvailableBudgExpCats)
+      console.log(JSON.stringify(this.postItemAvailableBudgExpCats));
+
+    });
   }
 
 
@@ -110,6 +132,13 @@ export class ExpensesComponent implements OnInit {
       this.returnedId = returnedId;
       })
       this.getAllExpenseCategories();
+  }
+
+  getBudgetExpCatsWithNameByDate(date: Date) {
+    this.expensesService.getBudgetExpCatsWithNameByDate(date).pipe(first()).subscribe(postItemAvailableBudgExpCats => {
+      this.postItemAvailableBudgExpCats = postItemAvailableBudgExpCats;
+      // console.log(postItemAvailableBudgExpCats)
+    })
   }
 
   getAllAccounts(){

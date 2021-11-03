@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.BudgetExpenseCategory;
 
+import com.Allen.SpringFinancesServer.Model.BudgExpCatRespWithName;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,9 +59,9 @@ public class BudgetExpenseCategoryDao {
 
     //Returns all budget expense categories from the period the date falls within
     //User may only access budget expense categories assigned to the user
-    public List<BudgetExpenseCategoryModel> getBudgetExpCatsBtDate(final String date, final int usersId) {
+    public List<BudgetExpenseCategoryModel> getBudgetExpCatsByDate(final String date, final int usersId) {
 
-        final String methodName = "getBudgetExpCatsBtDate() ";
+        final String methodName = "getBudgetExpCatsByDate() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
         Timestamp dateToSearch = timeMgr.stringToTimestampParser(date);
@@ -85,6 +86,44 @@ public class BudgetExpenseCategoryDao {
             budgExpCat.setExpenseCategoryId((int)row.get("expenseCategory_id"));
             budgExpCat.setAmountBudgeted((BigDecimal)row.get("amountBudgeted"));
             budgExpCat.setUsersId((int)row.get("users_id"));
+
+            result.add(budgExpCat);
+        }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //Returns all budget expense categories from the period the date falls within
+    //User may only access budget expense categories assigned to the user
+    public List<BudgExpCatRespWithName> getBudgetExpCatsWithNameByDate(final String date, final int usersId) {
+
+        final String methodName = "getBudgetExpCatsWithNameByDate() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        Timestamp dateToSearch = timeMgr.stringToTimestampParser(date);
+
+        String sql = "SELECT \"budget_expenseCategory\".\"id\", \"budget_expenseCategory\".\"budget_id\",\n" +
+                "\"budget_expenseCategory\".\"expenseCategory_id\", \"budget_expenseCategory\".\"amountBudgeted\", \n" +
+                "\"budget_expenseCategory\".\"users_id\", \"expenseCategory\".\"name\" FROM \"budget_expenseCategory\"\n" +
+                "JOIN \"budget\" ON \"budget_expenseCategory\".\"budget_id\" = \"budget\".\"id\"\n" +
+                "JOIN \"period\" ON \"budget\".\"period_id\" = \"period\".\"id\"\n" +
+                "JOIN \"expenseCategory\" ON \"budget_expenseCategory\".\"expenseCategory_id\" = \"expenseCategory\".\"id\"\n" +
+                "WHERE ? >= \"startDate\"\n" +
+                "AND ? <= \"endDate\"\n" +
+                "AND \"budget_expenseCategory\".\"users_id\" = ?;";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {dateToSearch, dateToSearch, usersId} );
+
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
+        List<BudgExpCatRespWithName> result = new ArrayList<BudgExpCatRespWithName>();
+        for(Map<String, Object> row:rows){
+            BudgExpCatRespWithName budgExpCat = new BudgExpCatRespWithName();
+            budgExpCat.setId((int)row.get("id"));
+            budgExpCat.setBudgetId((int)row.get("budget_id"));
+            budgExpCat.setExpenseCategoryId((int)row.get("expenseCategory_id"));
+            budgExpCat.setAmountBudgeted((BigDecimal)row.get("amountBudgeted"));
+            budgExpCat.setUsersId((int)row.get("users_id"));
+            budgExpCat.setName((String)row.get("name"));
 
             result.add(budgExpCat);
         }

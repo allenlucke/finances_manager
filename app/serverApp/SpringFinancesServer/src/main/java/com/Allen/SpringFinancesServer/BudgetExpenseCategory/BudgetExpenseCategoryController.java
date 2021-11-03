@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.BudgetExpenseCategory;
 
+import com.Allen.SpringFinancesServer.Model.BudgExpCatRespWithName;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,7 +82,7 @@ public class BudgetExpenseCategoryController {
     public List<BudgetExpenseCategoryModel> getBudgetExpCatsBtDate(
             @RequestHeader("Authorization") String jwtString, @QueryParam("date") String date){
 
-        final String methodName = "getBudgetExpCatsBtDate() ";
+        final String methodName = "getBudgetExpCatsByDate() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
         //Get the user id of user making the call
@@ -91,7 +92,28 @@ public class BudgetExpenseCategoryController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<BudgetExpenseCategoryModel> result;
-        result = dao.getBudgetExpCatsBtDate(date, userId);
+        result = dao.getBudgetExpCatsByDate(date, userId);
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //Returns all budget expense categories from the period the date falls within
+    @GetMapping("/getBudgetExpCatsWithNameByDate")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public List<BudgExpCatRespWithName> getBudgetExpCatsWithNameByDate(
+            @RequestHeader("Authorization") String jwtString, @QueryParam("date") String date){
+
+        final String methodName = "getBudgetExpCatsWithNameByDate() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
+        int userId = authorizationFilter.getUserIdFromToken(jwtString);
+
+        List<BudgExpCatRespWithName> result;
+        result = dao.getBudgetExpCatsWithNameByDate(date, userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }

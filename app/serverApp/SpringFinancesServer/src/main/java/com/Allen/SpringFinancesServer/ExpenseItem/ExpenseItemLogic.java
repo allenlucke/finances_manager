@@ -36,14 +36,15 @@ public class ExpenseItemLogic {
         //Get list of budget expense categories applicable to the desired transaction date
         String desiredTransactionDate = inputExpenseItem.getTransactionDate();
         int usersId = inputExpenseItem.getUsersId();
-        List<BudgetExpenseCategoryModel> budgetExpCats = budgetExpCatDao.getBudgetExpCatsBtDate(desiredTransactionDate, usersId);
+        List<BudgetExpenseCategoryModel> budgetExpCats = budgetExpCatDao.getBudgetExpCatsByDate(desiredTransactionDate, usersId);
 
         List<ReturnIdModel> emptyReturnedIdList = new ArrayList<>();
 
         if(budgetExpCats.size() > 0) {
             //Set paid with credit
             ExpenseItemModel updatedExpenseItem = setPaidWithCredit(inputExpenseItem);
-            List<ReturnIdModel> returnedIdList = dao.addExpItemReturnId(updatedExpenseItem);
+            //Direct to correct dao
+            List<ReturnIdModel> returnedIdList = addExpItemDaoDirector(updatedExpenseItem);
 
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return returnedIdList;
@@ -55,7 +56,7 @@ public class ExpenseItemLogic {
         }
     }
 
-    public ExpenseItemModel setPaidWithCredit(ExpenseItemModel expItem){
+    private ExpenseItemModel setPaidWithCredit(ExpenseItemModel expItem){
 
         final String methodName = "setPaidWithCredit() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -69,5 +70,22 @@ public class ExpenseItemLogic {
 
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return expItem;
+    }
+
+    private List<ReturnIdModel> addExpItemDaoDirector(ExpenseItemModel expenseItem) {
+
+        final String methodName = "addExpItemDaoDirector() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //If expense item is a payment to a credit card account
+        if (expenseItem.getPaymentToCreditAccount() || expenseItem.getInterestPaymentToCreditAccount()) {
+            List<ReturnIdModel> returnedIdList = dao.addExpItemReturnIdPaymentToCredit(expenseItem);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+            return returnedIdList;
+        } else {
+            List<ReturnIdModel> returnedIdList = dao.addExpItemReturnId(expenseItem);
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+            return returnedIdList;
+        }
     }
 }

@@ -15,6 +15,15 @@ public class ExpenseItemModel {
     private Boolean interestPaymentToCreditAccount;
     private int accountId;
     private int usersId;
+    private int payToCreditAcctId;
+
+    public int getPayToCreditAcctId() {
+        return payToCreditAcctId;
+    }
+
+    public void setPayToCreditAcctId(int payToCreditAcctId) {
+        this.payToCreditAcctId = payToCreditAcctId;
+    }
 
     ExpenseItemModel() {};
 

@@ -59,20 +59,27 @@ CREATE TABLE "expenseItem" (
 	"name" VARCHAR (200) NOT NULL,
 	"transactionDate" TIMESTAMP WITH TIME ZONE NOT NULL,
 	"amount" NUMERIC(12,2) DEFAULT 0.00,
-	--Denotes item was paid by credit card
+	--"paidWithCredit": Denotes item was paid by credit card
 	"paidWithCredit" BOOLEAN DEFAULT FALSE,
-	--Denotes Item was paymnet on a credit incomeCategory_id
+	--"paymentToCreditAccount": Denotes Item was paymnet on a credit incomeCategory_id
 	--These items Should NOT have a "budget_expenseCategory_id"
 	--As that was assigned at the time of the purchase,
 	--and doing so would essentially double the expenditure
 	--from the standpoint of the budget allocation
 	"paymentToCreditAccount" BOOLEAN DEFAULT FALSE,
-	--Denotes interest payment on a credit card,
+	--"interestPaymentToCreditAccount": Denotes interest payment on a credit card,
 	--This should be allocated to the period in
 	-- which the card was paid off
 	"interestPaymentToCreditAccount" BOOLEAN DEFAULT FALSE,
 	"account_id" INT NOT NULL REFERENCES "account",
-	"users_id" INT NOT NULL REFERENCES "users"
+	"users_id" INT NOT NULL REFERENCES "users",
+	--"payToCreditAcctId": Indicates the credit account id
+	--of the account paiment was made to
+	--Need to make sure we logg the payment to the correct account
+	--When we pay our credit card.
+	--Should only be populated if "paymentToCreditAccount" OR
+	--"interestPaymentToCreditAccount" is set to TRUE
+	"payToCreditAcctId" INT REFERENCES "account"
 );
 
 CREATE TABLE "incomeCategory" (

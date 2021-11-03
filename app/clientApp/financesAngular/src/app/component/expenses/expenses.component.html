@@ -41,7 +41,7 @@
     <div class="card">
         <h4 class="card-header">Add a new Expense Item</h4>
         <div class="card-body">
-            <form [formGroup]="newItemForm" (ngSubmit)="onSubmit()">
+            <form [formGroup]="newItemForm" (ngSubmit)="onSubmitExpItem()">
                 <div class="form-group">
                     <label for="name">Expense Item Name</label>
                     <input type="text" formControlName="name" class="form-control" [ngClass]="{ 'is-invalid': submitted && iF.name.errors }" />
@@ -57,11 +57,27 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="name">Amount</label>
+                    <label for="amount">Amount</label>
                     <input type="number" formControlName="amount" class="form-control" [ngClass]="{ 'is-invalid': submitted && iF.amount.errors }" />
                     <div *ngIf="submitted && iF.amount.errors" class="invalid-feedback">
                         <div *ngIf="iF.amount.errors.required">Amount is required</div>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="accountId">Account</label>
+                    <select class="custom-select" formControlName="accountId" class="form-control" [ngClass]="{ 'is-invalid': submitted && iF.accountId.errors }" >
+                        <option value="" >Select an Account expense will be withdrawn from</option>
+                        <option value = {{account.id}} *ngFor="let account of allAccounts">
+                            {{account.name}}</option>
+                      </select>
+                </div>
+                <div class="form-group">
+                    <label for="budgetExpenseCategoryId">Expense Category</label>
+                    <select class="custom-select" formControlName="budgetExpenseCategoryId" class="form-control" [ngClass]="{ 'is-invalid': submitted && iF.budgetExpenseCategoryId.errors }" >
+                        <option value="" >Select a Category for the Expense (Must select Transaction Date first)</option>
+                        <option value = {{budgExpCat.id}} *ngFor="let budgExpCat of postItemAvailableBudgExpCats">
+                            {{budgExpCat.name}}</option>
+                      </select>
                 </div>
                 <!-- <div class="form-group">
                     <label for="endDate">Period Start Date</label>
