@@ -54,14 +54,14 @@
             <form [formGroup]="cloneBudgetForm" (ngSubmit)="onSubmitClone()">
                 <div class="form-group">
                     <label for="name">Desired Name of New Budget</label>
-                    <input type="text" formControlName="name" class="form-control" [ngClass]="{ 'is-invalid': submitted && cF.name.errors }" />
-                    <div *ngIf="submitted && cF.name.errors" class="invalid-feedback">
+                    <input type="text" formControlName="name" class="form-control" [ngClass]="{ 'is-invalid': submittedClone && cF.name.errors }" />
+                    <div *ngIf="submittedClone && cF.name.errors" class="invalid-feedback">
                         <div *ngIf="cF.name.errors.required">name is required</div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="periodId">New Budget Period</label>
-                    <select class="custom-select" formControlName="periodId" class="form-control" [ngClass]="{ 'is-invalid': submitted && cF.periodId.errors }" >
+                    <select class="custom-select" formControlName="periodId" class="form-control" [ngClass]="{ 'is-invalid': submittedClone && cF.periodId.errors }" >
                         <option value="" >Select a Period to assign Budget to</option>
                         <option value = {{period.id}} *ngFor="let period of allPeriods">
                             {{period.name}}: {{ period.startDate | date: 'MM/dd/yyyy' }} - {{ period.endDate | date: 'MM/dd/yyyy' }}</option>
@@ -69,7 +69,7 @@
                 </div>
                 <div class="form-group">
                     <label for="templateBudgetId">Template Budget</label>
-                    <select class="custom-select" formControlName="templateBudgetId" class="form-control" [ngClass]="{ 'is-invalid': submitted && cF.templateBudgetId.errors }" >
+                    <select class="custom-select" formControlName="templateBudgetId" class="form-control" [ngClass]="{ 'is-invalid': submittedClone && cF.templateBudgetId.errors }" >
                         <option value="" >Select a Budget to clone from</option>
                         <option value = {{budget.id}} *ngFor="let budget of allBudgets">
                             {{budget.name}}</option>
@@ -80,6 +80,41 @@
                     Submit
                 </button>
                 <div *ngIf="errorClone" class="alert alert-danger mt-3 mb-0">{{errorClone}}</div>
+            </form>
+        </div>
+    </div>
+    <div class="card">
+        <h4 class="card-header">Add Expense Category To an Existing Budget</h4>
+        <div class="card-body">
+            <form [formGroup]="addBudgExpCatForm" (ngSubmit)="onSubmitAddBudgExpCat()">
+                <div class="form-group">
+                    <label for="budgetId">Budget</label>
+                    <select class="custom-select" formControlName="budgetId" class="form-control" [ngClass]="{ 'is-invalid': submittedBudgExpCat && bECF.budgetId.errors }" >
+                        <option value="" >Select a Budget</option>
+                        <option value = {{budget.id}} *ngFor="let budget of allBudgets">
+                            {{budget.name}}</option>
+                      </select>
+                </div>
+                <div class="form-group">
+                    <label for="expenseCategoryId">Expense Category</label>
+                    <select class="custom-select" formControlName="expenseCategoryId" class="form-control" [ngClass]="{ 'is-invalid': submittedBudgExpCat && bECF.expenseCategoryId.errors }" >
+                        <option value="" >Select Expense Category to Add (Must select a Budget first)</option>
+                        <option value = {{expCat.id}} *ngFor="let expCat of unassignedExpenseCats">
+                            {{expCat.name}}</option>
+                      </select>
+                </div>
+                <div class="form-group">
+                    <label for="amountBudgeted">Amount to Budget</label>
+                    <input type="number" formControlName="amountBudgeted" class="form-control" [ngClass]="{ 'is-invalid': submittedBudgExpCat && bECF.amountBudgeted.errors }" />
+                    <div *ngIf="submittedBudgExpCat && bECF.amountBudgeted.errors" class="invalid-feedback">
+                        <div *ngIf="bECF.amountBudgeted.errors.required">Amount is required</div>
+                    </div>
+                </div>
+                <button [disabled]="loading" class="btn btn-primary">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
+                    Submit
+                </button>
+                <div *ngIf="errorBudgExpCat" class="alert alert-danger mt-3 mb-0">{{errorBudgExpCat}}</div>
             </form>
         </div>
     </div>

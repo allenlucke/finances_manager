@@ -119,6 +119,27 @@ public class ExpenseCategoryController {
         }
     }
 
+    //Get available expense categories not assigned to the input budget
+    @GetMapping("/getExpenseCatsNotAssignedToBudget")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public List<ExpenseCategoryModel> getExpenseCatsNotAssignedToBudget(
+            @RequestHeader("Authorization") String jwtString, @QueryParam("budgetId") int budgetId){
+
+        final String methodName = "getExpenseCatsNotAssignedToBudget() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
+        int userId = authorizationFilter.getUserIdFromToken(jwtString);
+
+        List<ExpenseCategoryModel> result;
+        result = dao.getExpenseCatsNotAssignedToBudget(budgetId, userId);
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
     @PostMapping("/addExpCatRetId")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity addExpCatRetId(

@@ -1,1 +1,42 @@
-<p>income works!</p>
+<div class="card mt-4">
+    <h3 class="card-header" align="center" >Expenses</h3>
+    <div class="card-body">
+        <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
+        <table class="table table-bordered table-striped table-hover">
+            <thead>  
+                <tr>  
+                    <th>ID</th>
+                    <th>Category</th>
+                    <th>User's ID</th>
+                </tr>  
+            </thead>  
+            <tbody *ngFor="let category of allIncomeCategories; let i = index">  
+                <tr>  
+                    <td>{{category.id}}</td>
+                    <td>{{category.name}}</td>
+                    <td>{{category.usersId}}</td> 
+                </tr>   
+            </tbody>  
+        </table>  
+    </div>
+    <div class="card">
+        <h4 class="card-header">Add an Income category</h4>
+        <div class="card-body">
+            <form [formGroup]="newCategoryForm" (ngSubmit)="onSubmit()">
+                <div class="form-group">
+                    <label for="name">Income Category Name</label>
+                    <input type="text" formControlName="name" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.name.errors }" />
+                    <div *ngIf="submitted && f.name.errors" class="invalid-feedback">
+                        <div *ngIf="f.name.errors.required">name is required</div>
+                    </div>
+                </div>
+                <button [disabled]="loading" class="btn btn-primary">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
+                    Submit
+                </button>
+                <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
+            </form>
+        </div>
+    </div>
+
+</div>

@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { Budget } from '../_models/budget';
 import { BudgetExpenseCategory } from '../_models/budget-expense-category';
+import { ExpenseCategory } from '../_models/expense-category';
 
 @Injectable({
   providedIn: 'root'
@@ -28,5 +29,10 @@ export class BudgetService {
   //Add expense category to an existing budget
   addBudgetExpenseCategory(budgetId : number, expenseCategoryId : number, amountBudgeted : number, usersId : number) {
     return this.http.post<any>(`${environment.apiUrl}/addBudgetExpCatReturnId`, {budgetId, expenseCategoryId, amountBudgeted, usersId})
+  }
+
+  //Get expense categories not currently assigned to selected budget
+  getExpenseCatsNotAssignedToBudget(budgetId : number) {
+    return this.http.get<ExpenseCategory[]>(`${environment.apiUrl}/getExpenseCatsNotAssignedToBudget?budgetId=` + budgetId)
   }
 }

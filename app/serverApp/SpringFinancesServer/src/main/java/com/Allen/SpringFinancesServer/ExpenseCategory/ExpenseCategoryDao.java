@@ -106,7 +106,35 @@ public class ExpenseCategoryDao {
         return result;
     }
 
+    //Get available expense categories not assigned to the input budget
+    //User may only access expense categories assigned to the user
+    public List<ExpenseCategoryModel> getExpenseCatsNotAssignedToBudget(final int budgetId, final int usersId) {
 
+        final String methodName = "getExpenseCatsNotAssignedToBudget() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"expenseCategory\" \n" +
+                "WHERE \"expenseCategory\".\"users_id\" = ? \n" +
+                "EXCEPT (SELECT \"expenseCategory\".\"id\", \"expenseCategory\".\"name\", \"expenseCategory\".\"users_id\" FROM \"expenseCategory\"\n" +
+                "JOIN \"budget_expenseCategory\" ON \"expenseCategory\".\"id\" = \"budget_expenseCategory\".\"expenseCategory_id\"\n" +
+                "WHERE \"budget_expenseCategory\".\"budget_id\" = ?\n" +
+                "AND \"expenseCategory\".\"users_id\" = ?);";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {usersId, budgetId, usersId} );
+
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
+        List<ExpenseCategoryModel> result = new ArrayList<ExpenseCategoryModel>();
+        for(Map<String, Object> row:rows){
+            ExpenseCategoryModel expCat = new ExpenseCategoryModel();
+            expCat.setId((int)row.get("id"));
+            expCat.setName((String)row.get("name"));
+            expCat.setUsersId((int)row.get("users_id"));
+
+            result.add(expCat);
+        }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
 
     //Only Admin or the User to whom the income category will be assigned
     //may use this post call

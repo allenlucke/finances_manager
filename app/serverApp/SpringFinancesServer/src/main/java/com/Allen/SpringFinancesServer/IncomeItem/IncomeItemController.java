@@ -32,6 +32,9 @@ public class IncomeItemController {
     IncomeItemDao dao;
 
     @Autowired
+    IncomeItemLogic logic;
+
+    @Autowired
     AuthorizationFilter authorizationFilter;
 
 
@@ -126,23 +129,32 @@ public class IncomeItemController {
     @PostMapping("/addIncomeItemReturnId")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity addIncomeItemReturnId(
-            @RequestHeader("Authorization") String jwtString, @RequestBody IncomeItemModel expItem) throws ServletException, IOException {
+            @RequestHeader("Authorization") String jwtString, @RequestBody IncomeItemModel incItem) throws ServletException, IOException {
 
         final String methodName = "addIncomeItemReturnId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
         ///Check user auth: Only admin or assigned user may post
-        int requestUserId = expItem.getUsersId();
+        int requestUserId = incItem.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
         if(!confirmAuthorization) {
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
-        //If authorized make call to dao
+        //If authorized make call to logic class
         else {
-            List<ReturnIdModel> returnedId = dao.addIncomeItemReturnId(expItem);
-            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-            return new ResponseEntity(returnedId, HttpStatus.OK);
+            List<ReturnIdModel> returnedId = logic.addIncomeItemReturnId(incItem);
+
+            //See if post was rejected by logic class
+            if(returnedId.size() > 0) {
+                LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+                return new ResponseEntity(returnedId, HttpStatus.OK);
+            }
+            else{
+                LOGGER.warn(CLASS_NAME + methodName + " Input data invalid.");
+                LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+                return new ResponseEntity(returnedId, HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+            }
         }
     }
 

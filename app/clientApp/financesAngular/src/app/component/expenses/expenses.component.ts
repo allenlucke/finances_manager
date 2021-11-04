@@ -106,14 +106,11 @@ export class ExpensesComponent implements OnInit {
       this.submittedItem = false;
   }
 
-  // onChangeTest()
-
   onDateInputChange(): void {
   
     this.newItemForm.get('transactionDate')?.valueChanges.subscribe(val => {
       console.log('Tracking change to date. Date: ' + val);
       this.getBudgetExpCatsWithNameByDate(val);
-      // console.log(this.postItemAvailableBudgExpCats)
       console.log(JSON.stringify(this.postItemAvailableBudgExpCats));
 
     });

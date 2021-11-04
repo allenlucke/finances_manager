@@ -58,7 +58,7 @@ public class CloneOrEditBudgetLogic {
         List<ReturnIdModel> newExpCatsIdsList = postListOfExpenseCats(updatedBudgetExpCatsList);
 
         //Get List of budget income categories to be cloned to new budget
-        List<BudgetIncomeCategoryModel> matchingBudgetIncCatsList = budgetIncomeCategoryDao.getBudgetIncCatByExpCat(templateBudgetId, usersId);
+        List<BudgetIncomeCategoryModel> matchingBudgetIncCatsList = budgetIncomeCategoryDao.getBudgetIncCatByIncCat(templateBudgetId, usersId);
 
         //Replace template budget id in matchingBudgetIncCatsList with newBudgetId
         List<BudgetIncomeCategoryModel> updatedIncCatsList = replaceBudgetIdIncCats(matchingBudgetIncCatsList, newBudgetId);

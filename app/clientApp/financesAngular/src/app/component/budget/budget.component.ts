@@ -5,6 +5,7 @@ import { BudgetService } from 'src/app/service/budget.service';
 import { PeriodService } from 'src/app/service/period.service';
 import { Budget } from 'src/app/_models/budget';
 import { BudgetExpenseCategory } from 'src/app/_models/budget-expense-category';
+import { ExpenseCategory } from 'src/app/_models/expense-category';
 import { Period } from 'src/app/_models/period';
 
 @Component({
@@ -23,6 +24,7 @@ export class BudgetComponent implements OnInit {
   submittedBudgExpCat = false;
   allBudgets! : Budget[];
   allPeriods! : Period[];
+  unassignedExpenseCats! : ExpenseCategory[];
   error = '';
   errorClone = '';
   errorBudgExpCat = '';
@@ -59,6 +61,8 @@ export class BudgetComponent implements OnInit {
       expenseCategoryId: ['', Validators.required],
       amountBudgeted: ['', Validators.required]
     })
+
+    this.onDateInputChange();
   }
 
   // convenience getter for easy access to form fields
@@ -113,6 +117,12 @@ export class BudgetComponent implements OnInit {
     this.submittedBudgExpCat = false;
   }
 
+  onDateInputChange(): void {
+    this.addBudgExpCatForm.get('budgetId')?.valueChanges.subscribe(val => {
+      console.log('Tracking change to budget id. budgetId: ' + val);
+      this.getExpenseCatsNotAssignedToBudget(val);
+    });
+  }
 
   getAllBudgets() {
     this.budgetService.getAllBudgets().pipe(first()).subscribe(allBudgets => {
@@ -146,6 +156,14 @@ export class BudgetComponent implements OnInit {
   addBudgetExpenseCategory(budgetId : number, expenseCategoryId : number, amountBudgeted : number, usersId : number){
     this.budgetService.addBudgetExpenseCategory(budgetId, expenseCategoryId, amountBudgeted, usersId).pipe(first()).subscribe(returnedId => {
       this.returnedId = returnedId;
+    })
+  }
+
+  //Get expense categories not currently assigned to selected budget
+  getExpenseCatsNotAssignedToBudget(budgetId : number){
+    console.log(budgetId);
+    this.budgetService.getExpenseCatsNotAssignedToBudget(budgetId).pipe(first()).subscribe(unassignedExpenseCats => {
+      this.unassignedExpenseCats = unassignedExpenseCats;
     })
   }
 
