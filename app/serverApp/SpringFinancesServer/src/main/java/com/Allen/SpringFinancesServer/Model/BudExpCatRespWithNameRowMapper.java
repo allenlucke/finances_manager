@@ -1,7 +1,5 @@
 package com.Allen.SpringFinancesServer.Model;
 
-
-import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryModel;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;

@@ -66,14 +66,12 @@ export class ExpensesComponent implements OnInit {
 
   onSubmit() {
     this.submitted = true;
-
     // stop here if form is invalid
     if (this.newCategoryForm!.invalid) {
         return;
     }
 
     this.postExpenseCategory(this.f.name.value)
-
     this.getAllExpenseCategories();
     this.newCategoryForm.reset();
     this.f.name.untouched;
@@ -107,12 +105,9 @@ export class ExpensesComponent implements OnInit {
   }
 
   onDateInputChange(): void {
-  
     this.newItemForm.get('transactionDate')?.valueChanges.subscribe(val => {
       console.log('Tracking change to date. Date: ' + val);
       this.getBudgetExpCatsWithNameByDate(val);
-      console.log(JSON.stringify(this.postItemAvailableBudgExpCats));
-
     });
   }
 

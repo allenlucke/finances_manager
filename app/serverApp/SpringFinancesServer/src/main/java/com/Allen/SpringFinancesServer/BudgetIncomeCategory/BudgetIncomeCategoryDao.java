@@ -1,7 +1,6 @@
 package com.Allen.SpringFinancesServer.BudgetIncomeCategory;
 
-import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryModel;
-import com.Allen.SpringFinancesServer.Model.BudgExpCatRespWithName;
+import com.Allen.SpringFinancesServer.Model.BudgIncCatRespWithName;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -216,6 +215,44 @@ public class BudgetIncomeCategoryDao {
             budgIncomeCat.setIncomeCategoryId((int)row.get("incomeCategory_id"));
             budgIncomeCat.setAmountBudgeted((BigDecimal)row.get("amountBudgeted"));
             budgIncomeCat.setUsersId((int)row.get("users_id"));
+
+            result.add(budgIncomeCat);
+        }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //Returns all budget income categories from the period the date falls within
+    //User may only access budget income categories assigned to the user
+    public List<BudgIncCatRespWithName> getBudgetIncCatsWithNameByDate(final String date, final int usersId) {
+
+        final String methodName = "getBudgetIncCatsWithNameByDate() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        Timestamp dateToSearch = timeMgr.stringToTimestampParser(date);
+
+        String sql = "SELECT \"budget_incomeCategory\".\"id\", \"budget_incomeCategory\".\"budget_id\",\n" +
+                "\"budget_incomeCategory\".\"incomeCategory_id\", \"budget_incomeCategory\".\"amountBudgeted\",\n" +
+                "\"budget_incomeCategory\".\"users_id\", \"incomeCategory\".\"name\" FROM \"budget_incomeCategory\"\n" +
+                "JOIN \"budget\" ON \"budget_incomeCategory\".\"budget_id\" = \"budget\".\"id\"\n" +
+                "JOIN \"period\" ON \"budget\".\"period_id\" = \"period\".\"id\"\n" +
+                "JOIN \"incomeCategory\" ON \"budget_incomeCategory\".\"incomeCategory_id\" = \"incomeCategory\".\"id\"\n" +
+                "WHERE ? >= \"startDate\"\n" +
+                "AND ? <= \"endDate\"\n" +
+                "AND \"budget_incomeCategory\".\"users_id\" = ?;";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[]{dateToSearch, dateToSearch, usersId});
+
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
+        List<BudgIncCatRespWithName> result = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            BudgIncCatRespWithName budgIncomeCat = new BudgIncCatRespWithName();
+            budgIncomeCat.setId((int) row.get("id"));
+            budgIncomeCat.setBudgetId((int) row.get("budget_id"));
+            budgIncomeCat.setIncomeCategoryId((int) row.get("incomeCategory_id"));
+            budgIncomeCat.setAmountBudgeted((BigDecimal) row.get("amountBudgeted"));
+            budgIncomeCat.setUsersId((int) row.get("users_id"));
+            budgIncomeCat.setName((String)row.get("name"));
 
             result.add(budgIncomeCat);
         }

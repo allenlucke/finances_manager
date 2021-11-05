@@ -1,5 +1,5 @@
 <div class="card mt-4">
-    <h3 class="card-header" align="center" >Expenses</h3>
+    <h3 class="card-header" align="center" >Income</h3>
     <div class="card-body">
         <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
         <table class="table table-bordered table-striped table-hover">
@@ -38,5 +38,67 @@
             </form>
         </div>
     </div>
-
+    <div class="card">
+        <h4 class="card-header">Add a new Income Item</h4>
+        <div class="card-body">
+            <form [formGroup]="newItemForm" (ngSubmit)="onSubmitIncItem()">
+                <div class="form-group">
+                    <label for="name">Income Item Name</label>
+                    <input type="text" formControlName="name" class="form-control" [ngClass]="{ 'is-invalid': submittedItem && iF.name.errors }" />
+                    <div *ngIf="submittedItem && iF.name.errors" class="invalid-feedback">
+                        <div *ngIf="iF.name.errors.required">Item Name is required</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="receivedDate">Received Date</label>
+                    <input type="date" formControlName="receivedDate" class="form-control" [ngClass]="{ 'is-invalid': submittedItem && iF.receivedDate.errors }" />
+                    <div *ngIf="submittedItem && iF.receivedDate.errors" class="invalid-feedback">
+                        <div *ngIf="iF.receivedDate.errors.required">Received Date is required</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount</label>
+                    <input type="number" formControlName="amount" class="form-control" [ngClass]="{ 'is-invalid': submittedItem && iF.amount.errors }" />
+                    <div *ngIf="submittedItem && iF.amount.errors" class="invalid-feedback">
+                        <div *ngIf="iF.amount.errors.required">Amount is required</div>
+                    </div>
+                </div>
+                <!-- <div class="form-group">
+                    <label for="amountExpected">Amount Expected</label>
+                    <input type="number" formControlName="amountExpected" class="form-control" [ngClass]="{ 'is-invalid': submittedItem && iF.amountExpected.errors }" />
+                    <div *ngIf="submittedItem && iF.amountExpected.errors" class="invalid-feedback">
+                        <div *ngIf="iF.amountExpected.errors.required">Amount Expected is required</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="amountReceived">Amount Received</label>
+                    <input type="number" formControlName="amountReceived" class="form-control" [ngClass]="{ 'is-invalid': submittedItem && iF.amountReceived.errors }" />
+                    <div *ngIf="submittedItem && iF.amountReceived.errors" class="invalid-feedback">
+                        <div *ngIf="iF.amountReceived.errors.required">Amount Received is required</div>
+                    </div>
+                </div> -->
+                <div class="form-group">
+                    <label for="accountId">Account</label>
+                    <select class="custom-select" formControlName="accountId" class="form-control" [ngClass]="{ 'is-invalid': submittedItem && iF.accountId.errors }" >
+                        <option value="" >Select an Account income will be will be added to</option>
+                        <option value = {{account.id}} *ngFor="let account of allAccounts">
+                            {{account.name}}</option>
+                      </select>
+                </div>
+                <div class="form-group">
+                    <label for="budgetIncomeCategoryId">IncomeCategory</label>
+                    <select class="custom-select" formControlName="budgetIncomeCategoryId" class="form-control" [ngClass]="{ 'is-invalid': submitted && iF.budgetExpenseCategoryId.errors }" >
+                        <option value="" >Select a Category for the Income Item (Must select Received Date first)</option>
+                        <option value = {{budgIncCat.id}} *ngFor="let budgIncCat of postItemAvailableBudgIncCats">
+                            {{budgIncCat.name}}</option>
+                      </select>
+                </div>
+                <button [disabled]="loading" class="btn btn-primary">
+                    <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
+                    Submit
+                </button>
+                <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
+            </form>
+        </div>
+    </div>
 </div>

@@ -1,5 +1,7 @@
 package com.Allen.SpringFinancesServer.BudgetIncomeCategory;
 
+import com.Allen.SpringFinancesServer.Model.BudgExpCatRespWithName;
+import com.Allen.SpringFinancesServer.Model.BudgIncCatRespWithName;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,6 +119,27 @@ public class BudgetIncomeCategoryController {
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
+    }
+
+    //Returns all budget income categories from the period the date falls within
+    @GetMapping("/getBudgetIncCatsWithNameByDate")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public List<BudgIncCatRespWithName> getBudgetIncCatsWithNameByDate(
+            @RequestHeader("Authorization") String jwtString, @QueryParam("date") String date){
+
+        final String methodName = "getBudgetIncCatsWithNameByDate() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
+        int userId = authorizationFilter.getUserIdFromToken(jwtString);
+
+        List<BudgIncCatRespWithName> result;
+        result = dao.getBudgetIncCatsWithNameByDate(date, userId);
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
     }
 
     @PostMapping("/addBudgetIncomeCatReturnId")
