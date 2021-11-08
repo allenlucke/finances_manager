@@ -17,7 +17,6 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { JwtInterceptor } from 'src/app/_helpers/jwt.interceptor';
 import { ErrorInterceptor } from 'src/app/_helpers/error.interceptor';
-import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
 import { HomeComponent } from './component/home/home.component';
 import { LoginComponent } from './component/login/login.component';
@@ -35,7 +34,6 @@ import { BudgetComponent } from './component/budget/budget.component';
 @NgModule({
   declarations: [
     AppComponent,
-    HeaderComponent,
     FooterComponent,
     HomeComponent,
     LoginComponent,
@@ -49,18 +47,18 @@ import { BudgetComponent } from './component/budget/budget.component';
     BudgetComponent,
   ],
   imports: [
-    BrowserModule,
     FormsModule,
-    HttpClientModule,
-    ReactiveFormsModule,
-    BrowserAnimationsModule,
-    MatButtonModule,
     MatDialogModule,
+    ReactiveFormsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
+    HttpClientModule,
+    AppRoutingModule,
     MatToolbarModule,
     MatSidenavModule,
     MatListModule,
     MatIconModule,
-    AppRoutingModule
+    MatButtonModule,
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
