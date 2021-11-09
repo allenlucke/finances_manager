@@ -1,5 +1,5 @@
 <div class="card mt-4">
-    <h3 class="card-header" align="center" >Budgets</h3>
+    <h3 class="card-header" align="center" >Budget</h3>
     <div class="card-body">
         <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
         <table class="table table-bordered table-striped table-hover">
@@ -21,8 +21,11 @@
             </tbody>  
         </table>  
     </div>
-    <div class="card">
-        <h4 class="card-header">Add a new Budget</h4>
+    <app-budget-post></app-budget-post>
+    <app-budget-clone></app-budget-clone>
+    <app-budget-expense-category-post></app-budget-expense-category-post>
+    <!-- <div class="card">
+        <h4 class="card-header">Create New Budget</h4>
         <div class="card-body">
             <form [formGroup]="newBudgetForm" (ngSubmit)="onSubmit()">
                 <div class="form-group">
@@ -36,7 +39,7 @@
                     <label for="periodId">New Budget Period</label>
                     <select class="custom-select" formControlName="periodId" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.periodId.errors }" >
                         <option value="" >Select a Period to assign Budget to</option>
-                        <option value = {{period.id}} *ngFor="let period of allPeriods">
+                        <option value = {{period.id}} *ngFor="let period of periodsSansBudget">
                             {{period.name}}: {{ period.startDate | date: 'MM/dd/yyyy' }} - {{ period.endDate | date: 'MM/dd/yyyy' }}</option>
                       </select>
                 </div>
@@ -47,8 +50,8 @@
                 <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
             </form>
         </div>
-    </div>
-    <div class="card">
+    </div> -->
+    <!-- <div class="card">
         <h4 class="card-header">Clone Budget</h4>
         <div class="card-body">
             <form [formGroup]="cloneBudgetForm" (ngSubmit)="onSubmitClone()">
@@ -63,7 +66,7 @@
                     <label for="periodId">New Budget Period</label>
                     <select class="custom-select" formControlName="periodId" class="form-control" [ngClass]="{ 'is-invalid': submittedClone && cF.periodId.errors }" >
                         <option value="" >Select a Period to assign Budget to</option>
-                        <option value = {{period.id}} *ngFor="let period of allPeriods">
+                        <option value = {{period.id}} *ngFor="let period of periodsSansBudget">
                             {{period.name}}: {{ period.startDate | date: 'MM/dd/yyyy' }} - {{ period.endDate | date: 'MM/dd/yyyy' }}</option>
                       </select>
                 </div>
@@ -82,8 +85,8 @@
                 <div *ngIf="errorClone" class="alert alert-danger mt-3 mb-0">{{errorClone}}</div>
             </form>
         </div>
-    </div>
-    <div class="card">
+    </div> -->
+    <!-- <div class="card">
         <h4 class="card-header">Add Expense Category To an Existing Budget</h4>
         <div class="card-body">
             <form [formGroup]="addBudgExpCatForm" (ngSubmit)="onSubmitAddBudgExpCat()">
@@ -117,6 +120,6 @@
                 <div *ngIf="errorBudgExpCat" class="alert alert-danger mt-3 mb-0">{{errorBudgExpCat}}</div>
             </form>
         </div>
-    </div>
+    </div> -->
 <div>
 

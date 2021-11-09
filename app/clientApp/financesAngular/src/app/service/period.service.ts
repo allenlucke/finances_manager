@@ -15,6 +15,11 @@ export class PeriodService {
     return this.http.get<Period[]>(`${environment.apiUrl}/getAllPeriods`);
   }
 
+  //Gets all periods from a user where no budget is assigned
+  getPeriodsWithoutBudget() {
+    return this.http.get<Period[]>(`${environment.apiUrl}/getPeriodsWithoutBudget`);
+  }
+
   addPeriodRetId(name: string, startDate: Date, endDate: Date, usersId: number) {
     return this.http.post<any>(`${environment.apiUrl}/addPeriodRetId`, { name, startDate, endDate, usersId })
   }

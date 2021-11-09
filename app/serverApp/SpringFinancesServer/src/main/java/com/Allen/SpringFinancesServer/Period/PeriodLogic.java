@@ -56,6 +56,22 @@ public class PeriodLogic {
         }
     }
 
+    public List <PeriodModel> getPeriodsWithoutBudget(final int usersId) {
+
+        final String methodName = "getPeriodsWithoutBudget() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Make call to dao
+        List <PeriodModel> getPeriodsWithoutBudgetList = dao.getPeriodsWithoutBudget(usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return getPeriodsWithoutBudgetList;
+    }
+
+    //
+    //Helper Methods
+    //
+
     //Check to determine if a period overlaps with an existing period
     private boolean checkForExistingPeriod(PeriodModel period, int usersId) {
 

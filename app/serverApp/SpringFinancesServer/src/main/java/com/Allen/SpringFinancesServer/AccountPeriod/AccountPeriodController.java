@@ -144,7 +144,7 @@ public class AccountPeriodController {
             List<ReturnIdModel> returnedId = mgr.addAcctPeriodReturningId(acctPeriod);
 
             //Check to see if post was rejected due to an overlapping accountPeriod
-            if(returnedId.size() > 0){
+            if(returnedId.size() == 0){
                 LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
                 LOGGER.warn(CLASS_NAME + methodName + "This request overlaps/conflicts with a previously existing accountPeriod.");
                 return new ResponseEntity("Bad Request", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);

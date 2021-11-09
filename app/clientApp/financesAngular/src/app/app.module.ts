@@ -29,6 +29,9 @@ import { IncomeComponent } from './component/income/income.component';
 import { ModalComponent } from './component/modal/modal.component';
 import { PeriodComponent } from './component/period/period.component';
 import { BudgetComponent } from './component/budget/budget.component';
+import { BudgetCloneComponent } from './component/budget-clone/budget-clone.component';
+import { BudgetPostComponent } from './component/budget-post/budget-post.component';
+import { BudgetExpenseCategoryPostComponent } from './component/budget-expense-category-post/budget-expense-category-post.component';
 
 
 @NgModule({
@@ -45,6 +48,9 @@ import { BudgetComponent } from './component/budget/budget.component';
     ModalComponent,
     PeriodComponent,
     BudgetComponent,
+    BudgetCloneComponent,
+    BudgetPostComponent,
+    BudgetExpenseCategoryPostComponent,
   ],
   imports: [
     FormsModule,

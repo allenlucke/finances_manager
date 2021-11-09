@@ -158,6 +158,25 @@ public class PeriodController {
         return new ResponseEntity(result, HttpStatus.OK);
     }
 
+    @GetMapping("/getPeriodsWithoutBudget")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public ResponseEntity  getPeriodsWithoutBudget(@RequestHeader("Authorization") String jwtString){
+
+        final String methodName = "getPeriodsWithoutBudget() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        //Get the user id of user making the call
+        //If a request is made for data associated with a user other than
+        //the user making the call, the dao will return an empty result
+        //set from the database
+        int userId = authorizationFilter.getUserIdFromToken(jwtString);
+
+        List<PeriodModel> result;
+        result = mgr.getPeriodsWithoutBudget(userId);
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return new ResponseEntity(result, HttpStatus.OK);
+    }
+
     @PostMapping("/addPeriodRetId")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity addPeriodRetId(

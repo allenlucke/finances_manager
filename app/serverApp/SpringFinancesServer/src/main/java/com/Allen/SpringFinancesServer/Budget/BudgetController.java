@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.Budget;
 
+import com.Allen.SpringFinancesServer.AccountPeriod.AccountPeriodModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,9 @@ public class BudgetController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    BudgetLogic mgr;
 
     @Autowired
     BudgetDao dao;
@@ -136,11 +140,21 @@ public class BudgetController {
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
-        //If authorized make call to dao
+        //If authorized make call to logic class
         else {
-            List<ReturnIdModel> returnedId = dao.addBudgetReturnId(budget);
-            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-            return new ResponseEntity(returnedId, HttpStatus.OK);
+            List<ReturnIdModel> returnedId = mgr.addBudgetReturnId(budget);
+
+            //Check to see if post was rejected due to a previously existing budget already assigned to the periodId
+            if(returnedId.size() == 0){
+                LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+                LOGGER.warn(CLASS_NAME + methodName + "This request overlaps/conflicts with a previously existing budget.");
+                return new ResponseEntity("Bad Request", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+            }
+            //Else return response
+            else {
+                LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+                return new ResponseEntity(returnedId, HttpStatus.OK);
+            }
         }
     }
 }

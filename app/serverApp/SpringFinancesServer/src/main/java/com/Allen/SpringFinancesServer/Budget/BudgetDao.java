@@ -98,6 +98,22 @@ public class BudgetDao {
         return result;
     }
 
+    //User may only access budgets assigned to the user
+    public List<BudgetModel> getBudgetByPeriodId(final int periodId, final int usersId){
+        final String methodName = "getBudgetByPeriodId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"budget\" WHERE \"period_id\" = ? AND \"users_id\" = ?;";
+        BudgetModel budget = jdbcTemplate.queryForObject(
+                sql, new Object[]{periodId, usersId}, new BudgetRowMapper());
+
+        List<BudgetModel> result = new ArrayList<BudgetModel>();
+        result.add(budget);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
     //Admin only, may access any budget
     public List<BudgetModel> adminGetBudgetById(int id){
 

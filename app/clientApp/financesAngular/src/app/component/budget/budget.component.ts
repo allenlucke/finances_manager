@@ -4,7 +4,6 @@ import { first } from 'rxjs/operators';
 import { BudgetService } from 'src/app/service/budget.service';
 import { PeriodService } from 'src/app/service/period.service';
 import { Budget } from 'src/app/_models/budget';
-import { BudgetExpenseCategory } from 'src/app/_models/budget-expense-category';
 import { ExpenseCategory } from 'src/app/_models/expense-category';
 import { Period } from 'src/app/_models/period';
 
@@ -23,7 +22,7 @@ export class BudgetComponent implements OnInit {
   submittedClone = false;
   submittedBudgExpCat = false;
   allBudgets! : Budget[];
-  allPeriods! : Period[];
+  periodsSansBudget! : Period[];
   unassignedExpenseCats! : ExpenseCategory[];
   error = '';
   errorClone = '';
@@ -41,7 +40,7 @@ export class BudgetComponent implements OnInit {
     this.loading = true;
 
     this.getAllBudgets();
-    this.getAllPeriods();
+    this.getPeriodsWithoutBudget();
 
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
 
@@ -62,7 +61,7 @@ export class BudgetComponent implements OnInit {
       amountBudgeted: ['', Validators.required]
     })
 
-    this.onDateInputChange();
+    this.onBudgetInputChange();
   }
 
   // convenience getter for easy access to form fields
@@ -117,7 +116,7 @@ export class BudgetComponent implements OnInit {
     this.submittedBudgExpCat = false;
   }
 
-  onDateInputChange(): void {
+  onBudgetInputChange(): void {
     this.addBudgExpCatForm.get('budgetId')?.valueChanges.subscribe(val => {
       console.log('Tracking change to budget id. budgetId: ' + val);
       this.getExpenseCatsNotAssignedToBudget(val);
@@ -138,9 +137,9 @@ export class BudgetComponent implements OnInit {
     this.getAllBudgets();
   }
 
-  getAllPeriods() {
-    this.periodService.getAllPeriods().pipe(first()).subscribe(allPeriods => {
-      this.allPeriods = allPeriods;
+  getPeriodsWithoutBudget() {
+    this.periodService.getPeriodsWithoutBudget().pipe(first()).subscribe(periodsSansBudget => {
+      this.periodsSansBudget = periodsSansBudget;
       this.loading = false;
     })
   }

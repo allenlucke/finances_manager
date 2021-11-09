@@ -202,6 +202,38 @@ public class PeriodDao {
         return result;
     }
 
+    //User may only access periods assigned to the user
+    //Get a list of periods that no budget has been assigned to
+    public List <PeriodModel> getPeriodsWithoutBudget(final int usersId) {
+        final String methodName = "getPeriodsWithoutBudget() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "SELECT * FROM \"period\" WHERE \"period\".\"users_id\" = ?\n" +
+                "EXCEPT (SELECT \"period\".\"id\", \"period\".\"name\", \"period\".\"startDate\", \n" +
+                "\"period\".\"endDate\", \"period\".\"users_id\" FROM \"period\"\n" +
+                "JOIN \"budget\" ON \"period\".\"id\" = \"budget\".\"period_id\"\n" +
+                "WHERE \"period\".\"users_id\" = ?);";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {usersId, usersId} );
+
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
+        List<PeriodModel> result = new ArrayList<PeriodModel>();
+        for(Map<String, Object> row:rows){
+            PeriodModel period = new PeriodModel();
+            period.setId((int)row.get("id"));
+            period.setName((String)row.get("name"));
+            Timestamp startDate = (Timestamp) row.get("startDate");
+            period.setStartDate((String) timeMgr.timestampToStringParser(startDate));
+            Timestamp endDate = (Timestamp) row.get("endDate");
+            period.setEndDate((String) timeMgr.timestampToStringParser(endDate));
+            period.setUsersId((int)row.get("users_id"));
+
+            result.add(period);
+        }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
     //Only Admin or the User to whom the period will be assigned
     //may use this post call
     public List<ReturnIdModel> addPeriodReturnId(final PeriodModel period) {
