@@ -133,7 +133,7 @@ public class BudgetController {
         final String methodName = "addBudgetRetId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
-        ///Check user auth: Only admin or assigned user may post
+        //Check user auth: Only admin or assigned user may post
         int requestUserId = budget.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
         if(!confirmAuthorization) {

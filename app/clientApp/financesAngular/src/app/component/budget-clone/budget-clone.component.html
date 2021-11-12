@@ -13,7 +13,7 @@
                     <label for="periodId">New Budget Period</label>
                     <select class="custom-select" formControlName="periodId" class="form-control" [ngClass]="{ 'is-invalid': submittedClone && cF.periodId.errors }" >
                         <option value="" >Select a Period to assign Budget to</option>
-                        <option value = {{period.id}} *ngFor="let period of periodsSansBudget">
+                        <option value = {{period.id}} *ngFor="let period of (periodsSansBudget | async)">
                             {{period.name}}: {{ period.startDate | date: 'MM/dd/yyyy' }} - {{ period.endDate | date: 'MM/dd/yyyy' }}</option>
                       </select>
                 </div>
@@ -21,7 +21,7 @@
                     <label for="templateBudgetId">Template Budget</label>
                     <select class="custom-select" formControlName="templateBudgetId" class="form-control" [ngClass]="{ 'is-invalid': submittedClone && cF.templateBudgetId.errors }" >
                         <option value="" >Select a Budget to clone from</option>
-                        <option value = {{budget.id}} *ngFor="let budget of allBudgets">
+                        <option value = {{budget.id}} *ngFor="let budget of (allBudgets | async)">
                             {{budget.name}}</option>
                       </select>
                 </div>

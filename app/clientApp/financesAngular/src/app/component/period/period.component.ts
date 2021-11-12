@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { PeriodService } from 'src/app/service/period.service';
 import { Period } from 'src/app/_models/period';
@@ -10,11 +11,10 @@ import { Period } from 'src/app/_models/period';
   styleUrls: ['./period.component.css']
 })
 export class PeriodComponent implements OnInit {
-
   newPeriodForm!: FormGroup;
   loading = false;
   submitted = false;
-  allPeriods! : Period[];
+  allPeriods! : Observable<Period[]>;
   error = '';
   currentUserId! : number;
   returnedId! : number;
@@ -25,10 +25,13 @@ export class PeriodComponent implements OnInit {
   ) { }
 
   ngOnInit(){
-    this.loading = true;
+    this.loading = false;
 
-    this.getAllPeriods();
+    //All periods observable
+    this.allPeriods = this.periodService.allPeriods;
+    this.periodService.getAllPeriods();
 
+    //Get current user id
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
 
     this.newPeriodForm = this.formBuilder.group({
@@ -41,13 +44,6 @@ export class PeriodComponent implements OnInit {
   // convenience getter for easy access to form fields
   get f() { return this.newPeriodForm.controls; }
 
-  getAllPeriods() {
-    this.periodService.getAllPeriods().pipe(first()).subscribe(allPeriods => {
-      this.allPeriods = allPeriods;
-      this.loading = false;
-    })
-  }
-
   onSubmit(){
     this.submitted = true;
 
@@ -58,17 +54,12 @@ export class PeriodComponent implements OnInit {
 
     this.postPeriod(this.f.name.value, this.f.startDate.value, this.f.endDate.value, this.currentUserId);
 
-    this.getAllPeriods();
     this.newPeriodForm.reset();
-
     this.submitted = false;
   }
 
   postPeriod(name: string, startDate: Date, endDate: Date, usersId: number){
-    this.periodService.addPeriodRetId(name, startDate, endDate, usersId).pipe(first()).subscribe(returnedId => {
-      this.returnedId = returnedId;
-    })
-    this.getAllPeriods();
+    this.periodService.addPeriodRetId(name, startDate, endDate, usersId)
   }
 
 }

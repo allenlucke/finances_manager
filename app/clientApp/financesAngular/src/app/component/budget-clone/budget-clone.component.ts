@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { first } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { BudgetService } from 'src/app/service/budget.service';
 import { PeriodService } from 'src/app/service/period.service';
 import { Budget } from 'src/app/_models/budget';
@@ -16,8 +16,8 @@ export class BudgetCloneComponent implements OnInit {
   cloneBudgetForm!: FormGroup;
   loading = false;
   submittedClone = false;
-  allBudgets! : Budget[];
-  periodsSansBudget! : Period[];
+  allBudgets! : Observable<Budget[]>;
+  periodsSansBudget! : Observable<Period[]>;
   errorClone = '';
   currentUserId! : number;
   returnedId! : number;
@@ -31,10 +31,16 @@ export class BudgetCloneComponent implements OnInit {
   ngOnInit(){
     this.loading = true;
 
-    this.getAllBudgets();
-    this.getPeriodsWithoutBudget();
+    //All budgets observable
+    this.allBudgets = this.budgetService.allBudgets;
+    this.budgetService.getAllBudgets();
 
-    this.currentUserId = Number(localStorage.getItem('currentUserId'));
+    //Period sans budget observable
+    this.periodsSansBudget = this.periodService.periodsWithoutBudget;
+    this.periodService.getPeriodsWithoutBudget();
+
+    //Get user id from storage
+    // this.currentUserId = Number(localStorage.getItem('currentUserId'));
 
     this.cloneBudgetForm = this.formBuilder.group({
       name: ['', Validators.required],
@@ -56,35 +62,13 @@ export class BudgetCloneComponent implements OnInit {
       }
   
       this.cloneBudget(this.cF.templateBudgetId.value ,this.cF.name.value, this.cF.periodId.value, this.currentUserId);
-  
-      this.getAllBudgets();
-      this.cloneBudgetForm.reset();
-  
+
+      this.cloneBudgetForm.reset(); 
       this.submittedClone = false;
     }
 
-
-    getAllBudgets() {
-      this.budgetService.getAllBudgets().pipe(first()).subscribe(allBudgets => {
-        this.allBudgets = allBudgets;
-        this.loading = false;
-      })
-    }
-
-    getPeriodsWithoutBudget() {
-      this.periodService.getPeriodsWithoutBudget().pipe(first()).subscribe(periodsSansBudget => {
-        this.periodsSansBudget = periodsSansBudget;
-        this.loading = false;
-      })
-    }
-
     cloneBudget(templateBudgetId : number, name: string, periodId: number, usersId: number){
-      this.budgetService.cloneBudget(templateBudgetId, name, periodId, usersId).pipe(first()).subscribe(returnedId => {
-        this.returnedId = returnedId;
-      })
-      this.getAllBudgets();
+      this.budgetService.cloneBudget(templateBudgetId, name, periodId, usersId)
     }
-
-
     
 }

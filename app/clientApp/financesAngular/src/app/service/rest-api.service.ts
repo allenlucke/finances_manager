@@ -22,23 +22,21 @@ export class RestApiService {
   httpOptions = {
     headers: new HttpHeaders({
       'Content-Type': 'application/json',
-      // 'Authorization': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJERVZUU1RVU0VSIiwiZXhwIjoxNjMwNDQ4ODI2LCJpYXQiOjE2MzA0MzA4MjZ9.v0dI17cRrcdS8c_Uvv-scrajEfBM8l-_X2KfbcEFz00JLZwg-KY6XH5yghiRHkfhEP82jH7VH1_BgCG4sdzzzQ'
     })
   } 
 
   // HttpClient API get() method => SayHello Test Method
-    getHello(): Observable<any> {
-    console.log("In get hello API call")
-    const headers= new HttpHeaders()
-    .set('content-type', 'application/json')
-    .set('Access-Control-Allow-Origin', '*')
-    .set('Authorization', 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJERVZUU1RVU0VSIiwiZXhwIjoxNjMwNDQ4ODI2LCJpYXQiOjE2MzA0MzA4MjZ9.v0dI17cRrcdS8c_Uvv-scrajEfBM8l-_X2KfbcEFz00JLZwg-KY6XH5yghiRHkfhEP82jH7VH1_BgCG4sdzzzQ');
-    return this.http.get<any>(this.apiURL + '/hello', { 'headers': headers })
-    .pipe(
-      retry(1),
-      catchError(this.handleError)
-    )
-  }
+  //   getHello(): Observable<any> {
+  //   console.log("In get hello API call")
+  //   const headers= new HttpHeaders()
+  //   .set('content-type', 'application/json')
+  //   .set('Access-Control-Allow-Origin', '*')
+  //   return this.http.get<any>(this.apiURL + '/hello', { 'headers': headers })
+  //   .pipe(
+  //     retry(1),
+  //     catchError(this.handleError)
+  //   )
+  // }
 
   // HttpClient API get() method => Get Expenses call to stored procedure
   // getExpensesSP(data: any): Observable<any> {

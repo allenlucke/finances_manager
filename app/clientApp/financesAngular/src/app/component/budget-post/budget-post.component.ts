@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { BudgetService } from 'src/app/service/budget.service';
 import { PeriodService } from 'src/app/service/period.service';
 import { Budget } from 'src/app/_models/budget';
-import { ExpenseCategory } from 'src/app/_models/expense-category';
 import { Period } from 'src/app/_models/period';
 
 @Component({
@@ -17,8 +17,7 @@ export class BudgetPostComponent implements OnInit {
   newBudgetForm!: FormGroup;
   loading = false;
   submitted = false;
-  allBudgets! : Budget[];
-  periodsSansBudget! : Period[];
+  periodsSansBudget! : Observable<Period[]>;
   error = '';
   currentUserId! : number;
   returnedId! : number;
@@ -30,9 +29,11 @@ export class BudgetPostComponent implements OnInit {
   ) { }
 
   ngOnInit(){
-    this.loading = true;
+    this.loading = false;
 
-    this.getPeriodsWithoutBudget();
+    //Period sans budget observable
+    this.periodsSansBudget = this.periodService.periodsWithoutBudget;
+    this.periodService.getPeriodsWithoutBudget();
 
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
 
@@ -53,32 +54,15 @@ export class BudgetPostComponent implements OnInit {
         return;
       }
   
+      console.log("in submit budget")
       this.postBudget(this.f.name.value, this.f.periodId.value, this.currentUserId);
   
-      this.getAllBudgets();
-      this.newBudgetForm.reset();
-  
+      this.newBudgetForm.reset(); 
       this.submitted = false;
     }
 
-    getAllBudgets() {
-      this.budgetService.getAllBudgets().pipe(first()).subscribe(allBudgets => {
-        this.allBudgets = allBudgets;
-        this.loading = false;
-      })
-    }
-
-    getPeriodsWithoutBudget() {
-      this.periodService.getPeriodsWithoutBudget().pipe(first()).subscribe(periodsSansBudget => {
-        this.periodsSansBudget = periodsSansBudget;
-        this.loading = false;
-      })
-    }
-
     postBudget(name: string, periodId: number, usersId: number){
-      this.budgetService.addBudgetRetId(name, periodId, usersId).pipe(first()).subscribe(returnedId => {
-        this.returnedId = returnedId;
-      })
-      this.getAllBudgets();
+      this.budgetService.addBudgetRetId(name, periodId, usersId);
+      
     }
 }

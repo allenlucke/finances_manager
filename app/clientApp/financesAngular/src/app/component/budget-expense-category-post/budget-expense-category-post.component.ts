@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Observable } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { first } from 'rxjs/operators';
 import { BudgetService } from 'src/app/service/budget.service';
@@ -15,7 +16,7 @@ export class BudgetExpenseCategoryPostComponent implements OnInit {
   addBudgExpCatForm!: FormGroup;
   loading = false;
   submittedBudgExpCat = false;
-  allBudgets! : Budget[];
+  allBudgets! : Observable<Budget[]>;;
   unassignedExpenseCats! : ExpenseCategory[];
   errorBudgExpCat = '';
   currentUserId! : number;
@@ -27,9 +28,13 @@ export class BudgetExpenseCategoryPostComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.loading = true;
-    this.getAllBudgets();
+    this.loading = false;
 
+    //All budgets observable
+    this.allBudgets = this.budgetService.allBudgets;
+    this.budgetService.getAllBudgets();
+
+    //Get current user
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
 
     this.addBudgExpCatForm = this.formBuilder.group({
@@ -66,19 +71,9 @@ export class BudgetExpenseCategoryPostComponent implements OnInit {
       });
     }
 
-    getAllBudgets() {
-      this.budgetService.getAllBudgets().pipe(first()).subscribe(allBudgets => {
-        this.allBudgets = allBudgets;
-        this.loading = false;
-      })
-    }
-
-      //Add expense category to an existing budget
+    //Add expense category to an existing budget
     addBudgetExpenseCategory(budgetId : number, expenseCategoryId : number, amountBudgeted : number, usersId : number){
-      this.budgetService.addBudgetExpenseCategory(budgetId, expenseCategoryId, amountBudgeted, usersId).pipe(first()).subscribe(returnedId => {
-        this.returnedId = returnedId;
-        this.getAllBudgets;
-      })
+      this.budgetService.addBudgetExpenseCategory(budgetId, expenseCategoryId, amountBudgeted, usersId)
     }
 
     //Get expense categories not currently assigned to selected budget

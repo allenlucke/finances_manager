@@ -1,28 +1,28 @@
-    <div class="card mt-4">
-        <h3 class="card-header" align="center" >Create New Budget</h3>
-        <div class="card-body">
-            <form [formGroup]="newBudgetForm" (ngSubmit)="onSubmit()">
-                <div class="form-group">
-                    <label for="name">Desired Name of New Budget</label>
-                    <input type="text" formControlName="name" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.name.errors }" />
-                    <div *ngIf="submitted && f.name.errors" class="invalid-feedback">
-                        <div *ngIf="f.name.errors.required">name is required</div>
-                    </div>
+<div class="card mt-4">
+    <h3 class="card-header" align="center" >Create New Budget</h3>
+    <div class="card-body">
+        <form [formGroup]="newBudgetForm" (ngSubmit)="onSubmit()">
+            <div class="form-group">
+                <label for="name">Desired Name of New Budget</label>
+                <input type="text" formControlName="name" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.name.errors }" />
+                <div *ngIf="submitted && f.name.errors" class="invalid-feedback">
+                    <div *ngIf="f.name.errors.required">name is required</div>
                 </div>
-                <div class="form-group">
-                    <label for="periodId">New Budget Period</label>
-                    <select class="custom-select" formControlName="periodId" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.periodId.errors }" >
-                        <option value="" >Select a Period to assign Budget to</option>
-                        <option value = {{period.id}} *ngFor="let period of periodsSansBudget">
-                            {{period.name}}: {{ period.startDate | date: 'MM/dd/yyyy' }} - {{ period.endDate | date: 'MM/dd/yyyy' }}</option>
-                      </select>
-                </div>
-                <button [disabled]="loading" class="btn btn-primary">
-                    <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
-                    Submit
-                </button>
-                <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
-            </form>
-        </div>
+            </div>
+            <div class="form-group">
+                <label for="periodId">New Budget Period</label>
+                <select class="custom-select" formControlName="periodId" class="form-control" [ngClass]="{ 'is-invalid': submitted && f.periodId.errors }" >
+                    <option value="" >Select a Period to assign Budget to</option>
+                    <option value = {{period.id}} *ngFor="let period of (periodsSansBudget | async)">
+                        {{period.name}}: {{ period.startDate | date: 'MM/dd/yyyy' }} - {{ period.endDate | date: 'MM/dd/yyyy' }}</option>
+                  </select>
+            </div>
+            <button [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
+                Submit
+            </button>
+            <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
+        </form>
     </div>
+</div>
 <div>

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { AccountService } from 'src/app/service/account.service';
 import { IncomeService } from 'src/app/service/income.service';
@@ -20,7 +21,7 @@ export class IncomeComponent implements OnInit {
   submittedItem = false;
   error = '';
   errorIncItem = '';
-  allIncomeCategories! : IncomeCategory[];
+  allIncomeCategories! : Observable<IncomeCategory[]>;
   allAccounts! : Account[]; 
   currentUserId! : number;
   returnedId! : number;
@@ -36,10 +37,13 @@ export class IncomeComponent implements OnInit {
 
     this.loading = true;
 
-    this.getAllIncomeCategories();
+    //All Income Categories observable
+    this.allIncomeCategories = this.incomeService.allIncomeCats;
+    this.incomeService.getAllIncomeCat();
 
     this.getAllAccounts();
 
+    //Get user id
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
 
     this.newCategoryForm = this.formBuilder.group({
@@ -71,7 +75,8 @@ export class IncomeComponent implements OnInit {
     }
 
     this.postIncomeCategory(this.f.name.value)
-    this.getAllIncomeCategories();
+    //TODO
+    // this.getAllIncomeCategories();
     this.newCategoryForm.reset();
     this.f.name.untouched;
 
@@ -101,27 +106,18 @@ export class IncomeComponent implements OnInit {
   }
 
   onDateInputChange(): void {
-  
     this.newItemForm.get('receivedDate')?.valueChanges.subscribe(val => {
       console.log('Tracking change to date. Date: ' + val);
       this.getBudgetIncCatsWithNameByDate(val);
-      // console.log(JSON.stringify(this.postItemAvailableBudgExpCats));
-
     });
-  }
-
-  getAllIncomeCategories(){
-    this.incomeService.getAllIncomeCat().pipe(first()).subscribe(allIncomeCategories => {
-      this.allIncomeCategories = allIncomeCategories;
-      this.loading = false;
-    })
   }
 
   postIncomeCategory(name: string){
     this.incomeService.addIncomeCatRetId(name, this.currentUserId).pipe(first()).subscribe(returnedId => {
       this.returnedId = returnedId;
       })
-      this.getAllIncomeCategories();
+      //TODO
+      // this.getAllIncomeCategories();
   }
 
   getBudgetIncCatsWithNameByDate(date: Date) {

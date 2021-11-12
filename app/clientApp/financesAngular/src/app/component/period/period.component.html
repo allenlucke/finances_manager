@@ -10,7 +10,7 @@
                     <th>End Date</th>
                 </tr>  
             </thead>  
-            <tbody *ngFor="let period of allPeriods; let i = index">  
+            <tbody *ngFor="let period of (allPeriods | async); let i = index">  
                 <tr>  
                     <td>{{period.name}}</td>
                     <td>{{period.startDate  | date: 'MM/dd/yyyy' }}</td>
