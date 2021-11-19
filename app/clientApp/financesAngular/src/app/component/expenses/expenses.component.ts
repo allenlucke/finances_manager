@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { AccountService } from 'src/app/service/account.service';
 import { ExpensesService } from 'src/app/service/expenses.service';
@@ -19,7 +20,7 @@ export class ExpensesComponent implements OnInit {
   loading = false;
   submitted = false;
   submittedItem = false;
-  allExpCategories! : ExpenseCategory[];
+  allExpCategories! : Observable<ExpenseCategory[]>;
   allAccounts! : Account[]; 
   error = '';
   errorExpItem = '';
@@ -36,7 +37,9 @@ export class ExpensesComponent implements OnInit {
   ngOnInit(){
     this.loading = true;
 
-    this.getAllExpenseCategories();
+    //All Income Categories observable
+    this.allExpCategories = this.expensesService.allExpenseCats;
+    this.expensesService.getAllExpenseCat();
 
     this.getAllAccounts();
 
@@ -72,7 +75,7 @@ export class ExpensesComponent implements OnInit {
     }
 
     this.postExpenseCategory(this.f.name.value)
-    this.getAllExpenseCategories();
+    // this.getAllExpenseCategories();
     this.newCategoryForm.reset();
     this.f.name.untouched;
 
@@ -112,18 +115,18 @@ export class ExpensesComponent implements OnInit {
   }
 
 
-  getAllExpenseCategories(){
-    this.expensesService.getAllExpCat().pipe(first()).subscribe(allExpCategories => {
-      this.allExpCategories = allExpCategories;
-      this.loading = false;
-    })
-  }
+  // getAllExpenseCategories(){
+  //   this.expensesService.getAllExpCat().pipe(first()).subscribe(allExpCategories => {
+  //     this.allExpCategories = allExpCategories;
+  //     this.loading = false;
+  //   })
+  // }
 
   postExpenseCategory(name: string){
     this.expensesService.addExpCatRetId(name, this.currentUserId).pipe(first()).subscribe(returnedId => {
       this.returnedId = returnedId;
       })
-      this.getAllExpenseCategories();
+      // this.getAllExpenseCategories();
   }
 
   getBudgetExpCatsWithNameByDate(date: Date) {

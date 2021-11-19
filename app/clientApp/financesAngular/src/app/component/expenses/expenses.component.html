@@ -10,7 +10,7 @@
                     <th>User's ID</th>
                 </tr>  
             </thead>  
-            <tbody *ngFor="let category of allExpCategories; let i = index">  
+            <tbody *ngFor="let category of (allExpCategories | async); let i = index">  
                 <tr>  
                     <td>{{category.id}}</td>
                     <td>{{category.name}}</td>
