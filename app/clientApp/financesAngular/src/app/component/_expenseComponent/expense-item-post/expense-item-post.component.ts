@@ -10,17 +10,14 @@ import { BudgetExpenseCategoryWithName } from 'src/app/_models/budget-expense-ca
 import { ExpenseCategory } from 'src/app/_models/expense-category';
 
 @Component({
-  selector: 'app-expenses',
-  templateUrl: './expenses.component.html',
-  styleUrls: ['./expenses.component.css']
+  selector: 'app-expense-item-post',
+  templateUrl: './expense-item-post.component.html',
+  styleUrls: ['./expense-item-post.component.css']
 })
-export class ExpensesComponent implements OnInit {
-  newCategoryForm!: FormGroup;
+export class ExpenseItemPostComponent implements OnInit {
   newItemForm!: FormGroup;
   loading = false;
-  submitted = false;
   submittedItem = false;
-  allExpCategories! : Observable<ExpenseCategory[]>;
   allAccounts! : Account[]; 
   error = '';
   errorExpItem = '';
@@ -32,22 +29,14 @@ export class ExpensesComponent implements OnInit {
     private formBuilder: FormBuilder,
     private expensesService : ExpensesService,
     private accountService : AccountService
-    ) { }
+  ) { }
 
-  ngOnInit(){
+  ngOnInit() {
     this.loading = true;
-
-    //All Income Categories observable
-    this.allExpCategories = this.expensesService.allExpenseCats;
-    this.expensesService.getAllExpenseCat();
 
     this.getAllAccounts();
 
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
-
-    this.newCategoryForm = this.formBuilder.group({
-      name: ['', Validators.required],
-    });
 
     this.newItemForm = this.formBuilder.group({
       budgetExpenseCategoryId: ['', Validators.required],
@@ -64,23 +53,7 @@ export class ExpensesComponent implements OnInit {
   }
 
   // convenience getter for easy access to form fields
-  get f() { return this.newCategoryForm.controls; }
   get iF() { return this.newItemForm.controls; }
-
-  onSubmit() {
-    this.submitted = true;
-    // stop here if form is invalid
-    if (this.newCategoryForm!.invalid) {
-        return;
-    }
-
-    this.postExpenseCategory(this.f.name.value)
-    // this.getAllExpenseCategories();
-    this.newCategoryForm.reset();
-    this.f.name.untouched;
-
-    this.submitted = false;
-  }
 
   onSubmitExpItem() {
     this.submittedItem = true;
@@ -159,5 +132,4 @@ export class ExpensesComponent implements OnInit {
       this.returnedId = returnedId;
     })
   }
-
 }

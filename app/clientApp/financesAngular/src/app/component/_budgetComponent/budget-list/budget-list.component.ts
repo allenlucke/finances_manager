@@ -4,11 +4,11 @@ import { BudgetService } from 'src/app/service/budget.service';
 import { Budget } from 'src/app/_models/budget';
 
 @Component({
-  selector: 'app-budget',
-  templateUrl: './budget.component.html',
-  styleUrls: ['./budget.component.css']
+  selector: 'app-budget-list',
+  templateUrl: './budget-list.component.html',
+  styleUrls: ['./budget-list.component.css']
 })
-export class BudgetComponent implements OnInit {
+export class BudgetListComponent implements OnInit {
   loading = true;
   error = '';
   currentUserId! : number;
@@ -27,7 +27,7 @@ export class BudgetComponent implements OnInit {
 
     //Get current user
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
-
+    
   }
 
 }

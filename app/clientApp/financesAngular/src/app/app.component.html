@@ -1,46 +1,21 @@
-<!-- nav -->
-<!-- <nav class="navbar navbar-expand navbar-dark bg-dark" *ngIf="currentUser">
-  <div class="navbar-nav">
-      <a class="nav-item nav-link" routerLink="/">Home</a>
-      <a class="nav-item nav-link" (click)="logout()">Logout</a>
-      <a class="nav-item nav-link" routerLink="/budgetBalanceSheet">Budget Balance Sheet</a>
-      <a class="nav-item nav-link" routerLink="/accountBalanceSheet">Account Balance Sheet</a>
-      <a class="nav-item nav-link" routerLink="/income">Income</a>
-      <a class="nav-item nav-link" routerLink="/expenses">Expenses</a>
-      <a class="nav-item nav-link" routerLink="/period">Period</a>
-      <a class="nav-item nav-link" routerLink="/budgets">Budgets</a>
-  </div>
-</nav>
-<nav class="navbar navbar-expand navbar-dark bg-dark" *ngIf="!currentUser">
-  <div class="navbar-nav">
-      <a class="nav-item nav-link" routerLink="/login">Login</a>
-      <a class="nav-item nav-link" routerLink="/register">Register</a>
-  </div>
-</nav> -->
-<!-- main app container -->
-<!-- <div class="container">
-  <router-outlet></router-outlet>
-</div> -->
-
 <div class="d-flex" id="wrapper">
-  <!-- Sidebar -->
+  <!-- Start Sidebar -->
   <div class="bg-dark border-right" *ngIf="currentUser" id="sidebar-wrapper" >
     <div class="sidebar-heading">Quick Links </div>
     <div class="list-group list-group-flush">
-      
       <a class="nav-item nav-link" routerLink="/">Home</a>
       <!-- <a class="nav-item nav-link" (click)="logout()">Logout</a> -->
       <a class="nav-item nav-link" routerLink="/budgetBalanceSheet">Budget Balance Sheet</a>
       <a class="nav-item nav-link" routerLink="/accountBalanceSheet">Account Balance Sheet</a>
-      <a class="nav-item nav-link" routerLink="/income">Income</a>
-      <a class="nav-item nav-link" routerLink="/expenses">Expenses</a>
-      <a class="nav-item nav-link" routerLink="/period">Period</a>
-      <a class="nav-item nav-link" routerLink="/budgets">Budgets</a>
+      <a class="nav-item nav-link" routerLink="/account">Account Master</a>
+      <a class="nav-item nav-link" routerLink="/income">Income Master</a>
+      <a class="nav-item nav-link" routerLink="/expenses">Expense Master</a>
+      <a class="nav-item nav-link" routerLink="/period">Period Master</a>
+      <a class="nav-item nav-link" routerLink="/budgets">Budget Master</a>
     </div>
-
   </div>
-  <!-- /#sidebar-wrapper -->
-  <!-- Page Content -->
+  <!-- End Sidebar-->
+  <!-- Start Page Content -->
   <div id="page-content-wrapper" >
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom" >
       <button class="btn btn-secondary" id="menu-toggle" ><a><img src="../../assets/Images/icons8-menu-24.png" /> </a></button>
@@ -50,38 +25,67 @@
       <div class="collapse navbar-collapse" *ngIf="currentUser" id="navbarSupportedContent">
         <h1 >Finances Manager</h1>
         <ul class="navbar-nav ml-auto mt-2 mt-lg-0">
-          <!-- <a class="nav-item nav-link" routerLink="/">Home</a> -->
-          <!-- <a class="nav-item nav-link" (click)="logout()">Logout</a> -->
-
-          <!-- <a class="nav-item nav-link" routerLink="/budgetBalanceSheet">Budget Balance Sheet</a>
-          <a class="nav-item nav-link" routerLink="/accountBalanceSheet">Account Balance Sheet</a> -->
-          <a class="nav-item nav-link" routerLink="/income">Income</a>
-          <a class="nav-item nav-link" routerLink="/expenses">Expenses</a>
-          <a class="nav-item nav-link" routerLink="/period">Period</a>
-          <!-- <a class="nav-item nav-link" routerLink="/budgets">Budgets</a> -->
+          <!--Account dropdown --> 
+          <li class="nav-item dropdown" ngbDropdown>
+            <a class="nav-link dropdown-toggle" id="navbarScrollingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" ngbDropdownToggle>
+              Account
+            </a>
+            <ul class="dropdown-menu"  ngbDropdownMenu aria-labelledby="navbarScrollingDropdown">
+              <li ngbDropdownItem><a class="dropdown-item" href="/accountList">Accounts</a></li>
+              <li ngbDropdownItem><a class="dropdown-item" href="/accountPost">Create New Account</a></li>
+              <li ngbDropdownItem><a class="dropdown-item" href="/account">Account Master</a></li>
+            </ul>
+          </li>
+          <!--Income dropdown-->
+          <li class="nav-item dropdown" ngbDropdown>
+            <a class="nav-link dropdown-toggle" id="navbarScrollingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" ngbDropdownToggle>
+              Income
+            </a>
+            <ul class="dropdown-menu"  ngbDropdownMenu aria-labelledby="navbarScrollingDropdown">
+              <li ngbDropdownItem><a class="dropdown-item" href="/incomeCatList">Income Categories</a></li>
+              <li ngbDropdownItem><a class="dropdown-item" href="/incomeCatPost">Create New Income Category</a></li>
+              <li ngbDropdownItem><a class="dropdown-item" href="/incomeItemPost">Create New Income Item</a></li>
+              <li ngbDropdownItem><a class="dropdown-item" href="/income">Income Master</a></li>
+            </ul>
+          </li>
+          <!--Expense dropdown --> 
+          <li class="nav-item dropdown" ngbDropdown>
+            <a class="nav-link dropdown-toggle" id="navbarScrollingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" ngbDropdownToggle>
+              Expense
+            </a>
+            <ul class="dropdown-menu"  ngbDropdownMenu aria-labelledby="navbarScrollingDropdown">
+              <li ngbDropdownItem><a class="dropdown-item" href="/expenseCatList">Expense Categories</a></li>
+              <li ngbDropdownItem><a class="dropdown-item" href="/expenseCatPost">Create New Expense Category</a></li>
+              <li ngbDropdownItem><a class="dropdown-item" href="/expenseItemPost">Create New Expense Item</a></li>
+              <li ngbDropdownItem><a class="dropdown-item" href="/expenses">Expense Master</a></li>
+            </ul>
+          </li>
+          <!--Period dropdown --> 
+          <li class="nav-item dropdown" ngbDropdown>
+            <a class="nav-link dropdown-toggle" id="navbarScrollingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" ngbDropdownToggle>
+              Period
+            </a>
+            <ul class="dropdown-menu"  ngbDropdownMenu aria-labelledby="navbarScrollingDropdown">
+              <li ngbDropdownItem><a class="dropdown-item" href="/periodList">Periods</a></li>
+              <li ngbDropdownItem><a class="dropdown-item" href="/periodPost">Create New Period</a></li>
+              <li ngbDropdownItem><a class="dropdown-item" href="/period">Period Master</a></li>
+            </ul>
+          </li>
+          <!--Budget dropdown --> 
           <li class="nav-item dropdown" ngbDropdown>
             <a class="nav-link dropdown-toggle" id="navbarScrollingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" ngbDropdownToggle>
               Budget
             </a>
             <ul class="dropdown-menu"  ngbDropdownMenu aria-labelledby="navbarScrollingDropdown">
               <li ngbDropdownItem><a class="dropdown-item" href="/budgetBalanceSheet">Budget Balance Sheet</a></li>
+              <li ngbDropdownItem><a class="dropdown-item" href="/budgetList">Budgets</a></li>
               <li ngbDropdownItem><a class="dropdown-item" href="/budgetClone">Clone Budget</a></li>
               <li ngbDropdownItem><a class="dropdown-item" href="/budgetPost">Create New Budget</a></li>
               <li ngbDropdownItem><a class="dropdown-item" href="/budgetExpCatPost">Add Expense Category</a></li>
               <li ngbDropdownItem><a class="dropdown-item" href="/budgets">Budget Master</a></li>
             </ul>
           </li>
-          <!-- <li class="nav-item dropdown" ngbDropdown>
-            <a class="nav-link dropdown-toggle" id="navbarScrollingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" ngbDropdownToggle>
-              Link
-            </a>
-            <ul class="dropdown-menu"  ngbDropdownMenu aria-labelledby="navbarScrollingDropdown">
-              <li ngbDropdownItem><a class="dropdown-item" href="#">Action</a></li>
-              <li ngbDropdownItem><a class="dropdown-item" href="#">Another action</a></li>
-              <li ngbDropdownItem><hr class="dropdown-divider"></li>
-              <li ngbDropdownItem><a class="dropdown-item" href="#">Something else here</a></li>
-            </ul>
-          </li> -->
+
           <a class="nav-item nav-link" routerLink="/">Home</a>
           <a class="nav-item nav-link" (click)="logout()">Logout</a>
         </ul>
@@ -92,9 +96,8 @@
         <router-outlet></router-outlet>
       </div>
     </div>
-    
   </div>
-  <!-- /#page-content-wrapper -->
+  <!-- End Page Content -->
 </div>
 <!-- /#wrapper -->  
 

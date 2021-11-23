@@ -1,32 +1,28 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { AccountService } from 'src/app/service/account.service';
 import { IncomeService } from 'src/app/service/income.service';
 import { Account } from 'src/app/_models/account';
 import { BudgetIncomeCategoryWithName } from 'src/app/_models/budget-income-category-with-name';
-import { IncomeCategory } from 'src/app/_models/income-category';
 
 @Component({
-  selector: 'app-income',
-  templateUrl: './income.component.html',
-  styleUrls: ['./income.component.css']
+  selector: 'app-income-item-post',
+  templateUrl: './income-item-post.component.html',
+  styleUrls: ['./income-item-post.component.css']
 })
-export class IncomeComponent implements OnInit {
-  newCategoryForm!: FormGroup;
+export class IncomeItemPostComponent implements OnInit {
   newItemForm!: FormGroup;
   loading = false;
   submitted = false;
   submittedItem = false;
   error = '';
   errorIncItem = '';
-  allIncomeCategories! : Observable<IncomeCategory[]>;
   allAccounts! : Account[]; 
   currentUserId! : number;
   returnedId! : number;
   postItemAvailableBudgIncCats! : BudgetIncomeCategoryWithName[];
-
+  
   constructor(
     private formBuilder: FormBuilder,
     private incomeService: IncomeService,
@@ -37,18 +33,10 @@ export class IncomeComponent implements OnInit {
 
     this.loading = true;
 
-    //All Income Categories observable
-    this.allIncomeCategories = this.incomeService.allIncomeCats;
-    this.incomeService.getAllIncomeCat();
-
     this.getAllAccounts();
 
     //Get user id
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
-
-    this.newCategoryForm = this.formBuilder.group({
-      name: ['', Validators.required],
-    });
 
     this.newItemForm = this.formBuilder.group({
       budgetIncomeCategoryId: ['', Validators.required],
@@ -64,24 +52,7 @@ export class IncomeComponent implements OnInit {
   }
 
   // convenience getter for easy access to form fields
-  get f() { return this.newCategoryForm.controls; }
   get iF() { return this.newItemForm.controls; }
-
-  onSubmit() {
-    this.submitted = true;
-    // stop here if form is invalid
-    if (this.newCategoryForm!.invalid) {
-        return;
-    }
-
-    this.postIncomeCategory(this.f.name.value)
-    //TODO
-    // this.getAllIncomeCategories();
-    this.newCategoryForm.reset();
-    this.f.name.untouched;
-
-    this.submitted = false;
-  }
 
   onSubmitIncItem() {
     this.submittedItem = true;
@@ -112,14 +83,9 @@ export class IncomeComponent implements OnInit {
     });
   }
 
-  postIncomeCategory(name: string){
-    this.incomeService.addIncomeCatRetId(name, this.currentUserId)
-  }
-
   getBudgetIncCatsWithNameByDate(date: Date) {
     this.incomeService.getBudgetIncCatsWithNameByDate(date).pipe(first()).subscribe(postItemAvailableBudgIncCats => {
       this.postItemAvailableBudgIncCats = postItemAvailableBudgIncCats;
-      // console.log(postItemAvailableBudgExpCats)
     })
   }
 
@@ -153,5 +119,4 @@ export class IncomeComponent implements OnInit {
       this.returnedId = returnedId;
     })
   }
-
 }
