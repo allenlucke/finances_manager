@@ -39,7 +39,17 @@ export class ExpensesService {
   }
 
   addExpCatRetId(name: string, usersId: number ) {
-    return this.http.post<any>(`${environment.apiUrl}/addExpCatRetId`, { name, usersId })
+    this.http.post<any>(`${environment.apiUrl}/addExpCatRetId`, { name, usersId })
+      .subscribe(
+        data => {
+          this._allExpenseCats.next(Object.assign({}, this.allExpenseCatsDataStore).allExpenseCats);
+          //Update services based on change
+          this.getAllExpenseCat();
+          //Return new expense category id
+          return data;
+        },
+        error => console.log('Could not create expense category.')
+      );
   }
 
   addExpItemRetId(

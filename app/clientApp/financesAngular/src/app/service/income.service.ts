@@ -34,7 +34,17 @@ export class IncomeService {
   }
 
   addIncomeCatRetId(name: string, usersId: number ) {
-    return this.http.post<any>(`${environment.apiUrl}/addIncomeCatReturnId`, { name, usersId })
+    this.http.post<any>(`${environment.apiUrl}/addIncomeCatReturnId`, { name, usersId })
+      .subscribe(
+        data => {
+          this._allIncomeCats.next(Object.assign({}, this.allIncomeCatsDataStore).allIncomeCats);
+          //Update services based on change
+          this.getAllIncomeCat();
+          //Return new income category id
+          return data;
+        },
+        error => console.log('Could not create income category')
+      );
   }
 
   //Post new Income Item

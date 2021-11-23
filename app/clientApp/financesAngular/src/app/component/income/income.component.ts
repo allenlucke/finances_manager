@@ -113,11 +113,7 @@ export class IncomeComponent implements OnInit {
   }
 
   postIncomeCategory(name: string){
-    this.incomeService.addIncomeCatRetId(name, this.currentUserId).pipe(first()).subscribe(returnedId => {
-      this.returnedId = returnedId;
-      })
-      //TODO
-      // this.getAllIncomeCategories();
+    this.incomeService.addIncomeCatRetId(name, this.currentUserId)
   }
 
   getBudgetIncCatsWithNameByDate(date: Date) {

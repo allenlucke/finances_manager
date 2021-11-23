@@ -114,19 +114,8 @@ export class ExpensesComponent implements OnInit {
     });
   }
 
-
-  // getAllExpenseCategories(){
-  //   this.expensesService.getAllExpCat().pipe(first()).subscribe(allExpCategories => {
-  //     this.allExpCategories = allExpCategories;
-  //     this.loading = false;
-  //   })
-  // }
-
   postExpenseCategory(name: string){
-    this.expensesService.addExpCatRetId(name, this.currentUserId).pipe(first()).subscribe(returnedId => {
-      this.returnedId = returnedId;
-      })
-      // this.getAllExpenseCategories();
+    this.expensesService.addExpCatRetId(name, this.currentUserId);
   }
 
   getBudgetExpCatsWithNameByDate(date: Date) {
