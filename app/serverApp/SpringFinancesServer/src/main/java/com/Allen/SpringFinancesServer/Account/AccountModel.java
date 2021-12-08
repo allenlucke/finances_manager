@@ -7,6 +7,8 @@ public class AccountModel {
     private int usersId;
     private boolean isCredit;
     private boolean isActive;
+    private String creationDate;
+    private String closingDate;
 
     public AccountModel() {};
 
@@ -48,5 +50,21 @@ public class AccountModel {
 
     public void setActive(boolean active) {
         isActive = active;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+    }
+
+    public String getClosingDate() {
+        return closingDate;
+    }
+
+    public void setClosingDate(String closingDate) {
+        this.closingDate = closingDate;
     }
 }
