@@ -48,6 +48,8 @@ CREATE TABLE "account" (
 	"users_id" INT NOT NULL REFERENCES "users",
 	"isCredit" BOOLEAN DEFAULT FALSE,
 	"isActive" BOOLEAN DEFAULT TRUE,
+	"creationDate" TIMESTAMP WITH TIME ZONE NOT NULL,
+	"closingDate" TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE "expenseItem" (
