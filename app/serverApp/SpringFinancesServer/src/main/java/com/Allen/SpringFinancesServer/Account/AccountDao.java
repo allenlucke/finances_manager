@@ -155,7 +155,7 @@ public class AccountDao {
         return result;
     }
 
-    //Used by ExpenseItemLogic, no auth checks as user will have already passed auth check
+    //Used by AccountLogic, no auth checks as user will have already passed auth check
     public boolean checkForCreditAccount(int id){
 
         final String methodName = "checkForCreditAccount() ";

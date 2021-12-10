@@ -1,6 +1,6 @@
 package com.Allen.SpringFinancesServer.ExpenseItem;
 
-import com.Allen.SpringFinancesServer.Account.AccountDao;
+import com.Allen.SpringFinancesServer.Account.AccountLogic;
 import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryDao;
 import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
@@ -23,7 +23,7 @@ public class ExpenseItemLogic {
     ExpenseItemDao dao;
 
     @Autowired
-    AccountDao acctDao;
+    AccountLogic acctMgr;
 
     @Autowired
     BudgetExpenseCategoryDao budgetExpCatDao;
@@ -64,7 +64,7 @@ public class ExpenseItemLogic {
         //Get accountId from expenseItem
         int acctId = expItem.getAccountId();
         //Check to see if account is credit account
-        Boolean isCredit = acctDao.checkForCreditAccount(acctId);
+        Boolean isCredit = acctMgr.checkForCreditAccount(acctId);
         //Set expenseItem PaidWithCredit
         expItem.setPaidWithCredit(isCredit);
 

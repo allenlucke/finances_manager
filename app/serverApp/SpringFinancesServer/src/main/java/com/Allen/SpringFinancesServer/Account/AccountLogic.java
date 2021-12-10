@@ -1,10 +1,11 @@
 package com.Allen.SpringFinancesServer.Account;
 
 import com.Allen.SpringFinancesServer.ReturnIdModel;
+import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.sql.Timestamp;
 import java.util.List;
 
 import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
@@ -15,9 +16,46 @@ public class AccountLogic {
     @Autowired
     AccountDao dao;
 
+    private TimestampManager timeMgr = new TimestampManager();
+
     private static final String CLASS_NAME = "AccountLogic --- ";
     private static final String METHOD_ENTERING = "Entering:  ";
     private static final String METHOD_EXITING = "Exiting:  ";
+
+
+    public boolean checkForCreditAccount(final int id) {
+
+        final String methodName = "checkForCreditAccount() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        boolean isCredit = dao.checkForCreditAccount(id);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return isCredit;
+    }
+
+    public boolean checkForAccountIsOpenByDate(final int usersId, final int acctId, final String date) {
+
+        final String methodName = "checkForAccountIsOpenByDate() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<AccountModel> accountList = dao.getAccountById(acctId, usersId);
+        Timestamp acctCreateDate = timeMgr.stringToTimestampParser( accountList.get(0).getCreationDate() );
+        Timestamp acctClosingDate = timeMgr.stringToTimestampParser( accountList.get(0).getClosingDate() );
+
+        Timestamp desiredDate = timeMgr.stringToTimestampParser( date );
+
+        if( desiredDate.after( acctClosingDate ) ) {
+            LOGGER.warn(CLASS_NAME + methodName + " Account has already been closed. " );
+            return false;
+        }
+        if( desiredDate.before( acctCreateDate ) ){
+            LOGGER.warn(CLASS_NAME + methodName + " Account has not been created yet. " );
+            return false;
+        }
+
+        return true;
+    }
 
     //***
     //*** DAO Calls ***//
@@ -88,4 +126,5 @@ public class AccountLogic {
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
+
 }

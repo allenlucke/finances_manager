@@ -75,4 +75,5 @@ public class IncomeItemLogic {
         boolean isCredit = accountInfoList.get(0).isCredit();
         return isCredit;
     }
+
 }
