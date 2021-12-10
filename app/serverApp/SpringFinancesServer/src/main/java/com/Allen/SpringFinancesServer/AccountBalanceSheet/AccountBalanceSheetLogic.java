@@ -24,9 +24,6 @@ public class AccountBalanceSheetLogic {
     private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
     AccountBalanceSheetDao acctBalDao;
 
     @Autowired

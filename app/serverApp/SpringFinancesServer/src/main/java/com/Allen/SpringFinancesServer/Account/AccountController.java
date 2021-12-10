@@ -27,15 +27,18 @@ public class AccountController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+//    @Autowired
+//    AccountDao dao;
+
     @Autowired
-    AccountDao dao;
+    AccountLogic mgr;
 
     @Autowired
     AuthorizationFilter authorizationFilter;
 
     @GetMapping("/getAllAccounts")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<AccountModel> getAllAccounts(@RequestHeader("Authorization") String jwtString){
+    public ResponseEntity getAllAccounts(@RequestHeader("Authorization") String jwtString){
 
         final String methodName = "getAllAccounts() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -47,9 +50,9 @@ public class AccountController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<AccountModel> result;
-        result = dao.getAllAccounts(userId);
+        result = mgr.getAllAccounts(userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -66,10 +69,10 @@ public class AccountController {
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
-        //If authorized make call to dao
+        //If authorized make call to logic class
         else {
             List<AccountModel> result;
-            result = dao.adminGetAllAccounts();
+            result = mgr.adminGetAllAccounts();
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -77,7 +80,7 @@ public class AccountController {
 
     @GetMapping("/getAccountById")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<AccountModel> getAccountById(
+    public ResponseEntity getAccountById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int acctId){
 
         final String methodName = "getAccountById() ";
@@ -90,10 +93,10 @@ public class AccountController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<AccountModel> result;
-        result = dao.getAccountById(acctId, userId);
+        result = mgr.getAccountById(acctId, userId);
 
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -111,10 +114,10 @@ public class AccountController {
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
-        //If authorized make call to dao
+        //If authorized make call to logic class
         else {
             List<AccountModel> result;
-            result = dao.adminGetAccountById(acctId);
+            result = mgr.adminGetAccountById(acctId);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -136,9 +139,9 @@ public class AccountController {
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
-        //If authorized make call to dao
+        //If authorized make call to logic class
         else {
-            List<ReturnIdModel> returnedId = dao.addAccountReturningId(acct);
+            List<ReturnIdModel> returnedId = mgr.addAccountReturningId(acct);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }

@@ -39,11 +39,11 @@ VALUES
 
 --Create test accounts for user id#1
 INSERT INTO "account"
-	("name", "users_id", "isCredit" )
+	("name", "users_id", "isCredit", "creationDate" )
 VALUES
-	('test Checking', 1, FALSE ),
-	('test credit card',  1, TRUE ),
-	('test savings account', 1, FALSE);
+	('test Checking', 1, FALSE, '05-01-2021' ),
+	('test credit card',  1, TRUE, '05-01-2021'  ),
+	('test savings account', 1, FALSE, '05-01-2021' );
 
 --Create test budget_expenseCategories for user id#1
 INSERT INTO "budget_expenseCategory"

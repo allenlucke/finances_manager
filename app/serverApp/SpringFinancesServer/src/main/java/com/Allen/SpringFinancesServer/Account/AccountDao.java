@@ -1,6 +1,7 @@
 package com.Allen.SpringFinancesServer.Account;
 
 import com.Allen.SpringFinancesServer.ReturnIdModel;
+import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,8 @@ public class AccountDao {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    private TimestampManager timeMgr = new TimestampManager();
 
     //User may only access accounts assigned to the user
     public List<AccountModel> getAllAccounts(final int usersId){
@@ -44,6 +48,8 @@ public class AccountDao {
             account.setUsersId((int)row.get("users_id"));
             account.setCredit((boolean)row.get("isCredit"));
             account.setActive((boolean)row.get("isActive"));
+            account.setCreationDate((String)row.get("creationDate"));
+            account.setClosingDate((String)row.get("closingDate"));
 
             result.add(account);
         }
@@ -69,6 +75,8 @@ public class AccountDao {
             account.setUsersId((int)row.get("users_id"));
             account.setCredit((boolean)row.get("isCredit"));
             account.setActive((boolean)row.get("isActive"));
+            account.setCreationDate((String)row.get("creationDate"));
+            account.setClosingDate((String)row.get("closingDate"));
 
             result.add(account);
         }
@@ -94,7 +102,7 @@ public class AccountDao {
     }
 
     //Admin only, may access any account
-    public List<AccountModel> adminGetAccountById(int id){
+    public List<AccountModel> adminGetAccountById(final int id){
 
         final String methodName = "adminGetAccountById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -117,9 +125,9 @@ public class AccountDao {
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
         String sql = "INSERT INTO \"account\"\n" +
-                "\t(\"name\", \"users_id\", \"isCredit\" )\n" +
+                "\t(\"name\", \"users_id\", \"isCredit\", \"creationDate\" )\n" +
                 "VALUES\n" +
-                "\t(?, ?, ?);";
+                "\t( ?, ?, ?, ? );";
 
         KeyHolder holder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -129,6 +137,8 @@ public class AccountDao {
             ps.setString(1, acct.getName());
             ps.setInt(2, acct.getUsersId());
             ps.setBoolean(3, acct.isCredit());
+            Timestamp creationDateAsTimestamp = timeMgr.stringToTimestampParser(acct.getCreationDate());
+            ps.setTimestamp(4, creationDateAsTimestamp);
 
             return ps;
         },holder);
@@ -157,6 +167,5 @@ public class AccountDao {
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return isCredit;
     }
-
 
 }
