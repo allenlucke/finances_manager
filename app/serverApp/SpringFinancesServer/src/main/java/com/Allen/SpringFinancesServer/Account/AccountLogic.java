@@ -58,7 +58,7 @@ public class AccountLogic {
     }
 
     //***
-    //*** DAO Calls ***//
+    //*** Basic DAO Calls - No Logic Required ***//
     //***
 
     //User may only access accounts assigned to the user
@@ -113,7 +113,7 @@ public class AccountLogic {
         return result;
     }
 
-    //Only Admin or the User to whom the account period will be assigned
+    //Only Admin or the User to whom the account will be assigned
     //may use this post call
     public List<ReturnIdModel> addAccountReturningId(final AccountModel acct) {
 

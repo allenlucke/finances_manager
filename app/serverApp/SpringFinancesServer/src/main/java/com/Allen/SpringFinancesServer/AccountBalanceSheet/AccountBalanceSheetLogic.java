@@ -1,12 +1,12 @@
 package com.Allen.SpringFinancesServer.AccountBalanceSheet;
 
-import com.Allen.SpringFinancesServer.AccountPeriod.AccountPeriodDao;
+import com.Allen.SpringFinancesServer.AccountPeriod.AccountPeriodLogic;
 import com.Allen.SpringFinancesServer.AccountPeriod.AccountPeriodModel;
 import com.Allen.SpringFinancesServer.Period.PeriodDao;
+import com.Allen.SpringFinancesServer.Period.PeriodLogic;
 import com.Allen.SpringFinancesServer.Period.PeriodModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -24,13 +24,13 @@ public class AccountBalanceSheetLogic {
     private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
-    AccountBalanceSheetDao acctBalDao;
+    AccountBalanceSheetDao dao;
 
     @Autowired
-    PeriodDao periodDao;
+    PeriodLogic periodMgr;
 
     @Autowired
-    AccountPeriodDao acctPeriodDao;
+    AccountPeriodLogic accountPeriodMgr;
 
     final BigDecimal NO_BEGINNING_BALANCE = BigDecimal.valueOf(0.00);
     private BigDecimal beginningBalance;
@@ -46,7 +46,7 @@ public class AccountBalanceSheetLogic {
         //Get expense item data for desired period
         LOGGER.info(CLASS_NAME + methodName + ": Getting expense item data for desired period.");
         List<AccountBalanceSheetModel>  desiredPeriodExpenseData =
-                acctBalDao.getExpItemByPeriodNAcctType(acctId, periodId, usersId);
+                dao.getExpItemByPeriodNAcctType(acctId, periodId, usersId);
 
         for( AccountBalanceSheetModel exp : desiredPeriodExpenseData) {
             LOGGER.info(CLASS_NAME + methodName + ": Desired period exp amount: " + exp.getAmount());
@@ -55,7 +55,7 @@ public class AccountBalanceSheetLogic {
         //Get income item data for desired period
         LOGGER.info(CLASS_NAME + methodName + ": Getting income item data for desired period.");
         List<AccountBalanceSheetModel>  desiredPeriodIncomeData =
-                acctBalDao.getIncomeItemByPeriodNAcctType(acctId, periodId, usersId);
+                dao.getIncomeItemByPeriodNAcctType(acctId, periodId, usersId);
 
         for( AccountBalanceSheetModel income : desiredPeriodIncomeData) {
             LOGGER.info(CLASS_NAME + methodName + ": Desired period income amount: " + income.getAmount());
@@ -63,7 +63,7 @@ public class AccountBalanceSheetLogic {
 
         //Get startDate of desiredPeriod
         LOGGER.info(CLASS_NAME + methodName + ": Getting startDate of desired period.");
-        List<PeriodModel> desiredPeriod = periodDao.getPeriodById(periodId, usersId);
+        List<PeriodModel> desiredPeriod = periodMgr.getPeriodById(periodId, usersId);
         final String desiredPeriodStartDate = desiredPeriod.get(0).getStartDate();
         LOGGER.info(CLASS_NAME + methodName + ": Desired period startDate: " + desiredPeriodStartDate);
 
@@ -116,14 +116,14 @@ public class AccountBalanceSheetLogic {
             LOGGER.info(CLASS_NAME + methodName +
                     ": Getting expense items from start of oldest unclosed period up to day prior to desired period.");
             List<AccountBalanceSheetModel> expItemsPriorToDesiredPeriodList =
-                    acctBalDao.getExpItemByDatesNAcctType(
+                    dao.getExpItemByDatesNAcctType(
                             acctId, oldestUnclosedPerStartDate, desiredPeriodStartDate, usersId);
 
             //Get income items from start of oldest unclosed period up to day prior to desired period
             LOGGER.info(CLASS_NAME + methodName +
                     ": Getting income items from start of oldest unclosed period up to day prior to desired period.");
             List<AccountBalanceSheetModel> incomeItemsPriorToDesiredPeriodList =
-                    acctBalDao.getIncomeItemByDatesNAcctType(
+                    dao.getIncomeItemByDatesNAcctType(
                             acctId, oldestUnclosedPerStartDate, desiredPeriodStartDate, usersId);
 
             //Get desired period's starting balance
@@ -151,8 +151,8 @@ public class AccountBalanceSheetLogic {
         try {
             //Check desired period for beginning balance
             LOGGER.info(CLASS_NAME + methodName + ": Checking desired period for beginning balance.");
-            List<AccountPeriodModel> beginingBalanceList = acctPeriodDao.getAcctPeriodById(acctPeriodId, usersId);
-            BigDecimal beginningBalance = beginingBalanceList.get(0).getBeginningBalance();
+            List<AccountPeriodModel> beginningBalanceList = accountPeriodMgr.getAcctPeriodById(acctPeriodId, usersId);
+            BigDecimal beginningBalance = beginningBalanceList.get(0).getBeginningBalance();
 
             LOGGER.info(CLASS_NAME + methodName + ": Beginning Balance : " + beginningBalance);
 
@@ -184,7 +184,7 @@ public class AccountBalanceSheetLogic {
         try {
             //Get data of oldest unclosed period
             LOGGER.info(CLASS_NAME + methodName + ": Getting data of oldest unclosed period.");
-            oldestUnclosedPeriodList = acctBalDao.getLastUnclosedPeriod(desiredPeriodStartDate, usersId);
+            oldestUnclosedPeriodList = dao.getLastUnclosedPeriod(desiredPeriodStartDate, usersId);
             int oldestUnclosedPeriod = oldestUnclosedPeriodList.getPeriodId();
 
             LOGGER.info(CLASS_NAME + methodName + ": Last unclosed period id: " + oldestUnclosedPeriod);
@@ -300,7 +300,7 @@ public class AccountBalanceSheetLogic {
         final String methodName = "getAccountPeriodId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
-        List<AccountPeriodModel> accountPeriod = acctPeriodDao.getAccountPeriodByAccountNPeriod(accountId, periodId, usersId);
+        List<AccountPeriodModel> accountPeriod = accountPeriodMgr.getAccountPeriodByAccountNPeriod(accountId, periodId, usersId);
         int accountPeriodId = accountPeriod.get(0).getId();
 
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);

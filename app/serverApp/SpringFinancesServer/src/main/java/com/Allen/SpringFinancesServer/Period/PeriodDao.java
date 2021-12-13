@@ -1,6 +1,5 @@
 package com.Allen.SpringFinancesServer.Period;
 
-import com.Allen.SpringFinancesServer.Account.AccountModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,14 +12,8 @@ import org.springframework.stereotype.Service;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
@@ -65,7 +58,7 @@ public class PeriodDao {
     }
 
     //User may only access periods assigned to the user
-    public List<PeriodModel> getAllPeriods(int usersId){
+    public List<PeriodModel> getAllPeriods(final int usersId){
 
         final String methodName = "getAllPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -94,7 +87,7 @@ public class PeriodDao {
     }
 
     //User only may access current period assigned to user
-    public List<PeriodModel> getCurrentPeriod(int usersId){
+    public List<PeriodModel> getCurrentPeriod(final int usersId){
 
         final String methodName = "getCurrentPeriod() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -113,7 +106,7 @@ public class PeriodDao {
     }
 
     //User may only access accounts assigned to the user
-    public List<PeriodModel> getPeriodByDate(String date, int usersId){
+    public List<PeriodModel> getPeriodByDate(final String date, final int usersId){
 
         final String methodName = "getPeriodByDate() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -133,7 +126,7 @@ public class PeriodDao {
 
 
     //Admin only, may access any periods
-    public List<PeriodModel> adminGetPeriodById(int id){
+    public List<PeriodModel> adminGetPeriodById(final int id){
 
         final String methodName = "adminGetPeriodById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -149,7 +142,7 @@ public class PeriodDao {
     }
 
     //User may only access periods assigned to the user
-    public List<PeriodModel> getPeriodById(int periodId, int usersId){
+    public List<PeriodModel> getPeriodById(final int periodId, final int usersId){
 
         final String methodName = "getPeriodById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -165,7 +158,7 @@ public class PeriodDao {
     }
 
     //User may only access periods assigned to the user
-    public List<PeriodModel> getOverlappingPeriods(PeriodModel period, int usersId) throws EmptyResultDataAccessException {
+    public List<PeriodModel> getOverlappingPeriods(PeriodModel period, final int usersId) throws EmptyResultDataAccessException {
 
         final String methodName = "getOverlappingPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -205,6 +198,7 @@ public class PeriodDao {
     //User may only access periods assigned to the user
     //Get a list of periods that no budget has been assigned to
     public List <PeriodModel> getPeriodsWithoutBudget(final int usersId) {
+
         final String methodName = "getPeriodsWithoutBudget() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 

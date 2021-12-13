@@ -59,4 +59,74 @@ public class AccountPeriodLogic {
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return redundantAccountList;
     }
+
+    //***
+    //*** Basic DAO Calls - No Logic Required ***//
+    //***
+
+    //User may only access account periods assigned to the user
+    public List<AccountPeriodModel> getAllAccountPeriods(final int usersId) {
+
+        final String methodName = "getAllAccountPeriods() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<AccountPeriodModel> result;
+        result = dao.getAllAccountPeriods(usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //Admin only, may access all account periods
+    public List<AccountPeriodModel> adminGetAllAccountPeriods(){
+
+        final String methodName = "adminGetAllAccountPeriods() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<AccountPeriodModel> result;
+        result = dao.adminGetAllAccountPeriods();
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //User may only access account periods assigned to the user
+    public List<AccountPeriodModel> getAcctPeriodById(final int acctPeriodId, final int usersId) {
+
+        final String methodName = "getAcctPeriodById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<AccountPeriodModel> result;
+        result = dao.getAcctPeriodById(acctPeriodId, usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    public List<AccountPeriodModel> getAccountPeriodByAccountNPeriod(
+            final int accountId, final int periodId, final int usersId) throws EmptyResultDataAccessException {
+
+        final String methodName = "getAccountPeriodByAccountNPeriod() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<AccountPeriodModel> result;
+        result = dao.getAccountPeriodByAccountNPeriod(accountId, periodId, usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //Admin only, may access any account period
+    public List<AccountPeriodModel> adminGetAcctPeriodById(final int id){
+
+        final String methodName = "adminGetAcctPeriodById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<AccountPeriodModel> result;
+        result = dao.adminGetAcctPeriodById(id);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
 }

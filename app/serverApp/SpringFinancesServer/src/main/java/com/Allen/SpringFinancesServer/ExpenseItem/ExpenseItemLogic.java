@@ -23,7 +23,7 @@ public class ExpenseItemLogic {
     ExpenseItemDao dao;
 
     @Autowired
-    AccountLogic acctMgr;
+    AccountLogic accountMgr;
 
     @Autowired
     BudgetExpenseCategoryDao budgetExpCatDao;
@@ -40,6 +40,19 @@ public class ExpenseItemLogic {
 
         List<ReturnIdModel> emptyReturnedIdList = new ArrayList<>();
 
+        //Check to ensure account is active as of the received date
+        boolean checkForAccountIsOpenByDate = accountMgr.checkForAccountIsOpenByDate(
+                inputExpenseItem.getUsersId(),
+                inputExpenseItem.getAccountId(),
+                inputExpenseItem.getTransactionDate()
+        );
+
+        if(!checkForAccountIsOpenByDate){
+            LOGGER.warn(CLASS_NAME + methodName + " Desired account is not active as of:  " + inputExpenseItem.getTransactionDate());
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+            return emptyReturnedIdList;
+        }
+        //Check to ensure received date matches with an applicable budget income category
         if(budgetExpCats.size() > 0) {
             //Set paid with credit
             ExpenseItemModel updatedExpenseItem = setPaidWithCredit(inputExpenseItem);
@@ -64,7 +77,7 @@ public class ExpenseItemLogic {
         //Get accountId from expenseItem
         int acctId = expItem.getAccountId();
         //Check to see if account is credit account
-        Boolean isCredit = acctMgr.checkForCreditAccount(acctId);
+        Boolean isCredit = accountMgr.checkForCreditAccount(acctId);
         //Set expenseItem PaidWithCredit
         expItem.setPaidWithCredit(isCredit);
 

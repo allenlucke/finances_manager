@@ -119,7 +119,7 @@ public class AccountPeriodDao {
     }
 
     //Admin only, may access any account period
-    public List<AccountPeriodModel> adminGetAcctPeriodById(int id){
+    public List<AccountPeriodModel> adminGetAcctPeriodById(final int id){
 
         final String methodName = "adminGetAcctPeriodById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

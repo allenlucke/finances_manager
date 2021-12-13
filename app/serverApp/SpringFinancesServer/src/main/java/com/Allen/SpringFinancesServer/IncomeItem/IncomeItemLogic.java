@@ -1,6 +1,7 @@
 package com.Allen.SpringFinancesServer.IncomeItem;
 
 import com.Allen.SpringFinancesServer.Account.AccountDao;
+import com.Allen.SpringFinancesServer.Account.AccountLogic;
 import com.Allen.SpringFinancesServer.Account.AccountModel;
 import com.Allen.SpringFinancesServer.BudgetIncomeCategory.BudgetIncomeCategoryDao;
 import com.Allen.SpringFinancesServer.BudgetIncomeCategory.BudgetIncomeCategoryModel;
@@ -24,7 +25,7 @@ public class IncomeItemLogic {
     IncomeItemDao dao;
 
     @Autowired
-    AccountDao acctDao;
+    AccountLogic accountMgr;
 
     @Autowired
     BudgetIncomeCategoryDao budgetIncomeCategoryDao;
@@ -46,6 +47,17 @@ public class IncomeItemLogic {
         if(isCreditAccount){
             LOGGER.warn(CLASS_NAME + methodName + " Desired account is a credit account. " +
                     "Income cannot be posted to a credit account.");
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+            return emptyReturnedIdList;
+        }
+        //Check to ensure account is active as of the received date
+        boolean checkForAccountIsOpenByDate = accountMgr.checkForAccountIsOpenByDate(
+                inputIncomeItem.getUsersId(),
+                inputIncomeItem.getAccountId(),
+                inputIncomeItem.getReceivedDate());
+
+        if(!checkForAccountIsOpenByDate){
+            LOGGER.warn(CLASS_NAME + methodName + " Desired account is not active as of:  " + inputIncomeItem.getReceivedDate());
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return emptyReturnedIdList;
         }
@@ -71,7 +83,7 @@ public class IncomeItemLogic {
         int accountId = incomeItem.getAccountId();
         int usersId = incomeItem.getUsersId();
 
-        List<AccountModel> accountInfoList = acctDao.getAccountById(accountId, usersId);
+        List<AccountModel> accountInfoList = accountMgr.getAccountById(accountId, usersId);
         boolean isCredit = accountInfoList.get(0).isCredit();
         return isCredit;
     }

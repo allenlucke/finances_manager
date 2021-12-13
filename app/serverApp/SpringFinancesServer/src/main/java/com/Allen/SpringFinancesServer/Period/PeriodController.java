@@ -1,11 +1,9 @@
 package com.Allen.SpringFinancesServer.Period;
 
-import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.ServletException;
@@ -23,12 +21,6 @@ public class PeriodController {
     private static final String CLASS_NAME = "PeriodController --- ";
     private static final String METHOD_ENTERING = "Entering:  ";
     private static final String METHOD_EXITING = "Exiting:  ";
-
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    PeriodDao dao;
 
     @Autowired
     PeriodLogic mgr;
@@ -53,7 +45,7 @@ public class PeriodController {
         //If authorized make call to dao
         else {
             List<PeriodModel> result;
-            result = dao.adminGetAllPeriods();
+            result = mgr.adminGetAllPeriods();
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -61,7 +53,7 @@ public class PeriodController {
 
     @GetMapping("/getAllPeriods")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<PeriodModel> getAllPeriods(@RequestHeader("Authorization") String jwtString){
+    public ResponseEntity getAllPeriods(@RequestHeader("Authorization") String jwtString){
 
         final String methodName = "getAllPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -73,9 +65,9 @@ public class PeriodController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<PeriodModel> result;
-        result = dao.getAllPeriods(userId);
+        result = mgr.getAllPeriods(userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     @GetMapping("/getCurrentPeriod")
@@ -92,7 +84,7 @@ public class PeriodController {
         int userIdFromToken = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<PeriodModel> result;
-        result = dao.getCurrentPeriod(userIdFromToken);
+        result = mgr.getCurrentPeriod(userIdFromToken);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return new ResponseEntity(result, HttpStatus.OK);
     }
@@ -114,7 +106,7 @@ public class PeriodController {
         //If authorized make call to dao
         else {
             List<PeriodModel> result;
-            result = dao.adminGetPeriodById(id);
+            result = mgr.adminGetPeriodById(id);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -134,7 +126,7 @@ public class PeriodController {
         int userIdFromToken = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<PeriodModel> result;
-        result = dao.getPeriodById(periodId, userIdFromToken);
+        result = mgr.getPeriodById(periodId, userIdFromToken);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return new ResponseEntity(result, HttpStatus.OK);
     }
@@ -153,7 +145,7 @@ public class PeriodController {
         int userIdFromToken = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<PeriodModel> result;
-        result = dao.getPeriodByDate(searchDate, userIdFromToken);
+        result = mgr.getPeriodByDate(searchDate, userIdFromToken);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return new ResponseEntity(result, HttpStatus.OK);
     }

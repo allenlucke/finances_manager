@@ -2,6 +2,8 @@ package com.Allen.SpringFinancesServer.AccountBalanceSheet;
 
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -22,12 +24,6 @@ public class AccountBalanceSheetController {
     private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    AccountBalanceSheetDao dao;
-
-    @Autowired
     AccountBalanceSheetLogic mgr;
 
     @Autowired
@@ -35,9 +31,9 @@ public class AccountBalanceSheetController {
 
     @GetMapping("/getAcctBalSheet")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<AccountBalanceSheetModel> getBalanceSheetByPeriodNAcctType(
+    public ResponseEntity getBalanceSheetByPeriodNAcctType(
             @RequestHeader("Authorization") String jwtString,
-            @QueryParam("acctId") int acctId, @QueryParam("periodId") int periodId){
+            @QueryParam("acctId") final int acctId, @QueryParam("periodId") final int periodId){
 
         final String methodName = "getBalanceSheetByPeriodNAcctType() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -50,8 +46,9 @@ public class AccountBalanceSheetController {
 
         List<AccountBalanceSheetModel> result;
         result = mgr.accountBalanceSheetManager(acctId, periodId, userIdFromToken );
+
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
 

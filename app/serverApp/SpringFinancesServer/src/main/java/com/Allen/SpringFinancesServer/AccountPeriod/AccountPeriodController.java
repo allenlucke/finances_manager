@@ -25,12 +25,6 @@ public class AccountPeriodController {
     private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    AccountPeriodDao dao;
-
-    @Autowired
     AccountPeriodLogic mgr;
 
     @Autowired
@@ -38,7 +32,7 @@ public class AccountPeriodController {
 
     @GetMapping("/getAllAcctPeriods")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<AccountPeriodModel> getAllAccountPeriods(@RequestHeader("Authorization") String jwtString){
+    public ResponseEntity getAllAccountPeriods(@RequestHeader("Authorization") String jwtString){
 
         final String methodName = "getAllAccountPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -50,9 +44,10 @@ public class AccountPeriodController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<AccountPeriodModel> result;
-        result = dao.getAllAccountPeriods(userId);
+        result = mgr.getAllAccountPeriods(userId);
+
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -72,7 +67,7 @@ public class AccountPeriodController {
         //If authorized make call to dao
         else {
             List<AccountPeriodModel> result;
-            result = dao.adminGetAllAccountPeriods();
+            result = mgr.adminGetAllAccountPeriods();
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -80,7 +75,7 @@ public class AccountPeriodController {
 
     @GetMapping("/getAcctPeriodById")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<AccountPeriodModel> getAcctPeriodById(
+    public ResponseEntity getAcctPeriodById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int acctPeriodId){
 
         final String methodName = "getAcctPeriodById() ";
@@ -93,10 +88,10 @@ public class AccountPeriodController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<AccountPeriodModel> result;
-        result = dao.getAcctPeriodById(acctPeriodId, userId);
+        result = mgr.getAcctPeriodById(acctPeriodId, userId);
 
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -117,7 +112,7 @@ public class AccountPeriodController {
         //If authorized make call to dao
         else {
             List<AccountPeriodModel> result;
-            result = dao.adminGetAcctPeriodById(acctPeriodId);
+            result = mgr.adminGetAcctPeriodById(acctPeriodId);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
