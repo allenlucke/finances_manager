@@ -1,6 +1,5 @@
 package com.Allen.SpringFinancesServer.Budget;
 
-import com.Allen.SpringFinancesServer.AccountPeriod.AccountPeriodModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,14 +31,11 @@ public class BudgetController {
     BudgetLogic mgr;
 
     @Autowired
-    BudgetDao dao;
-
-    @Autowired
     AuthorizationFilter authorizationFilter;
 
     @GetMapping("/getAllBudgets")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<BudgetModel> getAllBudgets(@RequestHeader("Authorization") String jwtString){
+    public ResponseEntity getAllBudgets(@RequestHeader("Authorization") String jwtString){
 
         final String methodName = "getAllBudgets() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -51,9 +47,10 @@ public class BudgetController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<BudgetModel> result;
-        result = dao.getAllBudgets(userId);
+        result = mgr.getAllBudgets(userId);
+
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -73,7 +70,7 @@ public class BudgetController {
         //If authorized make call to dao
         else {
             List<BudgetModel> result;
-            result = dao.adminGetAllBudgets();
+            result = mgr.adminGetAllBudgets();
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -81,7 +78,7 @@ public class BudgetController {
 
     @GetMapping("/getBudgetById")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<BudgetModel> getBudgetById(
+    public ResponseEntity getBudgetById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int budgetId){
 
         final String methodName = "getBudgetById() ";
@@ -94,10 +91,10 @@ public class BudgetController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<BudgetModel> result;
-        result = dao.getBudgetById(budgetId, userId);
+        result = mgr.getBudgetById(budgetId, userId);
 
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -118,7 +115,7 @@ public class BudgetController {
         //If authorized make call to dao
         else {
             List<BudgetModel> result;
-            result = dao.adminGetBudgetById(id);
+            result = mgr.adminGetBudgetById(id);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }

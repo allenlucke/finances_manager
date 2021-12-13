@@ -61,4 +61,74 @@ public class BudgetLogic {
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return redundantBudgetList;
     }
+
+    //***
+    //*** Basic DAO Calls - No Logic Required ***//
+    //***
+
+    //User may only access budgets assigned to the user
+    public List<BudgetModel> getAllBudgets(final int usersId) {
+
+        final String methodName = "getAllBudgets() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<BudgetModel> result;
+        result = dao.getAllBudgets(usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //Admin only, may access all budgets
+    public List<BudgetModel> adminGetAllBudgets(){
+
+        final String methodName = "adminGetAllBudgets() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<BudgetModel> result;
+        result = dao.adminGetAllBudgets();
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+
+    //User may only access budgets assigned to the user
+    public List<BudgetModel> getBudgetById(final int budgetId, final int usersId){
+
+        final String methodName = "getBudgetById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<BudgetModel> result;
+        result = dao.getBudgetById(budgetId, usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //User may only access budgets assigned to the user
+    public List<BudgetModel> getBudgetByPeriodId(final int periodId, final int usersId){
+        final String methodName = "getBudgetByPeriodId() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<BudgetModel> result;
+        result = dao.getBudgetByPeriodId(periodId, usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //Admin only, may access any budget
+    public List<BudgetModel> adminGetBudgetById(final int id){
+
+        final String methodName = "adminGetBudgetById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<BudgetModel> result;
+        result = dao.adminGetBudgetById(id);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
 }

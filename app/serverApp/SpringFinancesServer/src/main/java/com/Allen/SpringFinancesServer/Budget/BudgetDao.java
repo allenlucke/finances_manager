@@ -115,7 +115,7 @@ public class BudgetDao {
     }
 
     //Admin only, may access any budget
-    public List<BudgetModel> adminGetBudgetById(int id){
+    public List<BudgetModel> adminGetBudgetById(final int id){
 
         final String methodName = "adminGetBudgetById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
