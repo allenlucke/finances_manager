@@ -1,12 +1,10 @@
 package com.Allen.SpringFinancesServer.IncomeCategory;
 
-import com.Allen.SpringFinancesServer.IncomeItem.IncomeItemModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.ServletException;
@@ -26,17 +24,14 @@ public class IncomeCategoryController {
     private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    IncomeCategoryDao dao;
+    IncomeCategoryLogic mgr;
 
     @Autowired
     AuthorizationFilter authorizationFilter;
 
     @GetMapping("/getAllIncomeCats")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<IncomeCategoryModel> getAllIncomeCats(@RequestHeader("Authorization") String jwtString){
+    public ResponseEntity getAllIncomeCats(@RequestHeader("Authorization") String jwtString){
 
         final String methodName = "getAllIncomeCats() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -48,9 +43,9 @@ public class IncomeCategoryController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<IncomeCategoryModel> result;
-        result = dao.getAllIncomeCats(userId);
+        result = mgr.getAllIncomeCats(userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -70,7 +65,7 @@ public class IncomeCategoryController {
         //If authorized make call to dao
         else {
             List<IncomeCategoryModel> result;
-            result = dao.adminGetAllIncomeCats();
+            result = mgr.adminGetAllIncomeCats();
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -94,7 +89,7 @@ public class IncomeCategoryController {
         //If authorized make call to dao
         else {
             List<IncomeCategoryModel> result;
-            result = dao.adminGetIncomeCatById(categoryId);
+            result = mgr.adminGetIncomeCatById(categoryId);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -102,7 +97,7 @@ public class IncomeCategoryController {
 
     @GetMapping("/getIncomeCatById")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<IncomeCategoryModel> getIncomeCatById(
+    public ResponseEntity getIncomeCatById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int categoryId){
 
         final String methodName = "getIncomeCatById() ";
@@ -115,9 +110,9 @@ public class IncomeCategoryController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<IncomeCategoryModel> result;
-        result = dao.getIncomeCatById(categoryId, userId);
+        result = mgr.getIncomeCatById(categoryId, userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     @PostMapping("/addIncomeCatReturnId")
@@ -137,7 +132,7 @@ public class IncomeCategoryController {
         }
         //If authorized make call to dao
         else {
-            List<ReturnIdModel> returnedId = dao.addIncomeCatReturnId(incomeCat);
+            List<ReturnIdModel> returnedId = mgr.addIncomeCatReturnId(incomeCat);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }
@@ -156,7 +151,7 @@ public class IncomeCategoryController {
         //the user making the call, the dao will not delete the item
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
-        boolean wasDeleted = dao.deleteIncomeCatById(catId, userId);
+        boolean wasDeleted = mgr.deleteIncomeCatById(catId, userId);
         if(!wasDeleted) {
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

@@ -28,7 +28,7 @@ public class UserController {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    UserDao dao;
+    UserLogic mgr;
 
     @Autowired
     AuthorizationFilter authorizationFilter;
@@ -52,7 +52,7 @@ public class UserController {
         //If authorized make call to dao
         else {
             String respString;
-            respString = dao.getUserFirstName(id);
+            respString = mgr.getUserFirstName(id);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(respString, HttpStatus.OK);
         }
@@ -75,7 +75,7 @@ public class UserController {
         //If authorized make call to dao
         else {
             List<UserModel> result;
-            result = dao.getUserById(id);
+            result = mgr.getUserById(id);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -98,7 +98,7 @@ public class UserController {
         //If authorized make call to dao
         else {
             List<UserModel> result;
-            result = dao.getUserById(id);
+            result = mgr.getUserById(id);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -121,7 +121,7 @@ public class UserController {
         //If authorized make call to dao
         else {
             List<UserModel> result;
-            result = dao.getAllUsers();
+            result = mgr.getAllUsers();
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -142,7 +142,7 @@ public class UserController {
         //set from the database
         int userIdFromToken = authorizationFilter.getUserIdFromToken(jwtString);
             List< ClientLocalStorageUser> result;
-            result = dao.getUserByToken(userIdFromToken);
+            result = mgr.getUserByToken(userIdFromToken);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }

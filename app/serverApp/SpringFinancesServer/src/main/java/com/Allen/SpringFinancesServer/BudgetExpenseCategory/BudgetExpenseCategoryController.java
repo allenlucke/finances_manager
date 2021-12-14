@@ -26,17 +26,14 @@ public class BudgetExpenseCategoryController {
     private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    BudgetExpenseCategoryDao dao;
+    BudgetExpenseCategoryLogic mgr;
 
     @Autowired
     AuthorizationFilter authorizationFilter;
 
     @GetMapping("/getAllBudgetExpCats")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<BudgetExpenseCategoryModel> getAllBudgetExpCats(@RequestHeader("Authorization") String jwtString){
+    public ResponseEntity getAllBudgetExpCats(@RequestHeader("Authorization") String jwtString){
 
         final String methodName = "getAllBudgetExpCats() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -48,9 +45,9 @@ public class BudgetExpenseCategoryController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<BudgetExpenseCategoryModel> result;
-        result = dao.getAllBudgetExpCats(userId);
+        result = mgr.getAllBudgetExpCats(userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -70,7 +67,7 @@ public class BudgetExpenseCategoryController {
         //If authorized make call to dao
         else {
             List<BudgetExpenseCategoryModel> result;
-            result = dao.adminGetAllBudgetExpCats();
+            result = mgr.adminGetAllBudgetExpCats();
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -79,7 +76,7 @@ public class BudgetExpenseCategoryController {
     //Returns all budget expense categories from the period the date falls within
     @GetMapping("/getBudgetExpCatsBtDate")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<BudgetExpenseCategoryModel> getBudgetExpCatsBtDate(
+    public ResponseEntity getBudgetExpCatsBtDate(
             @RequestHeader("Authorization") String jwtString, @QueryParam("date") String date){
 
         final String methodName = "getBudgetExpCatsByDate() ";
@@ -92,15 +89,15 @@ public class BudgetExpenseCategoryController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<BudgetExpenseCategoryModel> result;
-        result = dao.getBudgetExpCatsByDate(date, userId);
+        result = mgr.getBudgetExpCatsByDate(date, userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Returns all budget expense categories from the period the date falls within
     @GetMapping("/getBudgetExpCatsWithNameByDate")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<BudgExpCatRespWithName> getBudgetExpCatsWithNameByDate(
+    public ResponseEntity getBudgetExpCatsWithNameByDate(
             @RequestHeader("Authorization") String jwtString, @QueryParam("date") String date){
 
         final String methodName = "getBudgetExpCatsWithNameByDate() ";
@@ -113,14 +110,14 @@ public class BudgetExpenseCategoryController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<BudgExpCatRespWithName> result;
-        result = dao.getBudgetExpCatsWithNameByDate(date, userId);
+        result = mgr.getBudgetExpCatsWithNameByDate(date, userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     @GetMapping("/getBudgetExpCatById")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<BudgetExpenseCategoryModel> getBudgetExpCatById(
+    public ResponseEntity getBudgetExpCatById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int budgExpCatId){
 
         final String methodName = "getBudgetExpCatById() ";
@@ -133,9 +130,9 @@ public class BudgetExpenseCategoryController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<BudgetExpenseCategoryModel> result;
-        result = dao.getBudgetExpCatById(budgExpCatId, userId);
+        result = mgr.getBudgetExpCatById(budgExpCatId, userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -156,7 +153,7 @@ public class BudgetExpenseCategoryController {
         //If authorized make call to dao
         else {
             List<BudgetExpenseCategoryModel> result;
-            result = dao.adminGetBudgetExpCatById(id);
+            result = mgr.adminGetBudgetExpCatById(id);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -179,7 +176,7 @@ public class BudgetExpenseCategoryController {
         }
         //If authorized make call to dao
         else {
-            List<ReturnIdModel> returnedId = dao.addBudgetExpCatReturnId(budgetExpCat);
+            List<ReturnIdModel> returnedId = mgr.addBudgetExpCatReturnId(budgetExpCat);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }

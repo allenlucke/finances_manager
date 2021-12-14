@@ -1,6 +1,6 @@
 package com.Allen.SpringFinancesServer.Security;
 
-import com.Allen.SpringFinancesServer.User.UserDao;
+import com.Allen.SpringFinancesServer.User.UserLogic;
 import com.Allen.SpringFinancesServer.User.UserModel;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +26,7 @@ public class AuthorizationFilter {
     private JwtTokenUtil jwtTokenUtil;
 
     @Autowired
-    private UserDao userDao;
+    UserLogic userMgr;
 
     public boolean doFilterByUserIdOrSecurityLevel(final String requestTokenHeader, int userId) throws ServletException, IOException {
 
@@ -45,7 +45,7 @@ public class AuthorizationFilter {
             } catch (ExpiredJwtException e) {
                 LOGGER.warn(CLASS_NAME + methodName + "JWT Token has expired");
             }
-            UserModel userFromToken = userDao.getUserByUsername(username);
+            UserModel userFromToken = userMgr.getUserByUsername(username);
             int userIdFromToken = userFromToken.getId();
             int userSecLvlFromToken = userFromToken.getSecurityLevel();
             String userRoleFromToken = userFromToken.getRole();
@@ -82,7 +82,7 @@ public class AuthorizationFilter {
         } catch (ExpiredJwtException e) {
             LOGGER.warn(CLASS_NAME + methodName + "JWT Token has expired");
         }
-        UserModel userFromToken = userDao.getUserByUsername(username);
+        UserModel userFromToken = userMgr.getUserByUsername(username);
         int userIdFromToken = userFromToken.getId();
         int userSecLvlFromToken = userFromToken.getSecurityLevel();
         String userRoleFromToken = userFromToken.getRole();
@@ -116,7 +116,7 @@ public class AuthorizationFilter {
         } catch (ExpiredJwtException e) {
             LOGGER.warn(CLASS_NAME + methodName + "JWT Token has expired");
         }
-        UserModel userFromToken = userDao.getUserByUsername(username);
+        UserModel userFromToken = userMgr.getUserByUsername(username);
         int userIdFromToken = userFromToken.getId();
 
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);

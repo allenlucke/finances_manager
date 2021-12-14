@@ -1,6 +1,7 @@
 package com.Allen.SpringFinancesServer.BudgetBalanceSheet;
 
 import com.Allen.SpringFinancesServer.ExpenseItem.ExpenseItemDao;
+import com.Allen.SpringFinancesServer.ExpenseItem.ExpenseItemLogic;
 import com.Allen.SpringFinancesServer.ExpenseItem.ExpenseItemModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,7 +27,7 @@ public class BudgetBalanceSheetLogic {
     BudgetBalanceSheetDao dao;
 
     @Autowired
-    ExpenseItemDao expItemDao;
+    ExpenseItemLogic expenseItemMgr;
 
     final static BigDecimal NO_STARTING_AMOUNT = BigDecimal.valueOf(0.00);
 
@@ -41,7 +42,7 @@ public class BudgetBalanceSheetLogic {
 
         //Get expense items by period
         LOGGER.info(CLASS_NAME + methodName + ": Getting expense items by period");
-        List <ExpenseItemModel> expItemList = expItemDao.getExpItemByPeriod(periodId, usersId);
+        List <ExpenseItemModel> expItemList = expenseItemMgr.getExpItemByPeriod(periodId, usersId);
 
         //Get merged Budget Balance Sheet List
         LOGGER.info(CLASS_NAME + methodName + ": Getting merged Budget Balance Sheet List");
@@ -112,8 +113,6 @@ public class BudgetBalanceSheetLogic {
     private BigDecimal getAmountSpent( BigDecimal originalAmount ){
 
         BigDecimal newAmount = BigDecimal.valueOf(0.00);
-
-
         return newAmount;
     }
 }

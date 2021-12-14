@@ -1,5 +1,7 @@
 package com.Allen.SpringFinancesServer.AccountPeriod;
 
+import com.Allen.SpringFinancesServer.Account.AccountLogic;
+import com.Allen.SpringFinancesServer.Account.AccountModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -15,6 +17,9 @@ public class AccountPeriodLogic {
 
     @Autowired
     AccountPeriodDao dao;
+
+    @Autowired
+    AccountLogic accountMgr;
 
     private static final String CLASS_NAME = "AccountPeriodLogic --- ";
     private static final String METHOD_ENTERING = "Entering:  ";
@@ -33,6 +38,9 @@ public class AccountPeriodLogic {
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return emptyReturnedIdList;
         }
+        //Check to validate account dates
+
+
         //If not proceed to post account period
         else {
             List<ReturnIdModel> returnedIdList = dao.addAcctPeriodReturningId(acctPeriod);
@@ -41,6 +49,9 @@ public class AccountPeriodLogic {
         }
     }
 
+    //
+    //Helper Methods
+    //
     public List<AccountPeriodModel> getRedundantAccountPeriods(final AccountPeriodModel acctPeriod){
 
         final String methodName = "checkForRedundantAccountPeriods() ";
@@ -60,6 +71,23 @@ public class AccountPeriodLogic {
         return redundantAccountList;
     }
 
+//    public boolean checkForAccountIsOpenByDate(AccountPeriodModel acctPeriod) {
+//        final int usersId = acctPeriod.getUsersId();
+//        final int acctId = acctPeriod.getAccountId();
+//        final int periodId = acctPeriod.getPeriodId();
+////        final String date = acctPeriod.get
+//
+//        List<AccountModel> accountList = accountMgr.getAccountById(acctId, usersId);
+//        AccountModel account = accountList.get(0);
+//        String acctCreationDate = account.getCreationDate();
+//
+////        String acctClosingDate = account.getClosingDate();
+//
+//    }
+//
+//    checkForAccountIsOpenByDate(final int usersId, final int acctId, final String date) {
+//
+//    }
     //***
     //*** Basic DAO Calls - No Logic Required ***//
     //***

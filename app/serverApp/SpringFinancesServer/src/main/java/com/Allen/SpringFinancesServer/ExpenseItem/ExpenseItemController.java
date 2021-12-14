@@ -28,17 +28,14 @@ public class ExpenseItemController {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    ExpenseItemDao dao;
-
-    @Autowired
-    ExpenseItemLogic logic;
+    ExpenseItemLogic mgr;
 
     @Autowired
     AuthorizationFilter authorizationFilter;
 
     @GetMapping("/getAllExpItems")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<ExpenseItemModel> getAllExpItems(@RequestHeader("Authorization") String jwtString){
+    public ResponseEntity getAllExpItems(@RequestHeader("Authorization") String jwtString){
 
         final String methodName = "getAllExpItems() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -50,9 +47,10 @@ public class ExpenseItemController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<ExpenseItemModel> result;
-        result = dao.getAllExpItems(userId);
+        result = mgr.getAllExpItems(userId);
+
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -72,7 +70,7 @@ public class ExpenseItemController {
         //If authorized make call to dao
         else {
             List<ExpenseItemModel> result;
-            result = dao.adminGetAllExpItems();
+            result = mgr.adminGetAllExpItems();
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -80,7 +78,7 @@ public class ExpenseItemController {
 
     @GetMapping("/getExpItemById")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<ExpenseItemModel> getExpItemById(
+    public ResponseEntity getExpItemById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int itemId){
 
         final String methodName = "getExpItemById() ";
@@ -93,9 +91,10 @@ public class ExpenseItemController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<ExpenseItemModel> result;
-        result = dao.getExpItemById(itemId, userId);
+        result = mgr.getExpItemById(itemId, userId);
+
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -116,7 +115,7 @@ public class ExpenseItemController {
         //If authorized make call to dao
         else {
             List<ExpenseItemModel> result;
-            result = dao.adminGetExpItemById(itemId);
+            result = mgr.adminGetExpItemById(itemId);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -140,7 +139,7 @@ public class ExpenseItemController {
         }
         //If authorized make call to logic class
         else {
-            List<ReturnIdModel> returnedId = logic.addExpItemReturnId(expItem);
+            List<ReturnIdModel> returnedId = mgr.addExpItemReturnId(expItem);
 
             //See if post was rejected by logic class
             if(returnedId.size() > 0) {
@@ -169,7 +168,7 @@ public class ExpenseItemController {
         //the user making the call, the dao will not delete the item
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
-        boolean wasDeleted = dao.deleteExpItemById(itemId, userId);
+        boolean wasDeleted = mgr.deleteExpItemById(itemId, userId);
         if(!wasDeleted) {
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

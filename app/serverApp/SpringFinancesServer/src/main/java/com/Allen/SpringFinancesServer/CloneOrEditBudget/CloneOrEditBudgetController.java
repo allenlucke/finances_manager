@@ -2,6 +2,7 @@ package com.Allen.SpringFinancesServer.CloneOrEditBudget;
 
 import com.Allen.SpringFinancesServer.Budget.BudgetModel;
 import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryDao;
+import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryLogic;
 import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryModel;
 import com.Allen.SpringFinancesServer.ExpenseCategory.ExpenseCategoryModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
@@ -29,42 +30,12 @@ public class CloneOrEditBudgetController {
     private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-//    @Autowired
-//    CloneOrEditBudgetDao dao;
-
-    @Autowired
-    BudgetExpenseCategoryDao budgetExpenseCategoryDao;
-
-    @Autowired
     CloneOrEditBudgetLogic mgr;
 
     @Autowired
     AuthorizationFilter authorizationFilter;
 
-    @GetMapping("test/getBudgetExpCatByExpCat")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public List<BudgetExpenseCategoryModel> getBudgetById(
-            @RequestHeader("Authorization") String jwtString, @QueryParam("id") int budgetId){
-
-        final String methodName = "getBudgetById() ";
-        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
-
-        //Get the user id of user making the call
-        //If a request is made for data associated with a user other than
-        //the user making the call, the dao will return an empty result
-        //set from the database
-        int userId = authorizationFilter.getUserIdFromToken(jwtString);
-
-        List<BudgetExpenseCategoryModel> result;
-        result = budgetExpenseCategoryDao.getBudgetExpCatByExpCat(budgetId, userId);
-        
-        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
-    }
-
-    @PostMapping("cloneBudget")
+    @PostMapping("/cloneBudget")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity cloneBudget(@RequestBody BudgetModel newBudget,
             @RequestHeader("Authorization") String jwtString, @QueryParam("templateBudgetId") int templateBudgetId) throws ServletException, IOException {
@@ -85,4 +56,5 @@ public class CloneOrEditBudgetController {
             return new ResponseEntity(newBudgetReturnedIdList, HttpStatus.OK);
         }
     }
+
 }

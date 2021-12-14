@@ -11,8 +11,15 @@ public class TimestampManager {
     public String timestampToStringParser(Timestamp timestamp) {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
+        if(timestamp != null){
+
         String timestampAsString = formatter.format(timestamp.toLocalDateTime());
         return timestampAsString;
+        }
+        else{
+            String timestampAsString = null;
+            return timestampAsString;
+        }
     }
 
     public Timestamp stringToTimestampParser(String timeStampString){

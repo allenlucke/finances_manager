@@ -100,7 +100,7 @@ public class BudgetIncomeCategoryDao {
     }
 
     //Admin only, may access any budget income category
-    public List<BudgetIncomeCategoryModel> adminGetBudgetIncomeCatById(int id){
+    public List<BudgetIncomeCategoryModel> adminGetBudgetIncomeCatById(final int id){
 
         final String methodName = "adminGetBudgetIncomeCatById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

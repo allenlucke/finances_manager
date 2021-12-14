@@ -165,7 +165,7 @@ public class IncomeItemDao {
     }
 
     //User may only delete expense items assigned to the user
-    public boolean deleteIncomeItemById(int itemId, int usersId) {
+    public boolean deleteIncomeItemById(final int itemId, final int usersId) {
         final String methodName = "deleteIncomeItemById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 

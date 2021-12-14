@@ -114,7 +114,7 @@ public class ExpenseItemDao {
     }
 
     //Admin only, may access any expense item
-    public List<ExpenseItemModel> adminGetExpItemById(int id){
+    public List<ExpenseItemModel> adminGetExpItemById(final int id){
 
         final String methodName = "adminGetExpItemById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -130,7 +130,7 @@ public class ExpenseItemDao {
     }
 
     //User may only access expense items assigned to the user
-    public List<ExpenseItemModel> getExpItemByPeriod(int periodId, final int usersId){
+    public List<ExpenseItemModel> getExpItemByPeriod(final int periodId, final int usersId){
 
         final String methodName = "getExpItemByPeriod() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -169,7 +169,7 @@ public class ExpenseItemDao {
     }
 
     //User may only delete expense items assigned to the user
-    public boolean deleteExpItemById(int itemId, int usersId) {
+    public boolean deleteExpItemById(final int itemId, final int usersId) {
         final String methodName = "deleteExpItemById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 

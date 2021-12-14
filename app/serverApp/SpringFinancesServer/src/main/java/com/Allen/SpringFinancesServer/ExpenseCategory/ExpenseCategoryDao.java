@@ -90,7 +90,7 @@ public class ExpenseCategoryDao {
     }
 
     //Admin only, may access any expense category
-    public List<ExpenseCategoryModel> adminGetExpCatById(int id){
+    public List<ExpenseCategoryModel> adminGetExpCatById(final int id){
 
         final String methodName = "adminGetExpCatById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -172,7 +172,7 @@ public class ExpenseCategoryDao {
     }
 
     //User may only delete expense categories assigned to the user
-    public boolean deleteExpCatById(int catId, int usersId) {
+    public boolean deleteExpCatById(final int catId, final int usersId) {
         final String methodName = "deleteExpCatById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 

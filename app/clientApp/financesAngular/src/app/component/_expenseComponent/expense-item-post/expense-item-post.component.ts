@@ -32,7 +32,7 @@ export class ExpenseItemPostComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.loading = true;
+    // this.loading = true;
 
     this.getAllAccounts();
 

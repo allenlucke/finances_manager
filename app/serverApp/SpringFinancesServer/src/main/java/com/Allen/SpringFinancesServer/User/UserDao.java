@@ -25,7 +25,7 @@ public class UserDao {
     private JdbcTemplate jdbcTemplate;
 
 
-    public String getUserFirstName(int id){
+    public String getUserFirstName(final int id){
 
         final String methodName = "getUserFirstName() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -65,7 +65,7 @@ public class UserDao {
         return result;
     }
 
-    public List<UserModel> getUserById(int id){
+    public List<UserModel> getUserById(final int id){
 
         final String methodName = "getUserById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -83,7 +83,7 @@ public class UserDao {
     }
 
     //Used for application Client for local storage user data
-    public List<ClientLocalStorageUser> getUserByToken(int id){
+    public List<ClientLocalStorageUser> getUserByToken(final int id){
 
         final String methodName = "getUserByToken() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

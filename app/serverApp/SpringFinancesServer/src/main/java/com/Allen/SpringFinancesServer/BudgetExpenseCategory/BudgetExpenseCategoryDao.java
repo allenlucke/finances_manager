@@ -174,7 +174,7 @@ public class BudgetExpenseCategoryDao {
     }
 
     //Admin only, may access any budget expense category
-    public List<BudgetExpenseCategoryModel> adminGetBudgetExpCatById(int id){
+    public List<BudgetExpenseCategoryModel> adminGetBudgetExpCatById(final int id){
 
         final String methodName = "adminGetBudgetExpCatById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

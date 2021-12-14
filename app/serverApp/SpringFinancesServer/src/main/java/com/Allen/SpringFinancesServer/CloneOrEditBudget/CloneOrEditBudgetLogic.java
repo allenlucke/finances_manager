@@ -1,10 +1,10 @@
 package com.Allen.SpringFinancesServer.CloneOrEditBudget;
 
-import com.Allen.SpringFinancesServer.Budget.BudgetDao;
+import com.Allen.SpringFinancesServer.Budget.BudgetLogic;
 import com.Allen.SpringFinancesServer.Budget.BudgetModel;
-import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryDao;
+import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryLogic;
 import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryModel;
-import com.Allen.SpringFinancesServer.BudgetIncomeCategory.BudgetIncomeCategoryDao;
+import com.Allen.SpringFinancesServer.BudgetIncomeCategory.BudgetIncomeCategoryLogic;
 import com.Allen.SpringFinancesServer.BudgetIncomeCategory.BudgetIncomeCategoryModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,17 +26,14 @@ public class CloneOrEditBudgetLogic {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-//    @Autowired
-//    private CloneOrEditBudgetDao dao;
+    @Autowired
+    BudgetLogic budgetMgr;
 
     @Autowired
-    BudgetDao budgetDao;
+    private BudgetExpenseCategoryLogic budgetExpenseCategoryMgr;
 
     @Autowired
-    private BudgetExpenseCategoryDao budgetExpenseCategoryDao;
-
-    @Autowired
-    private BudgetIncomeCategoryDao budgetIncomeCategoryDao;
+    private BudgetIncomeCategoryLogic budgetIncomeCategoryMgr;
 
     //Method manages cloning of a budget
     public List<ReturnIdModel> cloneBudget(final int templateBudgetId, final int usersId, final BudgetModel newBudget){
@@ -45,11 +42,11 @@ public class CloneOrEditBudgetLogic {
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
         //Post new budget
-        List<ReturnIdModel> newBudgetIdList = budgetDao.addBudgetReturnId(newBudget);
+        List<ReturnIdModel> newBudgetIdList = budgetMgr.addBudgetReturnId(newBudget);
         int newBudgetId = newBudgetIdList.get(0).getId();
 
         //Get List of budget expense categories to be cloned to new budget
-        List<BudgetExpenseCategoryModel> matchingBudgetExpCatsList = budgetExpenseCategoryDao.getBudgetExpCatByExpCat(templateBudgetId, usersId);
+        List<BudgetExpenseCategoryModel> matchingBudgetExpCatsList = budgetExpenseCategoryMgr.getBudgetExpCatByExpCat(templateBudgetId, usersId);
 
         //Replace template budget id in matchingBudgetExpCatsList with newBudgetId
         List<BudgetExpenseCategoryModel> updatedBudgetExpCatsList = replaceBudgetIdExpCats(matchingBudgetExpCatsList, newBudgetId);
@@ -58,7 +55,7 @@ public class CloneOrEditBudgetLogic {
         List<ReturnIdModel> newExpCatsIdsList = postListOfExpenseCats(updatedBudgetExpCatsList);
 
         //Get List of budget income categories to be cloned to new budget
-        List<BudgetIncomeCategoryModel> matchingBudgetIncCatsList = budgetIncomeCategoryDao.getBudgetIncCatByIncCat(templateBudgetId, usersId);
+        List<BudgetIncomeCategoryModel> matchingBudgetIncCatsList = budgetIncomeCategoryMgr.getBudgetIncCatByIncCat(templateBudgetId, usersId);
 
         //Replace template budget id in matchingBudgetIncCatsList with newBudgetId
         List<BudgetIncomeCategoryModel> updatedIncCatsList = replaceBudgetIdIncCats(matchingBudgetIncCatsList, newBudgetId);
@@ -112,7 +109,7 @@ public class CloneOrEditBudgetLogic {
 
         List<ReturnIdModel> result = new ArrayList<>();
         for(BudgetExpenseCategoryModel budgetExpCat : budgetExpCatList){
-            List<ReturnIdModel> returnedIdList= budgetExpenseCategoryDao.addBudgetExpCatReturnId(budgetExpCat);
+            List<ReturnIdModel> returnedIdList= budgetExpenseCategoryMgr.addBudgetExpCatReturnId(budgetExpCat);
 
             result.add(returnedIdList.get(0));
         }
@@ -129,7 +126,7 @@ public class CloneOrEditBudgetLogic {
 
         List<ReturnIdModel> result = new ArrayList<>();
         for(BudgetIncomeCategoryModel budgetIncCat : budgetIncCatList){
-            List<ReturnIdModel> returnedIdList= budgetIncomeCategoryDao.addBudgetIncomeCatReturnId(budgetIncCat);
+            List<ReturnIdModel> returnedIdList= budgetIncomeCategoryMgr.addBudgetIncomeCatReturnId(budgetIncCat);
 
             result.add(returnedIdList.get(0));
         }

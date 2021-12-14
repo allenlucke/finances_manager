@@ -141,7 +141,7 @@ public class IncomeCategoryDao {
     }
 
     //User may only delete income categories assigned to the user
-    public boolean deleteIncomeCatById(int catId, int usersId) {
+    public boolean deleteIncomeCatById(final int catId, final int usersId) {
         final String methodName = "deleteIncomeCatById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 

@@ -2,6 +2,8 @@ package com.Allen.SpringFinancesServer.BudgetBalanceSheet;
 
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -25,9 +27,6 @@ public class BudgetBalanceController {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    BudgetBalanceSheetDao dao;
-
-    @Autowired
     BudgetBalanceSheetLogic mgr;
 
     @Autowired
@@ -35,7 +34,7 @@ public class BudgetBalanceController {
 
     @GetMapping("/getBudgetBalanceSheetByPeriod")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<BudgetBalanceSheetModel> getBudgetBalanceSheetByPeriod(
+    public ResponseEntity getBudgetBalanceSheetByPeriod(
             @RequestHeader("Authorization") String jwtString, @QueryParam("periodId") int periodId){
 
         final String methodName = "getBudgetBalanceSheetByPeriod() ";
@@ -49,8 +48,9 @@ public class BudgetBalanceController {
 
         List<BudgetBalanceSheetModel> result;
         result = mgr.balanceSheetByPeriodManager( periodId, userIdFromToken );
+
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
 }

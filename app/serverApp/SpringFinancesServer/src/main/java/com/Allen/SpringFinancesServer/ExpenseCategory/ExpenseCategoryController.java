@@ -25,17 +25,14 @@ public class ExpenseCategoryController {
     private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    ExpenseCategoryDao dao;
+    ExpenseCategoryLogic mgr;
 
     @Autowired
     AuthorizationFilter authorizationFilter;
 
     @GetMapping("/getAllExpCat")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<ExpenseCategoryModel> getAllExpCat(@RequestHeader("Authorization") String jwtString){
+    public ResponseEntity getAllExpCat(@RequestHeader("Authorization") String jwtString){
 
         final String methodName = "getAllExpCat() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -47,9 +44,9 @@ public class ExpenseCategoryController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<ExpenseCategoryModel> result;
-        result = dao.getAllExpCats(userId);
+        result = mgr.getAllExpCats(userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -69,7 +66,7 @@ public class ExpenseCategoryController {
         //If authorized make call to dao
         else {
             List<ExpenseCategoryModel> result;
-            result = dao.adminGetAllExpCats();
+            result = mgr.adminGetAllExpCats();
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -77,7 +74,7 @@ public class ExpenseCategoryController {
 
     @GetMapping("/getExpCatById")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<ExpenseCategoryModel> getExpCatById(
+    public ResponseEntity getExpCatById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int categoryId){
 
         final String methodName = "getExpCatById() ";
@@ -90,9 +87,9 @@ public class ExpenseCategoryController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<ExpenseCategoryModel> result;
-        result = dao.getExpCatById(categoryId, userId);
+        result = mgr.getExpCatById(categoryId, userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -113,7 +110,7 @@ public class ExpenseCategoryController {
         //If authorized make call to dao
         else {
             List<ExpenseCategoryModel> result;
-            result = dao.adminGetExpCatById(id);
+            result = mgr.adminGetExpCatById(id);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -122,7 +119,7 @@ public class ExpenseCategoryController {
     //Get available expense categories not assigned to the input budget
     @GetMapping("/getExpenseCatsNotAssignedToBudget")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<ExpenseCategoryModel> getExpenseCatsNotAssignedToBudget(
+    public ResponseEntity getExpenseCatsNotAssignedToBudget(
             @RequestHeader("Authorization") String jwtString, @QueryParam("budgetId") int budgetId){
 
         final String methodName = "getExpenseCatsNotAssignedToBudget() ";
@@ -135,9 +132,9 @@ public class ExpenseCategoryController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<ExpenseCategoryModel> result;
-        result = dao.getExpenseCatsNotAssignedToBudget(budgetId, userId);
+        result = mgr.getExpenseCatsNotAssignedToBudget(budgetId, userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     @PostMapping("/addExpCatRetId")
@@ -158,7 +155,7 @@ public class ExpenseCategoryController {
         }
         //If authorized make call to dao
         else {
-            List<ReturnIdModel> returnedId = dao.addExpCatReturnId(expCat);
+            List<ReturnIdModel> returnedId = mgr.addExpCatReturnId(expCat);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }
@@ -177,7 +174,7 @@ public class ExpenseCategoryController {
         //the user making the call, the dao will not delete the item
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
-        boolean wasDeleted = dao.deleteExpCatById(catId, userId);
+        boolean wasDeleted = mgr.deleteExpCatById(catId, userId);
         if(!wasDeleted) {
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

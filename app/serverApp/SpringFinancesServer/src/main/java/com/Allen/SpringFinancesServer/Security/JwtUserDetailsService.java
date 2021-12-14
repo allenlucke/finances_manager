@@ -3,6 +3,7 @@ package com.Allen.SpringFinancesServer.Security;
 import java.util.ArrayList;
 
 import com.Allen.SpringFinancesServer.User.UserDao;
+import com.Allen.SpringFinancesServer.User.UserLogic;
 import com.Allen.SpringFinancesServer.User.UserModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
@@ -22,7 +23,7 @@ public class JwtUserDetailsService implements UserDetailsService {
     private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
-    private UserDao userDao;
+    UserLogic userMgr;
 
     @Autowired
     private PasswordEncoder bcryptEncoder;
@@ -34,7 +35,7 @@ public class JwtUserDetailsService implements UserDetailsService {
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
         try{
-            UserModel checkUser = userDao.getUserByUsername(username);
+            UserModel checkUser = userMgr.getUserByUsername(username);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName + "User successfully loaded");
             return new User(checkUser.getUserName(), checkUser.getPassword(),
                     new ArrayList<>());
@@ -51,7 +52,7 @@ public class JwtUserDetailsService implements UserDetailsService {
 
         user.setPassword(bcryptEncoder.encode(user.getPassword()));
 
-        UserModel registeredUser = userDao.addUserReturnUser(user);
+        UserModel registeredUser = userMgr.addUserReturnUser(user);
 
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName + "User successfully added");
 

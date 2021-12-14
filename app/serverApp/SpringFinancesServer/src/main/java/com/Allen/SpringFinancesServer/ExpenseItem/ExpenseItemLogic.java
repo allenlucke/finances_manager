@@ -1,7 +1,7 @@
 package com.Allen.SpringFinancesServer.ExpenseItem;
 
 import com.Allen.SpringFinancesServer.Account.AccountLogic;
-import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryDao;
+import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryLogic;
 import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +26,9 @@ public class ExpenseItemLogic {
     AccountLogic accountMgr;
 
     @Autowired
-    BudgetExpenseCategoryDao budgetExpCatDao;
+    BudgetExpenseCategoryLogic budgetExpCatMgr;
 
-    public List<ReturnIdModel> addExpItemReturnId(ExpenseItemModel inputExpenseItem){
+    public List<ReturnIdModel> addExpItemReturnId(ExpenseItemModel inputExpenseItem) {
 
         final String methodName = "addExpItemReturnId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -36,7 +36,7 @@ public class ExpenseItemLogic {
         //Get list of budget expense categories applicable to the desired transaction date
         String desiredTransactionDate = inputExpenseItem.getTransactionDate();
         int usersId = inputExpenseItem.getUsersId();
-        List<BudgetExpenseCategoryModel> budgetExpCats = budgetExpCatDao.getBudgetExpCatsByDate(desiredTransactionDate, usersId);
+        List<BudgetExpenseCategoryModel> budgetExpCats = budgetExpCatMgr.getBudgetExpCatsByDate(desiredTransactionDate, usersId);
 
         List<ReturnIdModel> emptyReturnedIdList = new ArrayList<>();
 
@@ -47,13 +47,13 @@ public class ExpenseItemLogic {
                 inputExpenseItem.getTransactionDate()
         );
 
-        if(!checkForAccountIsOpenByDate){
+        if (!checkForAccountIsOpenByDate) {
             LOGGER.warn(CLASS_NAME + methodName + " Desired account is not active as of:  " + inputExpenseItem.getTransactionDate());
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return emptyReturnedIdList;
         }
         //Check to ensure received date matches with an applicable budget income category
-        if(budgetExpCats.size() > 0) {
+        if (budgetExpCats.size() > 0) {
             //Set paid with credit
             ExpenseItemModel updatedExpenseItem = setPaidWithCredit(inputExpenseItem);
             //Direct to correct dao
@@ -61,7 +61,7 @@ public class ExpenseItemLogic {
 
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return returnedIdList;
-        }else {
+        } else {
             LOGGER.warn(CLASS_NAME + methodName + " Desired transaction date has no matching budget expense item categories" +
                     ". The item will not be posted");
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
@@ -69,7 +69,7 @@ public class ExpenseItemLogic {
         }
     }
 
-    private ExpenseItemModel setPaidWithCredit(ExpenseItemModel expItem){
+    private ExpenseItemModel setPaidWithCredit(ExpenseItemModel expItem) {
 
         final String methodName = "setPaidWithCredit() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -101,4 +101,87 @@ public class ExpenseItemLogic {
             return returnedIdList;
         }
     }
+
+    //User may only delete expense items assigned to the user
+    public boolean deleteExpItemById(final int itemId, final int usersId) {
+        final String methodName = "deleteExpItemById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        boolean wasDeleted;
+        wasDeleted = dao.deleteExpItemById(itemId, usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return wasDeleted;
+    }
+
+    //***
+    //*** Basic DAO Calls - No Logic Required ***//
+    //***
+
+    //User may only access expense items assigned to the user
+    public List<ExpenseItemModel> getAllExpItems(final int usersId) {
+
+        final String methodName = "getAllExpItems() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<ExpenseItemModel> result;
+        result = dao.getAllExpItems(usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //Admin only, may access all expense items
+    public List<ExpenseItemModel> adminGetAllExpItems() {
+
+        final String methodName = "adminGetAllExpItems() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<ExpenseItemModel> result;
+        result = dao.adminGetAllExpItems();
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //User may only access expense items assigned to the user
+    public List<ExpenseItemModel> getExpItemById(final int itemId, final int usersId) {
+
+        final String methodName = "getExpItemById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<ExpenseItemModel> result;
+        result = dao.getExpItemById(itemId, usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //Admin only, may access any expense item
+    public List<ExpenseItemModel> adminGetExpItemById(final int id){
+
+        final String methodName = "adminGetExpItemById() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<ExpenseItemModel> result;
+        result = dao.adminGetExpItemById(id);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+    //User may only access expense items assigned to the user
+    public List<ExpenseItemModel> getExpItemByPeriod(final int periodId, final int usersId){
+
+        final String methodName = "getExpItemByPeriod() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<ExpenseItemModel> result;
+        result = dao.getExpItemByPeriod(periodId, usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
+
 }

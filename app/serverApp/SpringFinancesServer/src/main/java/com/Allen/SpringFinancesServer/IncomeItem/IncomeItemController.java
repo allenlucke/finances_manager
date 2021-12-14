@@ -1,6 +1,5 @@
 package com.Allen.SpringFinancesServer.IncomeItem;
-;
-import com.Allen.SpringFinancesServer.Period.PeriodModel;
+
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,13 +25,7 @@ public class IncomeItemController {
     private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    IncomeItemDao dao;
-
-    @Autowired
-    IncomeItemLogic logic;
+    IncomeItemLogic mgr;
 
     @Autowired
     AuthorizationFilter authorizationFilter;
@@ -40,7 +33,7 @@ public class IncomeItemController {
 
     @GetMapping("/getAllIncomeItems")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<IncomeItemModel> getAllIncomeItems(@RequestHeader("Authorization") String jwtString){
+    public ResponseEntity getAllIncomeItems(@RequestHeader("Authorization") String jwtString){
 
         final String methodName = "getAllIncomeItems() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -52,9 +45,9 @@ public class IncomeItemController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<IncomeItemModel> result;
-        result = dao.getAllIncomeItems(userId);
+        result = mgr.getAllIncomeItems(userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     //Admin only
@@ -76,7 +69,7 @@ public class IncomeItemController {
         else {
 
             List<IncomeItemModel> result;
-            result = dao.adminGetAllIncomeItems();
+            result = mgr.adminGetAllIncomeItems();
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -100,7 +93,7 @@ public class IncomeItemController {
         //If authorized make call to dao
         else {
             List<IncomeItemModel> result;
-            result = dao.adminGetIncomeItemById(itemId);
+            result = mgr.adminGetIncomeItemById(itemId);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(result, HttpStatus.OK);
         }
@@ -108,7 +101,7 @@ public class IncomeItemController {
 
     @GetMapping("/getIncomeItemById")
     @Consumes(MediaType.APPLICATION_JSON)
-    public List<IncomeItemModel> getIncomeItemById(
+    public ResponseEntity getIncomeItemById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int itemId){
 
         final String methodName = "getIncomeItemById() ";
@@ -121,9 +114,9 @@ public class IncomeItemController {
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
         List<IncomeItemModel> result;
-        result = dao.getIncomeItemById(itemId, userId);
+        result = mgr.getIncomeItemById(itemId, userId);
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     @PostMapping("/addIncomeItemReturnId")
@@ -143,7 +136,7 @@ public class IncomeItemController {
         }
         //If authorized make call to logic class
         else {
-            List<ReturnIdModel> returnedId = logic.addIncomeItemReturnId(incItem);
+            List<ReturnIdModel> returnedId = mgr.addIncomeItemReturnId(incItem);
 
             //See if post was rejected by logic class
             if(returnedId.size() > 0) {
@@ -171,7 +164,7 @@ public class IncomeItemController {
         //the user making the call, the dao will not delete the item
         int userId = authorizationFilter.getUserIdFromToken(jwtString);
 
-        boolean wasDeleted = dao.deleteIncomeItemById(itemId, userId);
+        boolean wasDeleted = mgr.deleteIncomeItemById(itemId, userId);
         if(!wasDeleted) {
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

@@ -32,7 +32,7 @@ public class AccountDao {
     //User may only access accounts assigned to the user
     public List<AccountModel> getAllAccounts(final int usersId){
 
-        final String methodName = "etAllAccounts() ";
+        final String methodName = "getAllAccounts() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
         String sql = "SELECT * FROM \"account\" WHERE \"users_id\" = ?;";
@@ -48,8 +48,10 @@ public class AccountDao {
             account.setUsersId((int)row.get("users_id"));
             account.setCredit((boolean)row.get("isCredit"));
             account.setActive((boolean)row.get("isActive"));
-            account.setCreationDate((String)row.get("creationDate"));
-            account.setClosingDate((String)row.get("closingDate"));
+            Timestamp creationDate = (Timestamp) row.get("creationDate");
+            account.setCreationDate((String) timeMgr.timestampToStringParser(creationDate));
+            Timestamp closingDate = (Timestamp) row.get("closingDate");
+            account.setClosingDate((String) timeMgr.timestampToStringParser(closingDate));
 
             result.add(account);
         }
@@ -75,9 +77,10 @@ public class AccountDao {
             account.setUsersId((int)row.get("users_id"));
             account.setCredit((boolean)row.get("isCredit"));
             account.setActive((boolean)row.get("isActive"));
-            account.setCreationDate((String)row.get("creationDate"));
-            account.setClosingDate((String)row.get("closingDate"));
-
+            Timestamp creationDate = (Timestamp) row.get("creationDate");
+            account.setCreationDate((String) timeMgr.timestampToStringParser(creationDate));
+            Timestamp closingDate = (Timestamp) row.get("closingDate");
+            account.setClosingDate((String) timeMgr.timestampToStringParser(closingDate));
             result.add(account);
         }
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
