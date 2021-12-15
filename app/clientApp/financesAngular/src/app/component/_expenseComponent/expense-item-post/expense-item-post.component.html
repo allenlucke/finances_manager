@@ -27,7 +27,7 @@
                 <label for="accountId">Account</label>
                 <select class="custom-select" formControlName="accountId" class="form-control" [ngClass]="{ 'is-invalid': submittedItem && iF.accountId.errors }" >
                     <option value="" >Select an Account expense will be withdrawn from</option>
-                    <option value = {{account.id}} *ngFor="let account of allAccounts">
+                    <option value = {{account.id}} *ngFor="let account of ( allAccounts | async )">
                         {{account.name}}</option>
                     </select>
             </div>

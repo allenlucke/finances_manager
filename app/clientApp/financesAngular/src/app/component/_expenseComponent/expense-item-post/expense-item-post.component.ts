@@ -18,7 +18,7 @@ export class ExpenseItemPostComponent implements OnInit {
   newItemForm!: FormGroup;
   loading = false;
   submittedItem = false;
-  allAccounts! : Account[]; 
+  allAccounts! : Observable<Account[]>; 
   error = '';
   errorExpItem = '';
   currentUserId! : number;
@@ -34,7 +34,9 @@ export class ExpenseItemPostComponent implements OnInit {
   ngOnInit() {
     // this.loading = true;
 
-    this.getAllAccounts();
+    //All accounts observable
+    this.allAccounts = this.accountService.allAccounts;
+    this.accountService.getAllAccounts();
 
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
 
@@ -95,13 +97,6 @@ export class ExpenseItemPostComponent implements OnInit {
     this.expensesService.getBudgetExpCatsWithNameByDate(date).pipe(first()).subscribe(postItemAvailableBudgExpCats => {
       this.postItemAvailableBudgExpCats = postItemAvailableBudgExpCats;
       // console.log(postItemAvailableBudgExpCats)
-    })
-  }
-
-  getAllAccounts(){
-    this.accountService.getAllAccounts().pipe(first()).subscribe(allAccounts => {
-      this.allAccounts = allAccounts;
-      this.loading = false;
     })
   }
 

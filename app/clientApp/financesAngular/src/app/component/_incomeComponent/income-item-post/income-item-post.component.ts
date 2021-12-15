@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { AccountService } from 'src/app/service/account.service';
 import { IncomeService } from 'src/app/service/income.service';
@@ -18,7 +19,7 @@ export class IncomeItemPostComponent implements OnInit {
   submittedItem = false;
   error = '';
   errorIncItem = '';
-  allAccounts! : Account[]; 
+  allAccounts! : Observable<Account[]>;  
   currentUserId! : number;
   returnedId! : number;
   postItemAvailableBudgIncCats! : BudgetIncomeCategoryWithName[];
@@ -33,7 +34,9 @@ export class IncomeItemPostComponent implements OnInit {
 
     this.loading = true;
 
-    this.getAllAccounts();
+    //All accounts observable
+    this.allAccounts = this.accountService.allAccounts;
+    this.accountService.getAllAccounts();
 
     //Get user id
     this.currentUserId = Number(localStorage.getItem('currentUserId'));
@@ -86,13 +89,6 @@ export class IncomeItemPostComponent implements OnInit {
   getBudgetIncCatsWithNameByDate(date: Date) {
     this.incomeService.getBudgetIncCatsWithNameByDate(date).pipe(first()).subscribe(postItemAvailableBudgIncCats => {
       this.postItemAvailableBudgIncCats = postItemAvailableBudgIncCats;
-    })
-  }
-
-  getAllAccounts(){
-    this.accountService.getAllAccounts().pipe(first()).subscribe(allAccounts => {
-      this.allAccounts = allAccounts;
-      this.loading = false;
     })
   }
 

@@ -1,1 +1,26 @@
-<p>account-list works!</p>
+<div class="card mt-4">
+    <h3 class="card-header" align="center" >Accounts</h3>
+    <div class="card-body">
+        <div *ngIf="loading" class="spinner-border spinner-border-sm"></div>
+        <table class="table table-bordered table-striped table-hover">
+            <thead>  
+                <tr>  
+                    <th>Name</th>
+                    <th>Credit</th>
+                    <th>Active</th>
+                    <th>Creation Date</th>
+                    <th>Closing Date</th>
+                </tr>  
+            </thead>  
+            <tbody *ngFor="let account of (allAccounts | async); let i = index">  
+                <tr>  
+                    <td>{{account.name}}</td>
+                    <td>{{account.credit}}</td>
+                    <td>{{account.active}}</td>
+                    <td>{{account.creationDate  | date: 'MM/dd/yyyy' }}</td>
+                    <td>{{account.closingDate | date: 'MM/dd/yyyy' }}</td> 
+                </tr>   
+            </tbody>  
+        </table>  
+    </div>
+</div>
