@@ -55,12 +55,10 @@ export class AccountPostComponent implements OnInit {
     );
 
     this.newAccountForm.reset();
-    console.log('Pssssst')
     this.submitted = false;
   }
 
   postAccount(name: string, usersId: number, isCredit: boolean, creationDate: Date){
-    console.log('Pssssst IOn post account')
     this.accountService.addAccountRetId(name, usersId, isCredit, creationDate )
   }
 

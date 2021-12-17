@@ -31,7 +31,6 @@ export class AccountService {
 
   //Add new account
   addAccountRetId(name: string, usersId: number, isCredit: boolean, creationDate: Date) {
-    console.log('Pssssst In addAccountRetId')
     this.http.post<any>(`${environment.apiUrl}/addAccountReturningId`, { name, usersId, isCredit, creationDate })
     .subscribe(
       data => {
