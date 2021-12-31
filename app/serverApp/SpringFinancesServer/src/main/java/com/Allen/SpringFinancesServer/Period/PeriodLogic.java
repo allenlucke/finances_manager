@@ -182,6 +182,19 @@ public class PeriodLogic {
         return result;
     }
 
+    //User may only access accounts assigned to the user
+    public List<PeriodModel> getPeriodsByDateRange(final String startDate, final String endDate, final int usersId){
+
+        final String methodName = "getPeriodsByDateRange() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        List<PeriodModel> result;
+        result = dao.getPeriodsByDateRange(startDate, endDate, usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
+
     //Admin only, may access any periods
     public List<PeriodModel> adminGetPeriodById(final int id) {
 

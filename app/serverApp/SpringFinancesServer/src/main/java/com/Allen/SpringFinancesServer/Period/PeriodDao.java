@@ -124,6 +124,25 @@ public class PeriodDao {
         return result;
     }
 
+    //User may only access accounts assigned to the user
+    public List<PeriodModel> getPeriodsByDateRange(final String startDate, final String endDate, final int usersId){
+
+        final String methodName = "getPeriodsByDateRange() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        Timestamp startDateToSearch = timeMgr.stringToTimestampParser(startDate);
+        Timestamp endDateToSearch = timeMgr.stringToTimestampParser(endDate);
+        String sql = "SELECT * FROM \"period\" WHERE \"startDate\" >= ? \n" +
+                "AND ? >= \"startDate\"\n" +
+                "AND \"users_id\" = ?;";
+        PeriodModel period = jdbcTemplate.queryForObject( sql, new Object[]{startDateToSearch, endDateToSearch, usersId}, new PeriodRowMapper());
+
+        List<PeriodModel> result = new ArrayList<PeriodModel>();
+        result.add(period);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
 
     //Admin only, may access any periods
     public List<PeriodModel> adminGetPeriodById(final int id){
