@@ -5,12 +5,14 @@ import com.Allen.SpringFinancesServer.Account.AccountModel;
 import com.Allen.SpringFinancesServer.AccountPeriod.AccountPeriodLogic;
 import com.Allen.SpringFinancesServer.AccountPeriod.AccountPeriodModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
+import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,12 +35,13 @@ public class PeriodLogic {
     @Autowired
     AccountLogic accountMgr;
 
+    private TimestampManager timeMgr = new TimestampManager();
+
 
     public ResponseEntity addPeriodRetId(PeriodModel period, int usersId) {
 
         final String methodName = "addPeriodRetId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
-
         boolean overlappingPeriodExists = checkForExistingPeriod(period, usersId);
 
         //Check to see if period to be posted would overlap with an existing period
@@ -48,10 +51,11 @@ public class PeriodLogic {
             return new ResponseEntity("Bad Request", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
         }
         else{
+            //Post new period
             List<ReturnIdModel> returnedId = dao.addPeriodReturnId(period);
-
             //Post accountPeriods for new period
-            List<ReturnIdModel> newAccountPeriodsIds = postAccountPeriods(returnedId.get(0).getId(), usersId);
+            List<ReturnIdModel> newAccountPeriodsIds = postAccountPeriods(returnedId.get(0).getId(), period, usersId);
+
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }
@@ -83,10 +87,11 @@ public class PeriodLogic {
         return false;
     }
 
-    private List<ReturnIdModel> postAccountPeriods(final int periodId, final int usersId) {
+    private List<ReturnIdModel> postAccountPeriods(final int periodId, final PeriodModel period, final int usersId) {
 
         final String methodName = "postAccountPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+        final String defaultEndDate = "9999-12-31";
 
         List<ReturnIdModel> userAccountIdsList = new ArrayList<>();
 
@@ -94,18 +99,37 @@ public class PeriodLogic {
         List<AccountModel> userAccounts = accountMgr.getAllAccounts(usersId);
 
         for(AccountModel account: userAccounts){
-            //Create new account period to post
-            AccountPeriodModel newAccountPeriod = new AccountPeriodModel();
-            newAccountPeriod.setUsersId(usersId);
-            newAccountPeriod.setAccountId(account.getId());
-            newAccountPeriod.setPeriodId(periodId);
 
-            //Make post call to account period dao
-            List<ReturnIdModel> newAccountPeriodReturnedIdList = acctPeriodMgr.addAcctPeriodReturningId(newAccountPeriod);
+            //Parse into timestamps to compare
+            Timestamp acctCreateDate = timeMgr.stringToTimestampParser(account.getCreationDate());
+            String acctClosingDateAsString;
+            //Check to see if account has a closing date
+            //If not use default closing date
+            if(account.getClosingDate() == null || account.getClosingDate().isBlank()){
+                acctClosingDateAsString = defaultEndDate;
+            }
+            else {
+                acctClosingDateAsString = account.getClosingDate();
+            }
+            Timestamp acctClosingDate = timeMgr.stringToTimestampParser(acctClosingDateAsString);
+            Timestamp periodEndDate = timeMgr.stringToTimestampParser(period.getEndDate());
 
-            //Add returned ids to userAccountIdsList
-            ReturnIdModel returnedId = newAccountPeriodReturnedIdList.get(0);
-            userAccountIdsList.add(returnedId);
+            //Only post valid account periods are
+            if(periodEndDate.before(acctClosingDate) && !acctCreateDate.after(periodEndDate)) {
+
+                //Create new account period to post
+                AccountPeriodModel newAccountPeriod = new AccountPeriodModel();
+                newAccountPeriod.setUsersId(usersId);
+                newAccountPeriod.setAccountId(account.getId());
+                newAccountPeriod.setPeriodId(periodId);
+
+                //Make post call to account period dao
+                List<ReturnIdModel> newAccountPeriodReturnedIdList = acctPeriodMgr.addAcctPeriodReturningId(newAccountPeriod);
+
+                //Add returned ids to userAccountIdsList
+                ReturnIdModel returnedId = newAccountPeriodReturnedIdList.get(0);
+                userAccountIdsList.add(returnedId);
+            }
         }
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return userAccountIdsList;

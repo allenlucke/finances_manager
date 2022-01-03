@@ -125,21 +125,33 @@ public class PeriodDao {
     }
 
     //User may only access accounts assigned to the user
-    public List<PeriodModel> getPeriodsByDateRange(final String startDate, final String endDate, final int usersId){
+    public List<PeriodModel> getPeriodsByDateRange(final String beginningDate, final String endingDate, final int usersId){
 
         final String methodName = "getPeriodsByDateRange() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
-        Timestamp startDateToSearch = timeMgr.stringToTimestampParser(startDate);
-        Timestamp endDateToSearch = timeMgr.stringToTimestampParser(endDate);
+        Timestamp beginningDateToSearch = timeMgr.stringToTimestampParser(beginningDate);
+        Timestamp endingDateToSearch = timeMgr.stringToTimestampParser(endingDate);
         String sql = "SELECT * FROM \"period\" WHERE \"startDate\" >= ? \n" +
                 "AND ? >= \"startDate\"\n" +
                 "AND \"users_id\" = ?;";
-        PeriodModel period = jdbcTemplate.queryForObject( sql, new Object[]{startDateToSearch, endDateToSearch, usersId}, new PeriodRowMapper());
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql,
+                new Object[] {beginningDateToSearch, endingDateToSearch, usersId} );
 
+        LOGGER.info(CLASS_NAME + methodName + "Mapping result set");
         List<PeriodModel> result = new ArrayList<PeriodModel>();
-        result.add(period);
+        for(Map<String, Object> row:rows){
+            PeriodModel period = new PeriodModel();
+            period.setId((int)row.get("id"));
+            period.setName((String)row.get("name"));
+            Timestamp startDate = (Timestamp) row.get("startDate");
+            period.setStartDate((String) timeMgr.timestampToStringParser(startDate));
+            Timestamp endDate = (Timestamp) row.get("endDate");
+            period.setEndDate((String) timeMgr.timestampToStringParser(endDate));
+            period.setUsersId((int)row.get("users_id"));
 
+            result.add(period);
+        }
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }

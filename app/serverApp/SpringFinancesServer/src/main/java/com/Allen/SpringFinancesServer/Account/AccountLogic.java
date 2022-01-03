@@ -60,16 +60,17 @@ public class AccountLogic {
     //Used to automatically create applicable accountPeriods following the creation of an account
     public List<ReturnIdModel> addAccountPeriodWhereApplicable(final AccountModel acct, final int accountId){
 
-        int usersId = acct.getUsersId();
+        final String methodName = "addAccountPeriodWhereApplicable() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+        final String defaultClosingDate = "9999-12-31";
 
+        int usersId = acct.getUsersId();
         String creationDate = acct.getCreationDate();
         String closingDate;
 
-        final String defaultClosingDate = "9999-12-31";
-
-
-        //Get the first period the new account is open in
+        //Get the first period in which the new account is open
         List<PeriodModel> firstPeriodList;
+        LOGGER.info(CLASS_NAME + methodName + ": Getting the first period in which the new account is open.");
         firstPeriodList = periodMgr.getPeriodByDate(creationDate, usersId);
         PeriodModel firstPeriod = firstPeriodList.get(0);
 
@@ -82,7 +83,8 @@ public class AccountLogic {
             closingDate = acct.getClosingDate();
         }
 
-        //Get all other periods account is open in
+        //Get all other periods in which the account is open
+        LOGGER.info(CLASS_NAME + methodName + ": Getting all other periods in which the account is open.");
         List<PeriodModel> allOtherPeriodsList;
         allOtherPeriodsList = periodMgr.getPeriodsByDateRange(creationDate, closingDate, usersId);
 
@@ -97,7 +99,6 @@ public class AccountLogic {
         List<AccountPeriodModel> accountPeriodsList = new ArrayList<>();
         for(PeriodModel period : allPeriodsList) {
             int periodId = period.getId();
-
             AccountPeriodModel acctPeriod = new AccountPeriodModel();
             acctPeriod.setPeriodId(periodId);
             acctPeriod.setAccountId(accountId);
@@ -113,6 +114,7 @@ public class AccountLogic {
             ReturnIdModel returnedId = returnedIdList.get(0);
             newAccountPeriodIdsList.add(returnedId);
         }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return newAccountPeriodIdsList;
     }
 
