@@ -32,7 +32,7 @@ export class IncomeItemPostComponent implements OnInit {
 
   ngOnInit() {
 
-    this.loading = true;
+    // this.loading = true;
 
     //All accounts observable
     this.allAccounts = this.accountService.allAccounts;

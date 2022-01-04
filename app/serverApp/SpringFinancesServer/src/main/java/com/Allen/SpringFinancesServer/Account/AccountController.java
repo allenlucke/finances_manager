@@ -13,6 +13,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 import static com.Allen.SpringFinancesServer.SpringFinancesServerApplication.LOGGER;
@@ -26,9 +27,6 @@ public class AccountController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
-//    @Autowired
-//    AccountDao dao;
 
     @Autowired
     AccountLogic mgr;
@@ -126,14 +124,14 @@ public class AccountController {
     @PostMapping("/addAccountReturningId")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity addAccountReturningId(
-            @RequestHeader("Authorization") String jwtString, @RequestBody AccountModel acct)
-            throws ServletException, IOException {
+            @RequestHeader("Authorization") String jwtString, @RequestBody AccountModel account,
+            @QueryParam("beginningBalance") BigDecimal beginningBalance) throws ServletException, IOException {
 
         final String methodName = "addAccountReturningId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
         ///Check user auth: Only admin or assigned user may post
-        int requestUserId = acct.getUsersId();
+        int requestUserId = account.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
         if(!confirmAuthorization) {
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
@@ -141,7 +139,15 @@ public class AccountController {
         }
         //If authorized make call to logic class
         else {
-            List<ReturnIdModel> returnedId = mgr.addAccountReturningId(acct);
+            boolean hasApplicablePeriod = mgr.hasApplicablePeriod(account);
+            //Is there a period that matches the account's creation date?
+            //If not return error
+            if(!hasApplicablePeriod){
+                return new ResponseEntity("Bad Request: The account's creation date does not fall within any previously existing period, " +
+                        "the period must exist first.", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+            }
+            //If so, proceed to post
+            List<ReturnIdModel> returnedId = mgr.addAccountReturningId(account, beginningBalance);
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             return new ResponseEntity(returnedId, HttpStatus.OK);
         }

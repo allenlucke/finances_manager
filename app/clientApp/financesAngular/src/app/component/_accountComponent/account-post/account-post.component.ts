@@ -30,7 +30,8 @@ export class AccountPostComponent implements OnInit {
     this.newAccountForm = this.formBuilder.group({
       name: ['', Validators.required], 
       isCredit: ['', Validators.required], 
-      creationDate: ['', Validators.required]
+      creationDate: ['', Validators.required],
+      beginningBalance: ['', Validators.required]
     });
   }
 
@@ -51,15 +52,16 @@ export class AccountPostComponent implements OnInit {
       this.f.name.value,
       this.currentUserId,
       this.f.isCredit.value,
-      this.f.creationDate.value
+      this.f.creationDate.value,
+      this.f.beginningBalance.value
     );
 
     this.newAccountForm.reset();
     this.submitted = false;
   }
 
-  postAccount(name: string, usersId: number, isCredit: boolean, creationDate: Date){
-    this.accountService.addAccountRetId(name, usersId, isCredit, creationDate )
+  postAccount(name: string, usersId: number, isCredit: boolean, creationDate: Date, beginningBalance: Number){
+    this.accountService.addAccountRetId(name, usersId, isCredit, creationDate, beginningBalance )
   }
 
 }

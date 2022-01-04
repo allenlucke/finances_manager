@@ -120,7 +120,7 @@ public class AccountDao {
         return result;
     }
 
-    //Only Admin or the User to whom the account period will be assigned
+    //Only Admin or the User to whom the account will be assigned
     //may use this post call
     public List<ReturnIdModel> addAccountReturningId(final AccountModel acct) {
 

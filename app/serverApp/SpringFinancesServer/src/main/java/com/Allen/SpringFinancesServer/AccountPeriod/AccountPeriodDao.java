@@ -177,4 +177,30 @@ public class AccountPeriodDao {
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
+
+    //Only Admin or the User to whom the account period will be assigned
+    //may use this put call
+    public boolean updateBeginningBalance(final BigDecimal beginningBalance, final int acctPeriodId, final int usersId) {
+
+        final String methodName = "updateBeginningBalance() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        String sql = "UPDATE \"accountPeriod\" SET \"beginningBalance\" = ? \n" +
+                "WHERE \"id\" = ? AND \"users_id\" = ?;";
+        int status = jdbcTemplate.update(sql, beginningBalance, acctPeriodId, usersId);
+        boolean wasUpdated;
+
+        if(status != 0) {
+            LOGGER.info(CLASS_NAME + methodName + ": accountPeriod with id of " + acctPeriodId +
+                    " has had it's beginning balance updated successfully.");
+            wasUpdated = true;
+        }else{
+            LOGGER.info(CLASS_NAME + methodName + ": accountPeriod with id of " + acctPeriodId +
+                    " cannot be found, beginning balance will not be updated.");
+            wasUpdated = false;
+        }
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return wasUpdated;
+    }
+
 }

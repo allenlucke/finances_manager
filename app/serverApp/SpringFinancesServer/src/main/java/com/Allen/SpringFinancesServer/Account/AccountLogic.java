@@ -7,8 +7,10 @@ import com.Allen.SpringFinancesServer.Period.PeriodModel;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Period;
 import java.util.ArrayList;
@@ -36,7 +38,7 @@ public class AccountLogic {
 
     //Only Admin or the User to whom the account will be assigned
     //may use this post call
-    public List<ReturnIdModel> addAccountReturningId(final AccountModel acct) {
+    public List<ReturnIdModel> addAccountReturningId(final AccountModel acct, final BigDecimal beginningBalance) {
 
         final String methodName = "addAccountReturningId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -49,6 +51,14 @@ public class AccountLogic {
         List<ReturnIdModel> newAccountPeriodIdList;
         newAccountPeriodIdList = addAccountPeriodWhereApplicable(acct, accountId);
 
+        //Add beginning balance to earliest accountPeriod
+        int firstAccountPeriodId = newAccountPeriodIdList.get(0).getId();
+        boolean hasUpdatedBeginningBalance = updateBeginningBalance(firstAccountPeriodId, acct.getUsersId(), beginningBalance);
+        if(!hasUpdatedBeginningBalance){
+            LOGGER.warn(CLASS_NAME + methodName + " Beginning balance was not successfully updated. " );
+        }
+
+        //Finally return the id of the new account
         LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
         return result;
     }
@@ -56,6 +66,52 @@ public class AccountLogic {
     //
     //Helper Methods
     //
+
+    //Checks for an existing period that matches account opening date
+    public boolean hasApplicablePeriod(final AccountModel acct ) {
+
+        final String methodName = "hasApplicablePeriod() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        int usersId = acct.getUsersId();
+        String creationDate = acct.getCreationDate();
+
+        //Get the first period in which the new account is open
+        List<PeriodModel> firstPeriodList;
+        LOGGER.info(CLASS_NAME + methodName + ": Getting the first period in which the new account is open.");
+
+        try {
+            firstPeriodList = periodMgr.getPeriodByDate(creationDate, usersId);
+            if(firstPeriodList.size() > 0) {
+                LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+                return true;
+            }
+        }
+        catch (EmptyResultDataAccessException e) {
+            LOGGER.warn(CLASS_NAME + methodName + " No applicable period exists during account creation date. " );
+            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+            return false;
+        }
+//        if(firstPeriodList.size() > 0) {
+//            LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+//            return true;
+//        }
+        LOGGER.warn(CLASS_NAME + methodName + " No applicable period exists during account creation date. " );
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return false;
+    }
+
+    //Calls to accountPeriod Manager to update a beginning balance
+    public boolean updateBeginningBalance(final int accountPeriodId, final int usersId, final BigDecimal beginningBalance){
+
+        final String methodName = "updateBeginningBalance() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        boolean result = acctPeriodMgr.updateBeginningBalance(beginningBalance, accountPeriodId, usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
 
     //Used to automatically create applicable accountPeriods following the creation of an account
     public List<ReturnIdModel> addAccountPeriodWhereApplicable(final AccountModel acct, final int accountId){

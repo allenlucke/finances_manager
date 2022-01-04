@@ -106,7 +106,7 @@ public class PeriodDao {
     }
 
     //User may only access accounts assigned to the user
-    public List<PeriodModel> getPeriodByDate(final String date, final int usersId){
+    public List<PeriodModel> getPeriodByDate(final String date, final int usersId)throws EmptyResultDataAccessException{
 
         final String methodName = "getPeriodByDate() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -209,4 +210,16 @@ public class AccountPeriodLogic {
         return result;
     }
 
+    //User may only modify account periods assigned to the user
+    public boolean updateBeginningBalance(final BigDecimal beginningBalance, final int acctPeriodId, final int usersId) {
+
+        final String methodName = "updateBeginningBalance() ";
+        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+
+        boolean result;
+        result = dao.updateBeginningBalance(beginningBalance, acctPeriodId, usersId);
+
+        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+        return result;
+    }
 }

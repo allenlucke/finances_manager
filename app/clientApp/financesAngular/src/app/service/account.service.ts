@@ -30,8 +30,8 @@ export class AccountService {
   }
 
   //Add new account
-  addAccountRetId(name: string, usersId: number, isCredit: boolean, creationDate: Date) {
-    this.http.post<any>(`${environment.apiUrl}/addAccountReturningId`, { name, usersId, isCredit, creationDate })
+  addAccountRetId(name: string, usersId: number, isCredit: boolean, creationDate: Date, beginningBalance: Number) {
+    this.http.post<any>(`${environment.apiUrl}/addAccountReturningId?initialBalance=${beginningBalance}`, { name, usersId, isCredit, creationDate })
     .subscribe(
       data => {
         this._allAccounts.next(Object.assign({}, this.allAccountsDataStore).allAccounts);
