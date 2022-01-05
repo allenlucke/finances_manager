@@ -18,6 +18,7 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { JwtInterceptor } from 'src/app/_helpers/jwt.interceptor';
 import { ErrorInterceptor } from 'src/app/_helpers/error.interceptor';
+import { HttpErrorInterceptor } from './_helpers/http-error.interceptor';
 import { FooterComponent } from './footer/footer.component';
 import { HomeComponent } from './component/home/home.component';
 import { LoginComponent } from './component/login/login.component';
@@ -99,6 +100,7 @@ import { AccountPostComponent } from './component/_accountComponent/account-post
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: HttpErrorInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true }
   ],
   bootstrap: [AppComponent],
