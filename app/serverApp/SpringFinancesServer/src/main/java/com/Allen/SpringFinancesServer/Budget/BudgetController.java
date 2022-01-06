@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.Budget;
 
+import com.Allen.SpringFinancesServer.Model.ApiError;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,8 +65,14 @@ public class BudgetController {
         //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getAllBudgets"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -109,8 +116,14 @@ public class BudgetController {
         //Check user auth: Only admin may access any budget
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getBudgetById"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -134,8 +147,14 @@ public class BudgetController {
         int requestUserId = budget.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/addBudgetRetId"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to logic class
         else {
@@ -143,9 +162,15 @@ public class BudgetController {
 
             //Check to see if post was rejected due to a previously existing budget already assigned to the periodId
             if(returnedId.size() == 0){
+                ApiError apiError = new ApiError(
+                        416,
+                        HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                        "This request overlaps/conflicts with a previously existing budget.",
+                        "/Admin/getAllAcctPeriods"
+                );
                 LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
                 LOGGER.warn(CLASS_NAME + methodName + "This request overlaps/conflicts with a previously existing budget.");
-                return new ResponseEntity("Bad Request", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+                return new ResponseEntity(apiError, HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
             }
             //Else return response
             else {

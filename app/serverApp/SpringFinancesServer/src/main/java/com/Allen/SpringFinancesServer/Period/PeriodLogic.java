@@ -51,6 +51,7 @@ public class PeriodLogic {
             return new ResponseEntity("Bad Request", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
         }
         else{
+            LOGGER.info(CLASS_NAME + methodName + " Period end date: " + period.getEndDate());
             //Post new period
             List<ReturnIdModel> returnedId = dao.addPeriodReturnId(period);
             //Post accountPeriods for new period
@@ -260,16 +261,16 @@ public class PeriodLogic {
 
     //Only Admin or the User to whom the period will be assigned
     //may use this post call
-    public List<ReturnIdModel> addPeriodReturnId(final PeriodModel period) {
-
-        final String methodName = "addPeriodReturnId() ";
-        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
-
-        List<ReturnIdModel> result;
-        result = dao.addPeriodReturnId(period);
-
-        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-        return result;
-    }
+//    public List<ReturnIdModel> addPeriodReturnId(final PeriodModel period) {
+//
+//        final String methodName = "addPeriodReturnId() ";
+//        LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
+//
+//        List<ReturnIdModel> result;
+//        result = dao.addPeriodReturnId(period);
+//
+//        LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
+//        return result;
+//    }
 
 }

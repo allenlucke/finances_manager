@@ -51,6 +51,4 @@ public class AccountBalanceSheetController {
         return new ResponseEntity(result, HttpStatus.OK);
     }
 
-
-
 }

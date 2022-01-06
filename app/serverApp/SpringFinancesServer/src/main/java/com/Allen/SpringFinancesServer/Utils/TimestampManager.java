@@ -22,15 +22,31 @@ public class TimestampManager {
         }
     }
 
-    public Timestamp stringToTimestampParser(String timeStampString){
+    public Timestamp stringToTimestampParser(String timestampString){
 
-        if(timeStampString.length() > 10) {
-            timeStampString = timeStampString.substring(0, 10);
+        if(timestampString.length() > 10) {
+            timestampString = timestampString.substring(0, 10);
         }
 
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.US);
 
-        LocalDateTime localDateTime = LocalDate.parse(timeStampString, dtf).atStartOfDay();
+        LocalDateTime localDateTime = LocalDate.parse(timestampString, dtf).atStartOfDay();
+
+        Timestamp timestamp = Timestamp.valueOf(localDateTime);
+        return timestamp;
+    }
+
+    //Only used for posting periods
+    //Ensures posted date will fall at EOD
+    public Timestamp periodPostingStringToTimestampParser(String dateString) {
+
+        if(dateString.length() > 10) {
+            dateString = dateString.substring(0, 10);
+        }
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.US);
+
+        LocalDateTime localDateTime = LocalDate.parse(dateString, dtf).atTime(23, 59, 59, 9);
 
         Timestamp timestamp = Timestamp.valueOf(localDateTime);
         return timestamp;

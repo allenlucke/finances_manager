@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.Account;
 
+import com.Allen.SpringFinancesServer.Model.ApiError;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +65,12 @@ public class AccountController {
         //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getAllAccounts"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
             return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
@@ -109,8 +116,14 @@ public class AccountController {
         //Check user auth: Only admin may access any account
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getAccountById"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to logic class
         else {
@@ -134,8 +147,14 @@ public class AccountController {
         int requestUserId = account.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/addAccountReturningId"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to logic class
         else {
@@ -143,8 +162,13 @@ public class AccountController {
             //Is there a period that matches the account's creation date?
             //If not return error
             if(!hasApplicablePeriod){
-                return new ResponseEntity("Bad Request: The account's creation date does not fall within any previously existing period, " +
-                        "the period must exist first.", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+                ApiError apiError = new ApiError(
+                        416,
+                        HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                        "Bad Request: The account's creation date does not fall within any previously existing period, the period must exist first.",
+                        "/addAccountReturningId"
+                );
+                return new ResponseEntity(apiError, HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
             }
             //If so, proceed to post
             List<ReturnIdModel> returnedId = mgr.addAccountReturningId(account, beginningBalance);

@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.AccountPeriod;
 
+import com.Allen.SpringFinancesServer.Model.ApiError;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,8 +62,14 @@ public class AccountPeriodController {
         //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getAllAcctPeriods"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -106,8 +113,14 @@ public class AccountPeriodController {
         //Check user auth: Only admin may access any account period
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getAcctPeriodById"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -131,8 +144,14 @@ public class AccountPeriodController {
         int requestUserId = acctPeriod.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/addAccountPeriodRetId"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to logic class
         else {
@@ -140,10 +159,17 @@ public class AccountPeriodController {
 
             //Check to see if post was rejected due to an overlapping accountPeriod
             if(returnedId.size() == 0){
+                ApiError apiError = new ApiError(
+                        416,
+                        HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                        "This request overlaps/conflicts with a previously existing accountPeriod " +
+                                "or the account requested does not exist in the requested period.",
+                        "/addAccountPeriodRetId"
+                );
                 LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
                 LOGGER.warn(CLASS_NAME + methodName + "This request overlaps/conflicts with a previously existing accountPeriod " +
                         "or the account requested does not exist in the requested period.");
-                return new ResponseEntity("Bad Request", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+                return new ResponseEntity(apiError, HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
             }
             //Else return response
             else {

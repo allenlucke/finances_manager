@@ -281,7 +281,7 @@ public class PeriodDao {
             ps.setString(1, period.getName());
             Timestamp startDateAsTimestamp = timeMgr.stringToTimestampParser(period.getStartDate());
             ps.setTimestamp(2, startDateAsTimestamp);
-            Timestamp endDateAsTimestamp = timeMgr.stringToTimestampParser(period.getEndDate());
+            Timestamp endDateAsTimestamp = timeMgr.periodPostingStringToTimestampParser(period.getEndDate());
             ps.setTimestamp(3, endDateAsTimestamp);
             ps.setInt(4, period.getUsersId());
 
