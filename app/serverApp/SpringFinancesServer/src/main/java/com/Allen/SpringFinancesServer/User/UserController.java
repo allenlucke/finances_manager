@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.User;
 
+import com.Allen.SpringFinancesServer.Model.ApiError;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,9 +26,6 @@ public class UserController {
     private static final String METHOD_EXITING = "Exiting:  ";
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
     UserLogic mgr;
 
     @Autowired
@@ -46,8 +44,14 @@ public class UserController {
         //Check user auth
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, id);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/getUserFirstName"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -69,8 +73,14 @@ public class UserController {
         //Check user auth
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, id);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/getUserFirstName"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -92,8 +102,14 @@ public class UserController {
         //Check user auth
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, id);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/getUserByName"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -115,8 +131,14 @@ public class UserController {
         //Check user auth
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getAllUsers"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {

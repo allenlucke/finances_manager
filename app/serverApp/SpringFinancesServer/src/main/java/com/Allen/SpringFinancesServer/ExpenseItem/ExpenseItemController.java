@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.ExpenseItem;
 
+import com.Allen.SpringFinancesServer.Model.ApiError;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,8 +65,14 @@ public class ExpenseItemController {
         //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getAllExpItems"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -109,8 +116,14 @@ public class ExpenseItemController {
         //Check user auth: Only admin may access any expense item
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getExpItemById"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -134,28 +147,43 @@ public class ExpenseItemController {
         int requestUserId = expItem.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/addExpItemRetId"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to logic class
         else {
             List<ReturnIdModel> returnedId = mgr.addExpItemReturnId(expItem);
 
-            //See if post was rejected by logic class
+            //Check if post was rejected by logic class
             if(returnedId.size() > 0) {
+                //Post NOT rejected
                 LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
                 return new ResponseEntity(returnedId, HttpStatus.OK);
             }
             else{
-                LOGGER.warn(CLASS_NAME + methodName + " Desired transaction date has no matching budget expense item categories" +
-                        ". The item will not be posted");
+                //Post rejected
+                ApiError apiError = new ApiError(
+                        416,
+                        HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                        "Unable to post expense item, possible causes include: " +
+                                "Desired account is not active as of the expense item's received date. " +
+                                " Desired transaction date has no matching budget expense item categories.",
+                        "/addExpItemRetId"
+                );
+                LOGGER.warn(CLASS_NAME + methodName + " Input data invalid.");
                 LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-                return new ResponseEntity(returnedId, HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+                return new ResponseEntity(apiError, HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
             }
         }
     }
 
-    @DeleteMapping("deleteExpItemById")
+    @DeleteMapping("/deleteExpItemById")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity deleteExpItemById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int itemId) {
@@ -170,8 +198,15 @@ public class ExpenseItemController {
 
         boolean wasDeleted = mgr.deleteExpItemById(itemId, userId);
         if(!wasDeleted) {
+            ApiError apiError = new ApiError(
+                    404,
+                    HttpStatus.NOT_FOUND,
+                    "Unable to delete the expense item. Possible causes include: " +
+                            "An incorrect expense item was passed to the server.",
+                    "/deleteExpItemById"
+            );
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity(apiError, HttpStatus.NOT_FOUND);
         }
         else {
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);

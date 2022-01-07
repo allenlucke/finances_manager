@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.IncomeCategory;
 
+import com.Allen.SpringFinancesServer.Model.ApiError;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,8 +60,14 @@ public class IncomeCategoryController {
         //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getAllIncomeCats"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -83,8 +90,14 @@ public class IncomeCategoryController {
         //Check user auth: Only admin may access any income category
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getIncomeCatById"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -127,8 +140,14 @@ public class IncomeCategoryController {
         int requestUserId = incomeCat.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/addIncomeCatReturnId"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -138,7 +157,7 @@ public class IncomeCategoryController {
         }
     }
 
-    @DeleteMapping("deleteIncomeCatById")
+    @DeleteMapping("/deleteIncomeCatById")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity deleteExpItemById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int catId) {
@@ -153,8 +172,16 @@ public class IncomeCategoryController {
 
         boolean wasDeleted = mgr.deleteIncomeCatById(catId, userId);
         if(!wasDeleted) {
+            ApiError apiError = new ApiError(
+                    404,
+                    HttpStatus.NOT_FOUND,
+                    "Unable to delete the income category. Possible causes include: " +
+                            "The income category is currently being used as part of a budget or income item; " +
+                            "OR An incorrect income category was passed to the server.",
+                    "/deleteIncomeCatById"
+            );
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity(apiError ,HttpStatus.NOT_FOUND);
         }
         else {
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);

@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.ExpenseCategory;
 
+import com.Allen.SpringFinancesServer.Model.ApiError;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,8 +61,14 @@ public class ExpenseCategoryController {
         //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getAllExpCat"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -104,8 +111,14 @@ public class ExpenseCategoryController {
         //Check user auth: Only admin may access any expense category
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getExpCatById"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -150,8 +163,14 @@ public class ExpenseCategoryController {
         int requestUserId = expCat.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/addExpCatRetId"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -161,7 +180,7 @@ public class ExpenseCategoryController {
         }
     }
 
-    @DeleteMapping("deleteExpCatById")
+    @DeleteMapping("/deleteExpCatById")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity deleteExpItemById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int catId) {
@@ -176,8 +195,16 @@ public class ExpenseCategoryController {
 
         boolean wasDeleted = mgr.deleteExpCatById(catId, userId);
         if(!wasDeleted) {
+            ApiError apiError = new ApiError(
+                    404,
+                    HttpStatus.NOT_FOUND,
+                    "Unable to delete the expense category. Possible causes include: " +
+                    "The expense category is currently being used as part of a budget or expense item; " +
+                    "OR An incorrect expense category was passed to the server.",
+                    "/deleteExpCatById"
+            );
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity(apiError, HttpStatus.NOT_FOUND);
         }
         else {
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);

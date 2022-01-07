@@ -4,6 +4,9 @@ import com.Allen.SpringFinancesServer.Account.AccountLogic;
 import com.Allen.SpringFinancesServer.Account.AccountModel;
 import com.Allen.SpringFinancesServer.AccountPeriod.AccountPeriodLogic;
 import com.Allen.SpringFinancesServer.AccountPeriod.AccountPeriodModel;
+import com.Allen.SpringFinancesServer.BudgetIncomeCategory.BudgetIncomeCategoryModel;
+import com.Allen.SpringFinancesServer.IncomeItem.IncomeItemModel;
+import com.Allen.SpringFinancesServer.Model.ApiError;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Utils.TimestampManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,27 +41,29 @@ public class PeriodLogic {
     private TimestampManager timeMgr = new TimestampManager();
 
 
-    public ResponseEntity addPeriodRetId(PeriodModel period, int usersId) {
+    public List<ReturnIdModel> addPeriodRetId(PeriodModel period, int usersId) {
 
         final String methodName = "addPeriodRetId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
         boolean overlappingPeriodExists = checkForExistingPeriod(period, usersId);
 
+        List<ReturnIdModel> emptyReturnedIdList = new ArrayList<>();
+
         //Check to see if period to be posted would overlap with an existing period
         if(overlappingPeriodExists){
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
             LOGGER.warn(CLASS_NAME + methodName + "This request overlaps/conflicts with a previously existing period.");
-            return new ResponseEntity("Bad Request", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+            return emptyReturnedIdList;
         }
         else{
             LOGGER.info(CLASS_NAME + methodName + " Period end date: " + period.getEndDate());
             //Post new period
-            List<ReturnIdModel> returnedId = dao.addPeriodReturnId(period);
+            List<ReturnIdModel> returnedIdList = dao.addPeriodReturnId(period);
             //Post accountPeriods for new period
-            List<ReturnIdModel> newAccountPeriodsIds = postAccountPeriods(returnedId.get(0).getId(), period, usersId);
+            List<ReturnIdModel> newAccountPeriodsIds = postAccountPeriods(returnedIdList.get(0).getId(), period, usersId);
 
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-            return new ResponseEntity(returnedId, HttpStatus.OK);
+            return returnedIdList;
         }
     }
 

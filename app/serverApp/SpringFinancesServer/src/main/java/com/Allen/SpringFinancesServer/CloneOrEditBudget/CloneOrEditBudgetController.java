@@ -5,6 +5,7 @@ import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategor
 import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryLogic;
 import com.Allen.SpringFinancesServer.BudgetExpenseCategory.BudgetExpenseCategoryModel;
 import com.Allen.SpringFinancesServer.ExpenseCategory.ExpenseCategoryModel;
+import com.Allen.SpringFinancesServer.Model.ApiError;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,8 +48,14 @@ public class CloneOrEditBudgetController {
         int requestUserId = newBudget.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/cloneBudget"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         else{
             List<ReturnIdModel> newBudgetReturnedIdList = mgr.cloneBudget(templateBudgetId, requestUserId, newBudget);

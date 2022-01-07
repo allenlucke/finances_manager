@@ -1,5 +1,6 @@
 package com.Allen.SpringFinancesServer.IncomeItem;
 
+import com.Allen.SpringFinancesServer.Model.ApiError;
 import com.Allen.SpringFinancesServer.ReturnIdModel;
 import com.Allen.SpringFinancesServer.Security.AuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,12 +63,17 @@ public class IncomeItemController {
         //Check user auth: Only admin
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getAllIncomeItems"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
-
             List<IncomeItemModel> result;
             result = mgr.adminGetAllIncomeItems();
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
@@ -87,8 +93,14 @@ public class IncomeItemController {
         //Check user auth: Only admin may access any income item
         boolean confirmAuthorization = authorizationFilter.doFilterBySecurityLevel(jwtString);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/Admin/getIncomeItemById"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to dao
         else {
@@ -131,27 +143,44 @@ public class IncomeItemController {
         int requestUserId = incItem.getUsersId();
         boolean confirmAuthorization = authorizationFilter.doFilterByUserIdOrSecurityLevel(jwtString, requestUserId);
         if(!confirmAuthorization) {
+            ApiError apiError = new ApiError(
+                    401,
+                    HttpStatus.UNAUTHORIZED,
+                    "User is not authorized to access these records",
+                    "/addIncomeItemReturnId"
+            );
             LOGGER.warn(CLASS_NAME + methodName + "User is not authorized to access these records");
-            return new ResponseEntity("Unauthorized", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity(apiError, HttpStatus.UNAUTHORIZED);
         }
         //If authorized make call to logic class
         else {
             List<ReturnIdModel> returnedId = mgr.addIncomeItemReturnId(incItem);
 
-            //See if post was rejected by logic class
+            //Check if post was rejected by logic class
             if(returnedId.size() > 0) {
+                //Post NOT rejected
                 LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
                 return new ResponseEntity(returnedId, HttpStatus.OK);
             }
             else{
+                //Post rejected
+                ApiError apiError = new ApiError(
+                        416,
+                        HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                        "Unable to post income item, possible causes include: " +
+                                " Desired account is a credit account, income cannot be posted to a credit account. " +
+                                "Desired account is not active as of the income item's received date. " +
+                                "Desired received date has no matching budget income item categories.",
+                        "/addIncomeItemReturnId"
+                );
                 LOGGER.warn(CLASS_NAME + methodName + " Input data invalid.");
                 LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-                return new ResponseEntity(returnedId, HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
+                return new ResponseEntity(apiError, HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
             }
         }
     }
 
-    @DeleteMapping("deleteIncomeItemById")
+    @DeleteMapping("/deleteIncomeItemById")
     @Consumes(MediaType.APPLICATION_JSON)
     public ResponseEntity deleteIncomeItemById(
             @RequestHeader("Authorization") String jwtString, @QueryParam("id") int itemId) {
@@ -166,8 +195,15 @@ public class IncomeItemController {
 
         boolean wasDeleted = mgr.deleteIncomeItemById(itemId, userId);
         if(!wasDeleted) {
+            ApiError apiError = new ApiError(
+                    404,
+                    HttpStatus.NOT_FOUND,
+                    "Unable to delete the income item. Possible causes include: " +
+                            "An incorrect income item was passed to the server.",
+                    "/deleteIncomeItemById"
+            );
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity(apiError ,HttpStatus.NOT_FOUND);
         }
         else {
             LOGGER.info(CLASS_NAME + METHOD_EXITING + methodName);
