@@ -27,7 +27,7 @@ public class BudgetDao {
     private JdbcTemplate jdbcTemplate;
 
     //User may only access budgets assigned to the user
-    public List<BudgetModel> getAllBudgets(final int usersId){
+    protected List<BudgetModel> getAllBudgets(final int usersId){
 
         final String methodName = "getAllBudgets() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -57,7 +57,7 @@ public class BudgetDao {
     }
 
     //Admin only, may access all budgets
-    public List<BudgetModel> adminGetAllBudgets(){
+    protected List<BudgetModel> adminGetAllBudgets(){
 
         final String methodName = "adminGetAllBudgets() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -82,7 +82,7 @@ public class BudgetDao {
     }
 
     //User may only access budgets assigned to the user
-    public List<BudgetModel> getBudgetById(final int budgetId, final int usersId){
+    protected List<BudgetModel> getBudgetById(final int budgetId, final int usersId){
 
         final String methodName = "getBudgetById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -99,7 +99,7 @@ public class BudgetDao {
     }
 
     //User may only access budgets assigned to the user
-    public List<BudgetModel> getBudgetByPeriodId(final int periodId, final int usersId){
+    protected List<BudgetModel> getBudgetByPeriodId(final int periodId, final int usersId){
         final String methodName = "getBudgetByPeriodId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 
@@ -115,7 +115,7 @@ public class BudgetDao {
     }
 
     //Admin only, may access any budget
-    public List<BudgetModel> adminGetBudgetById(final int id){
+    protected List<BudgetModel> adminGetBudgetById(final int id){
 
         final String methodName = "adminGetBudgetById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -132,7 +132,7 @@ public class BudgetDao {
 
     //Only Admin or the User to whom the budget will be assigned
     //may use this post call
-    public List<ReturnIdModel> addBudgetReturnId(final BudgetModel budget) {
+    protected List<ReturnIdModel> addBudgetReturnId(final BudgetModel budget) {
 
         final String methodName = "addBudgetReturnId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

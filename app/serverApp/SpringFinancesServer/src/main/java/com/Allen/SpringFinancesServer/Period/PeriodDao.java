@@ -31,7 +31,7 @@ public class PeriodDao {
     private TimestampManager timeMgr = new TimestampManager();
 
     //Admin only, may access all periods
-    public List<PeriodModel> adminGetAllPeriods(){
+    protected List<PeriodModel> adminGetAllPeriods(){
 
         final String methodName = "adminGetAllPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -58,7 +58,7 @@ public class PeriodDao {
     }
 
     //User may only access periods assigned to the user
-    public List<PeriodModel> getAllPeriods(final int usersId){
+    protected List<PeriodModel> getAllPeriods(final int usersId){
 
         final String methodName = "getAllPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -87,7 +87,7 @@ public class PeriodDao {
     }
 
     //User only may access current period assigned to user
-    public List<PeriodModel> getCurrentPeriod(final int usersId){
+    protected List<PeriodModel> getCurrentPeriod(final int usersId){
 
         final String methodName = "getCurrentPeriod() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -106,7 +106,7 @@ public class PeriodDao {
     }
 
     //User may only access accounts assigned to the user
-    public List<PeriodModel> getPeriodByDate(final String date, final int usersId)throws EmptyResultDataAccessException{
+    protected List<PeriodModel> getPeriodByDate(final String date, final int usersId)throws EmptyResultDataAccessException{
 
         final String methodName = "getPeriodByDate() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -125,7 +125,7 @@ public class PeriodDao {
     }
 
     //User may only access accounts assigned to the user
-    public List<PeriodModel> getPeriodsByDateRange(final String beginningDate, final String endingDate, final int usersId){
+    protected List<PeriodModel> getPeriodsByDateRange(final String beginningDate, final String endingDate, final int usersId){
 
         final String methodName = "getPeriodsByDateRange() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -157,7 +157,7 @@ public class PeriodDao {
     }
 
     //Admin only, may access any periods
-    public List<PeriodModel> adminGetPeriodById(final int id){
+    protected List<PeriodModel> adminGetPeriodById(final int id){
 
         final String methodName = "adminGetPeriodById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -173,7 +173,7 @@ public class PeriodDao {
     }
 
     //User may only access periods assigned to the user
-    public List<PeriodModel> getPeriodById(final int periodId, final int usersId){
+    protected List<PeriodModel> getPeriodById(final int periodId, final int usersId){
 
         final String methodName = "getPeriodById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -189,7 +189,7 @@ public class PeriodDao {
     }
 
     //User may only access periods assigned to the user
-    public List<PeriodModel> getOverlappingPeriods(PeriodModel period, final int usersId) throws EmptyResultDataAccessException {
+    protected List<PeriodModel> getOverlappingPeriods(PeriodModel period, final int usersId) throws EmptyResultDataAccessException {
 
         final String methodName = "getOverlappingPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -228,7 +228,7 @@ public class PeriodDao {
 
     //User may only access periods assigned to the user
     //Get a list of periods that no budget has been assigned to
-    public List <PeriodModel> getPeriodsWithoutBudget(final int usersId) {
+    protected List <PeriodModel> getPeriodsWithoutBudget(final int usersId) {
 
         final String methodName = "getPeriodsWithoutBudget() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -261,7 +261,7 @@ public class PeriodDao {
 
     //Only Admin or the User to whom the period will be assigned
     //may use this post call
-    public List<ReturnIdModel> addPeriodReturnId(final PeriodModel period) {
+    protected List<ReturnIdModel> addPeriodReturnId(final PeriodModel period) {
 
         final String methodName = "addPeriodReturnId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

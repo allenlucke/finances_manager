@@ -24,7 +24,7 @@ public class BudgetBalanceSheetDao {
 
     //Get budget expense categories by period
     //User may only access budget expense categories assigned to the user
-    public List<BudgetBalanceSheetModel> getBudgetExpCatsByPeriod(int periodId, final int usersId){
+    protected List<BudgetBalanceSheetModel> getBudgetExpCatsByPeriod(int periodId, final int usersId){
 
         final String methodName = "getBudgetExpCatsByPeriod() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

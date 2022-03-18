@@ -25,7 +25,7 @@ public class UserDao {
     private JdbcTemplate jdbcTemplate;
 
 
-    public String getUserFirstName(final int id){
+    protected String getUserFirstName(final int id){
 
         final String methodName = "getUserFirstName() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -37,7 +37,7 @@ public class UserDao {
     }
 
     //Admin ONLY!
-    public List<UserModel> getAllUsers(){
+    protected List<UserModel> getAllUsers(){
 
         final String methodName = "getAllUsers() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -65,7 +65,7 @@ public class UserDao {
         return result;
     }
 
-    public List<UserModel> getUserById(final int id){
+    protected List<UserModel> getUserById(final int id){
 
         final String methodName = "getUserById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -83,7 +83,7 @@ public class UserDao {
     }
 
     //Used for application Client for local storage user data
-    public List<ClientLocalStorageUser> getUserByToken(final int id){
+    protected List<ClientLocalStorageUser> getUserByToken(final int id){
 
         final String methodName = "getUserByToken() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -101,7 +101,7 @@ public class UserDao {
         return result;
     }
 
-    public int addUserReturnId(final UserModel usr) {
+    protected int addUserReturnId(final UserModel usr) {
 
         final String methodName = "addUserReturnId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -131,7 +131,7 @@ public class UserDao {
     }
 
     //Used by JWTAuthenticationController - No Auth required
-    public UserModel getUserByUsername(final String username){
+    protected UserModel getUserByUsername(final String username){
 
         final String methodName = "getUserByUsername() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -147,7 +147,7 @@ public class UserDao {
 
     //Used by JWTAuthenticationController? - No Auth required
     //Method uses longhand style instead of row mapper
-    public UserModel addUserReturnUser(final UserModel usr) {
+    protected UserModel addUserReturnUser(final UserModel usr) {
 
         final String methodName = "addUserReturnUser() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

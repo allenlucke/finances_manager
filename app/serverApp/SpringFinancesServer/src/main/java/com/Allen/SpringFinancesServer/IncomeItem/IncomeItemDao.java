@@ -32,7 +32,7 @@ public class IncomeItemDao {
     private TimestampManager timeMgr = new TimestampManager();
 
     //Admin only, may access all income items
-    public List<IncomeItemModel> adminGetAllIncomeItems() {
+    protected List<IncomeItemModel> adminGetAllIncomeItems() {
 
         final String methodName = "adminGetAllIncomeItems() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -61,7 +61,7 @@ public class IncomeItemDao {
     }
 
     //User may only access income items assigned to the user
-    public List<IncomeItemModel> getAllIncomeItems(final int usersId) {
+    protected List<IncomeItemModel> getAllIncomeItems(final int usersId) {
 
         final String methodName = "getAllIncomeItems() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -91,7 +91,7 @@ public class IncomeItemDao {
     }
 
     //User may only access income items assigned to the user
-    public List<IncomeItemModel> getIncomeItemById(final int itemId, final int usersId){
+    protected List<IncomeItemModel> getIncomeItemById(final int itemId, final int usersId){
 
         final String methodName = "getIncomeItemById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -108,7 +108,7 @@ public class IncomeItemDao {
     }
 
     //Admin only, may access any periods
-    public List<IncomeItemModel> adminGetIncomeItemById(final int itemId){
+    protected List<IncomeItemModel> adminGetIncomeItemById(final int itemId){
 
         final String methodName = "adminGetPeriodById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -125,7 +125,7 @@ public class IncomeItemDao {
 
     //Only Admin or the User to whom the income item will be assigned
     //may use this post call
-    public List<ReturnIdModel> addIncomeItemReturnId(final IncomeItemModel incomeItem) {
+    protected List<ReturnIdModel> addIncomeItemReturnId(final IncomeItemModel incomeItem) {
 
         final String methodName = "addIncomeItemReturnId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -165,7 +165,7 @@ public class IncomeItemDao {
     }
 
     //User may only delete expense items assigned to the user
-    public boolean deleteIncomeItemById(final int itemId, final int usersId) {
+    protected boolean deleteIncomeItemById(final int itemId, final int usersId) {
         final String methodName = "deleteIncomeItemById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 

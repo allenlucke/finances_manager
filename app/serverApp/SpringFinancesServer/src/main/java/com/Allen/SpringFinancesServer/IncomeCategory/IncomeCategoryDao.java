@@ -26,7 +26,7 @@ public class IncomeCategoryDao {
     private JdbcTemplate jdbcTemplate;
 
     //User may only access income categories assigned to the user
-    public List<IncomeCategoryModel> getAllIncomeCats(final int usersId) {
+    protected List<IncomeCategoryModel> getAllIncomeCats(final int usersId) {
 
         final String methodName = "getAllIncomeCats() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -50,7 +50,7 @@ public class IncomeCategoryDao {
     }
 
     //Admin only, may access all income categories
-    public List<IncomeCategoryModel> adminGetAllIncomeCats() {
+    protected List<IncomeCategoryModel> adminGetAllIncomeCats() {
 
         final String methodName = "adminGetAllIncomeCats() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -73,7 +73,7 @@ public class IncomeCategoryDao {
     }
 
     //Admin only, may access any income category
-    public List<IncomeCategoryModel> adminGetIncomeCatById(final int id){
+    protected List<IncomeCategoryModel> adminGetIncomeCatById(final int id){
 
         final String methodName = "adminGetIncomeCatById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -89,7 +89,7 @@ public class IncomeCategoryDao {
     }
 
     //User may only access income categories assigned to the user
-    public List<IncomeCategoryModel> getIncomeCatById(final int id, final int usersId){
+    protected List<IncomeCategoryModel> getIncomeCatById(final int id, final int usersId){
 
         final String methodName = "getIncomeCatById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -107,7 +107,7 @@ public class IncomeCategoryDao {
 
     //Only Admin or the User to whom the income category will be assigned
     //may use this post call
-    public List<ReturnIdModel> addIncomeCatReturnId(final IncomeCategoryModel incomeCat) {
+    protected List<ReturnIdModel> addIncomeCatReturnId(final IncomeCategoryModel incomeCat) {
 
         final String methodName = "addIncomeCatReturnId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -141,7 +141,7 @@ public class IncomeCategoryDao {
     }
 
     //User may only delete income categories assigned to the user
-    public boolean deleteIncomeCatById(final int catId, final int usersId) {
+    protected boolean deleteIncomeCatById(final int catId, final int usersId) {
         final String methodName = "deleteIncomeCatById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
 

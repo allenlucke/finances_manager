@@ -32,7 +32,7 @@ public class BudgetExpenseCategoryDao {
     private TimestampManager timeMgr = new TimestampManager();
 
     //User may only access budget expense categories assigned to the user
-    public List<BudgetExpenseCategoryModel> getAllBudgetExpCats(final int usersId) {
+    protected List<BudgetExpenseCategoryModel> getAllBudgetExpCats(final int usersId) {
 
         final String methodName = "getAllBudgetExpCats() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -59,7 +59,7 @@ public class BudgetExpenseCategoryDao {
 
     //Returns all budget expense categories from the period the date falls within
     //User may only access budget expense categories assigned to the user
-    public List<BudgetExpenseCategoryModel> getBudgetExpCatsByDate(final String date, final int usersId) {
+    protected List<BudgetExpenseCategoryModel> getBudgetExpCatsByDate(final String date, final int usersId) {
 
         final String methodName = "getBudgetExpCatsByDate() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -95,7 +95,7 @@ public class BudgetExpenseCategoryDao {
 
     //Returns all budget expense categories from the period the date falls within
     //User may only access budget expense categories assigned to the user
-    public List<BudgExpCatRespWithName> getBudgetExpCatsWithNameByDate(final String date, final int usersId) {
+    protected List<BudgExpCatRespWithName> getBudgetExpCatsWithNameByDate(final String date, final int usersId) {
 
         final String methodName = "getBudgetExpCatsWithNameByDate() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -132,7 +132,7 @@ public class BudgetExpenseCategoryDao {
     }
 
     //Admin only, may access all budget expense categories
-    public List<BudgetExpenseCategoryModel> adminGetAllBudgetExpCats() {
+    protected List<BudgetExpenseCategoryModel> adminGetAllBudgetExpCats() {
 
         final String methodName = "adminGetAllBudgetExpCats() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -157,7 +157,7 @@ public class BudgetExpenseCategoryDao {
     }
 
     //User may only access budget expense categories assigned to the user
-    public List<BudgetExpenseCategoryModel> getBudgetExpCatById(final int budgExpCatId, final int usersId){
+    protected List<BudgetExpenseCategoryModel> getBudgetExpCatById(final int budgExpCatId, final int usersId){
 
         final String methodName = "getBudgetExpCatById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -174,7 +174,7 @@ public class BudgetExpenseCategoryDao {
     }
 
     //Admin only, may access any budget expense category
-    public List<BudgetExpenseCategoryModel> adminGetBudgetExpCatById(final int id){
+    protected List<BudgetExpenseCategoryModel> adminGetBudgetExpCatById(final int id){
 
         final String methodName = "adminGetBudgetExpCatById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -192,7 +192,7 @@ public class BudgetExpenseCategoryDao {
 
     //Only Admin or the User to whom the income category will be assigned
     //may use this post call
-    public List<ReturnIdModel> addBudgetExpCatReturnId(final BudgetExpenseCategoryModel budgetExpCat) {
+    protected List<ReturnIdModel> addBudgetExpCatReturnId(final BudgetExpenseCategoryModel budgetExpCat) {
 
         final String methodName = "addBudgetExpCatReturnId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -232,7 +232,7 @@ public class BudgetExpenseCategoryDao {
     }
 
     //User may only access budget expense categories assigned to the user
-    public List<BudgetExpenseCategoryModel> getBudgetExpCatByExpCat(final int budgetId, final int usersId){
+    protected List<BudgetExpenseCategoryModel> getBudgetExpCatByExpCat(final int budgetId, final int usersId){
 
         final String methodName = "getBudgetExpCatByExpCatNUsersId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

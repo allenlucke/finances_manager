@@ -30,7 +30,7 @@ public class AccountDao {
     private TimestampManager timeMgr = new TimestampManager();
 
     //User may only access accounts assigned to the user
-    public List<AccountModel> getAllAccounts(final int usersId){
+    protected List<AccountModel> getAllAccounts(final int usersId){
 
         final String methodName = "getAllAccounts() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -60,7 +60,7 @@ public class AccountDao {
     }
 
     //Admin only, may access all accounts
-    public List<AccountModel> adminGetAllAccounts(){
+    protected List<AccountModel> adminGetAllAccounts(){
 
         final String methodName = "adminGetAllAccounts() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -88,7 +88,7 @@ public class AccountDao {
     }
 
     //User may only access accounts assigned to the user
-    public List<AccountModel> getAccountById(final int acctId, final int usersId){
+    protected List<AccountModel> getAccountById(final int acctId, final int usersId){
 
         final String methodName = "getAccountById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -105,7 +105,7 @@ public class AccountDao {
     }
 
     //Admin only, may access any account
-    public List<AccountModel> adminGetAccountById(final int id){
+    protected List<AccountModel> adminGetAccountById(final int id){
 
         final String methodName = "adminGetAccountById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -122,7 +122,7 @@ public class AccountDao {
 
     //Only Admin or the User to whom the account will be assigned
     //may use this post call
-    public List<ReturnIdModel> addAccountReturningId(final AccountModel acct) {
+    protected List<ReturnIdModel> addAccountReturningId(final AccountModel acct) {
 
         final String methodName = "addAccountReturningId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -164,7 +164,7 @@ public class AccountDao {
     }
 
     //Used by AccountLogic, no auth checks as user will have already passed auth check
-    public boolean checkForCreditAccount(int id){
+    protected boolean checkForCreditAccount(int id){
 
         final String methodName = "checkForCreditAccount() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

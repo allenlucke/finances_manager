@@ -28,7 +28,7 @@ public class AccountBalanceSheetDao {
 
     //Get expense item by period and acct type
     //User may only access expense items assigned to the user
-    public List<AccountBalanceSheetModel> getExpItemByPeriodNAcctType(int acctId, int periodId, int usersId){
+    protected List<AccountBalanceSheetModel> getExpItemByPeriodNAcctType(int acctId, int periodId, int usersId){
 
         final String methodName = "getExpItemByPeriodNAcctType() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -73,7 +73,7 @@ public class AccountBalanceSheetDao {
 
     //Get expense item by date range and acct type
     //User may only access expense items assigned to the user
-    public List<AccountBalanceSheetModel> getExpItemByDatesNAcctType(
+    protected List<AccountBalanceSheetModel> getExpItemByDatesNAcctType(
             int acctId, String startDate, String dayAfterEndDate, final int usersId){
 
         final String methodName = "getExpItemByDatesNAcctType() ";
@@ -123,7 +123,7 @@ public class AccountBalanceSheetDao {
 
     //Get the startDate etc of the oldest unclosed period
     //User may only access periods assigned to the user
-    public OldestUnclosedPeriodModel getLastUnclosedPeriod(
+    protected OldestUnclosedPeriodModel getLastUnclosedPeriod(
             String targetPeriod, final int usersId) throws EmptyResultDataAccessException {
 
         final String methodName = "getLastUnclosedPeriod() ";
@@ -150,7 +150,7 @@ public class AccountBalanceSheetDao {
 
     //Get income items by date range and acct type
     //User may only access income items assigned to the user
-    public List<AccountBalanceSheetModel> getIncomeItemByDatesNAcctType(
+    protected List<AccountBalanceSheetModel> getIncomeItemByDatesNAcctType(
             int acctId, String startDate, String dayAfterEndDate, final int usersId){
 
         final String methodName = "getIncomeItemByDatesNAcctType() ";
@@ -200,7 +200,7 @@ public class AccountBalanceSheetDao {
 
     //Get income item by period and acct type
     //User may only access income items assigned to the user
-    public List<AccountBalanceSheetModel> getIncomeItemByPeriodNAcctType(int acctId, int periodId, final int usersId){
+    protected List<AccountBalanceSheetModel> getIncomeItemByPeriodNAcctType(int acctId, int periodId, final int usersId){
 
         final String methodName = "getIncomeItemByPeriodNAcctType() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);

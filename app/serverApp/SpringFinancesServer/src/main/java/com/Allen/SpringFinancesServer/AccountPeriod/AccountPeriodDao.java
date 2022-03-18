@@ -28,7 +28,7 @@ public class AccountPeriodDao {
     private JdbcTemplate jdbcTemplate;
 
     //User may only access account periods assigned to the user
-    public List<AccountPeriodModel> getAllAccountPeriods(final int usersId){
+    protected List<AccountPeriodModel> getAllAccountPeriods(final int usersId){
 
         final String methodName = "getAllAccountPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -55,7 +55,7 @@ public class AccountPeriodDao {
     }
 
     //Admin only, may access all account periods
-    public List<AccountPeriodModel> adminGetAllAccountPeriods(){
+    protected List<AccountPeriodModel> adminGetAllAccountPeriods(){
 
         final String methodName = "adminGetAllAccountPeriods() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -81,7 +81,7 @@ public class AccountPeriodDao {
     }
 
     //User may only access account periods assigned to the user
-    public List<AccountPeriodModel> getAcctPeriodById(final int acctPeriodId, final int usersId){
+    protected List<AccountPeriodModel> getAcctPeriodById(final int acctPeriodId, final int usersId){
 
         final String methodName = "getAcctPeriodById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -98,7 +98,7 @@ public class AccountPeriodDao {
     }
 
     //User may only access account periods assigned to the user
-    public List<AccountPeriodModel> getAccountPeriodByAccountNPeriod(
+    protected List<AccountPeriodModel> getAccountPeriodByAccountNPeriod(
             final int accountId, final int periodId, final int usersId) throws EmptyResultDataAccessException {
 
         final String methodName = "getAccountPeriodByAccountNPeriod() ";
@@ -119,7 +119,7 @@ public class AccountPeriodDao {
     }
 
     //Admin only, may access any account period
-    public List<AccountPeriodModel> adminGetAcctPeriodById(final int id){
+    protected List<AccountPeriodModel> adminGetAcctPeriodById(final int id){
 
         final String methodName = "adminGetAcctPeriodById() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -138,7 +138,7 @@ public class AccountPeriodDao {
 
     //Only Admin or the User to whom the account period will be assigned
     //may use this post call
-    public List<ReturnIdModel> addAcctPeriodReturningId(final AccountPeriodModel acctPeriod) {
+    protected List<ReturnIdModel> addAcctPeriodReturningId(final AccountPeriodModel acctPeriod) {
 
         final String methodName = "addAcctPeriodReturningId() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
@@ -180,7 +180,7 @@ public class AccountPeriodDao {
 
     //Only Admin or the User to whom the account period will be assigned
     //may use this put call
-    public boolean updateBeginningBalance(final BigDecimal beginningBalance, final int acctPeriodId, final int usersId) {
+    protected boolean updateBeginningBalance(final BigDecimal beginningBalance, final int acctPeriodId, final int usersId) {
 
         final String methodName = "updateBeginningBalance() ";
         LOGGER.info(CLASS_NAME + METHOD_ENTERING + methodName);
