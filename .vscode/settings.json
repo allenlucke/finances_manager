@@ -1,0 +1,16 @@
+{
+  "files.exclude": {
+    "**/target": true,
+    "**/.angular": true,
+    "**/__pycache__": true
+  },
+  "search.exclude": {
+    "legacy/**": true,
+    "**/node_modules": true,
+    "**/.venv": true
+  },
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
+  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[html]": { "editor.defaultFormatter": "esbenp.prettier-vscode" }
+}
