@@ -1,0 +1,65 @@
+name: finances-manager
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-finances}
+      POSTGRES_USER: ${DATABASE_USER:-finances}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-finances}
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-finances} -d ${DATABASE_NAME:-finances}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ai:
+    build:
+      context: ../services/ai
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    # Not published to the host by default: the AI service is internal-only.
+    # Uncomment for local debugging, and see docs/SECURITY.md before exposing it anywhere else.
+    # ports:
+    #   - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ../services/api
+    depends_on:
+      db:
+        condition: service_healthy
+      ai:
+        condition: service_started
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/${DATABASE_NAME:-finances}
+      DATABASE_USER: ${DATABASE_USER:-finances}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-finances}
+      AI_SERVICE_URL: http://ai:8000
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: ../services/web
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-4200}:80"
+
+volumes:
+  db_data:

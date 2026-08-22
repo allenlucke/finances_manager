@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, modernize-2026]
+  pull_request:
+
+# Nothing in this repo should ever need write permissions to run tests.
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API (Java)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: maven
+      - name: Test
+        working-directory: services/api
+        run: mvn -B --no-transfer-progress test
+
+  web:
+    name: Web (Angular)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: services/web/package-lock.json
+      - name: Install
+        working-directory: services/web
+        run: npm ci
+      - name: Test
+        working-directory: services/web
+        run: npm run test:ci
+      - name: Build
+        working-directory: services/web
+        run: npm run build
+
+  ai:
+    name: AI (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install
+        working-directory: services/ai
+        run: uv sync --extra dev
+      - name: Lint
+        working-directory: services/ai
+        run: uv run ruff check src tests
+      - name: Test
+        working-directory: services/ai
+        run: uv run pytest -q

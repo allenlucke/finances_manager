@@ -1,0 +1,36 @@
+# --- Secrets: never commit ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Financial data: never commit ---
+# Statement files, exports, and anything derived from real accounts.
+*.ofx
+*.qfx
+statements/
+data/
+
+# --- Java ---
+services/api/target/
+services/api/.mvn/wrapper/maven-wrapper.jar
+*.class
+
+# --- Node / Angular ---
+node_modules/
+services/web/dist/
+services/web/.angular/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# --- Editors / OS ---
+.idea/
+.DS_Store
+*.iml

@@ -1,0 +1,42 @@
+[project]
+name = "finances-ai"
+version = "0.1.0"
+description = "Statement parsing, categorization and inference for finances_manager"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "python-multipart>=0.0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "httpx>=0.27",
+    "ruff>=0.7",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/finances_ai"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# Statement dates are calendar dates in the institution's own reporting, not instants.
+# Timestamps that represent instants are TIMESTAMPTZ in the API service and UTC everywhere.
+ignore = [
+    "DTZ007",
+    # FastAPI's dependency defaults (File(...), Query(...)) are calls by design.
+    "B008",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
