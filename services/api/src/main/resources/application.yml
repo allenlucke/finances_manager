@@ -18,9 +18,22 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: false
+  session:
+    # Sessions live in Postgres, not Tomcat memory (D-12: revocation, and surviving a restart).
+    store-type: jdbc
+    timeout: 30d
+    jdbc:
+      # Flyway owns the schema. Spring Session must never create its own tables.
+      initialize-schema: never
 
 server:
   port: ${API_PORT:8080}
+
+spring.servlet.multipart:
+  # Statements are small; a real Chase year is well under a megabyte. Bounded so an oversized
+  # upload is refused by the container before it reaches the parser.
+  max-file-size: 10MB
+  max-request-size: 12MB
 
 management:
   endpoints:
@@ -33,6 +46,19 @@ management:
 
 finances:
   version: 0.1.0-SNAPSHOT
+  security:
+    webauthn:
+      # rpId must equal the browser's registrable domain, and allowed-origins must be full origins.
+      # Both change when this moves to the Tailscale host (D-16) — override there, do not hardcode.
+      rp-id: ${WEBAUTHN_RP_ID:localhost}
+      rp-name: ${WEBAUTHN_RP_NAME:Finances Manager}
+      allowed-origins: ${WEBAUTHN_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:8080}
+  # Local automation token (D-17), used by services/mcp so Claude Code can drive the API without a
+  # browser session. Blank disables it entirely, and blank is the default: the bypass does not
+  # exist until one is deliberately set. Read docs/SECURITY.md before setting it anywhere but here.
+  local-token:
+    value: ${LOCAL_API_TOKEN:}
+    loopback-only: ${LOCAL_API_TOKEN_LOOPBACK_ONLY:true}
   ai:
     base-url: ${AI_SERVICE_URL:http://localhost:8000}
     timeout: 30s

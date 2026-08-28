@@ -1,0 +1,219 @@
+<div class="page">
+  <div class="grid">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Targets in effect</mat-card-title>
+        <mat-card-subtitle>
+          Optional — set one only where you want to spend differently than you have been
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (activeTargets().length === 0) {
+          <p class="muted">No targets set. Spending is still tracked without them.</p>
+        } @else {
+          <div class="table-scroll">
+            <table mat-table [dataSource]="activeTargets()">
+              <tr mat-header-row *matHeaderRowDef="targetColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: targetColumns"></tr>
+
+              <ng-container matColumnDef="category">
+                <th mat-header-cell *matHeaderCellDef>Category</th>
+                <td mat-cell *matCellDef="let row">{{ categoryName(row.categoryId) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="entity">
+                <th mat-header-cell *matHeaderCellDef>Books</th>
+                <td mat-cell *matCellDef="let row" class="muted">
+                  {{ entityName(row.ledgerEntityId) }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="amount">
+                <th mat-header-cell *matHeaderCellDef class="amount">Amount</th>
+                <td mat-cell *matCellDef="let row" class="amount">{{ money(row.amount) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="from">
+                <th mat-header-cell *matHeaderCellDef>Since</th>
+                <td mat-cell *matCellDef="let row" class="muted nowrap">{{ row.effectiveFrom }}</td>
+              </ng-container>
+              <ng-container matColumnDef="to">
+                <th mat-header-cell *matHeaderCellDef>Until</th>
+                <td mat-cell *matCellDef="let row" class="muted">ongoing</td>
+              </ng-container>
+            </table>
+          </div>
+        }
+
+        @if (pastTargets().length) {
+          <details class="history">
+            <summary class="muted">{{ pastTargets().length }} previous target(s)</summary>
+            <div class="table-scroll">
+              <table mat-table [dataSource]="pastTargets()">
+                <tr mat-header-row *matHeaderRowDef="targetColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: targetColumns"></tr>
+                <ng-container matColumnDef="category">
+                  <th mat-header-cell *matHeaderCellDef>Category</th>
+                  <td mat-cell *matCellDef="let row">{{ categoryName(row.categoryId) }}</td>
+                </ng-container>
+                <ng-container matColumnDef="entity">
+                  <th mat-header-cell *matHeaderCellDef>Books</th>
+                  <td mat-cell *matCellDef="let row" class="muted">
+                    {{ entityName(row.ledgerEntityId) }}
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="amount">
+                  <th mat-header-cell *matHeaderCellDef class="amount">Amount</th>
+                  <td mat-cell *matCellDef="let row" class="amount">{{ money(row.amount) }}</td>
+                </ng-container>
+                <ng-container matColumnDef="from">
+                  <th mat-header-cell *matHeaderCellDef>From</th>
+                  <td mat-cell *matCellDef="let row" class="muted nowrap">
+                    {{ row.effectiveFrom }}
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="to">
+                  <th mat-header-cell *matHeaderCellDef>Until</th>
+                  <td mat-cell *matCellDef="let row" class="muted nowrap">{{ row.effectiveTo }}</td>
+                </ng-container>
+              </table>
+            </div>
+          </details>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <div class="forms">
+      <mat-card>
+        <mat-card-header><mat-card-title>Set a target</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <form [formGroup]="targetForm" (ngSubmit)="setTarget()">
+            <mat-form-field appearance="outline">
+              <mat-label>Category</mat-label>
+              <mat-select formControlName="categoryId">
+                @for (category of categories(); track category.id) {
+                  <mat-option [value]="category.id">{{ category.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Books</mat-label>
+              <mat-select formControlName="ledgerEntityId">
+                @for (entity of entities(); track entity.id) {
+                  <mat-option [value]="entity.id">{{ entity.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Monthly amount</mat-label>
+              <input matInput formControlName="amount" inputmode="decimal" placeholder="0.00" />
+              <span matTextPrefix>$&nbsp;</span>
+            </mat-form-field>
+            <button
+              mat-flat-button
+              type="submit"
+              [disabled]="targetForm.invalid || saving()"
+              matTooltip="Replacing a target keeps the old one as history"
+            >
+              Set target
+            </button>
+          </form>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header><mat-card-title>Add a category</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <form [formGroup]="categoryForm" (ngSubmit)="addCategory()">
+            <mat-form-field appearance="outline">
+              <mat-label>Name</mat-label>
+              <input matInput formControlName="name" placeholder="Groceries" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Kind</mat-label>
+              <mat-select formControlName="kind">
+                <mat-option value="expense">Expense</mat-option>
+                <mat-option value="income">Income</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <button mat-flat-button type="submit" [disabled]="categoryForm.invalid || saving()">
+              <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">add</mat-icon>
+              Add category
+            </button>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <mat-card class="history-card">
+    <mat-card-header>
+      <mat-card-title>Categories</mat-card-title>
+      <mat-card-subtitle> Most need no target — spending is tracked either way </mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (sortedCategories().length === 0) {
+        <p class="muted">No categories yet. Add one to start classifying spending.</p>
+      } @else {
+        <div class="table-scroll">
+          <table mat-table [dataSource]="sortedCategories()">
+            <tr mat-header-row *matHeaderRowDef="categoryColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: categoryColumns"></tr>
+
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Category</th>
+              <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+            </ng-container>
+            <ng-container matColumnDef="kind">
+              <th mat-header-cell *matHeaderCellDef>Kind</th>
+              <td mat-cell *matCellDef="let row" class="muted">{{ row.kind }}</td>
+            </ng-container>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="history-card">
+    <mat-card-header>
+      <mat-card-title>Spending by month</mat-card-title>
+      <mat-card-subtitle
+        >Card payments and transfers are excluded — they are not spending</mat-card-subtitle
+      >
+    </mat-card-header>
+    <mat-card-content>
+      @if (recentSpend().length === 0) {
+        <p class="muted">Nothing categorized yet.</p>
+      } @else {
+        <div class="table-scroll">
+          <table mat-table [dataSource]="recentSpend()">
+            <tr mat-header-row *matHeaderRowDef="historyColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: historyColumns"></tr>
+
+            <ng-container matColumnDef="month">
+              <th mat-header-cell *matHeaderCellDef>Month</th>
+              <td mat-cell *matCellDef="let row" class="nowrap">{{ monthLabel(row.month) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="category">
+              <th mat-header-cell *matHeaderCellDef>Category</th>
+              <td mat-cell *matCellDef="let row">{{ row.categoryName }}</td>
+            </ng-container>
+            <ng-container matColumnDef="spent">
+              <th mat-header-cell *matHeaderCellDef class="amount">Spent</th>
+              <td mat-cell *matCellDef="let row" class="amount">{{ money(row.netAmount) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="target">
+              <th mat-header-cell *matHeaderCellDef class="amount">Target</th>
+              <td mat-cell *matCellDef="let row" class="amount muted">
+                {{ row.targetAmount === null ? '—' : money(row.targetAmount) }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="remaining">
+              <th mat-header-cell *matHeaderCellDef class="amount">Remaining</th>
+              <td mat-cell *matCellDef="let row" [class]="amountClass(row.remaining)">
+                {{ row.remaining === null ? '—' : money(row.remaining) }}
+              </td>
+            </ng-container>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

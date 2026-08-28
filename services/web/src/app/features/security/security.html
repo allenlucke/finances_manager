@@ -1,0 +1,114 @@
+<div class="page">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Sign-in security</mat-card-title>
+      <mat-card-subtitle>
+        @if (twoFactor()) {
+          Passphrase and a passkey are both required
+        } @else {
+          Passphrase only
+        }
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (!supported) {
+        <p class="warn" role="alert">
+          <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">warning</mat-icon>
+          This browser does not support passkeys.
+        </p>
+      }
+
+      @if (!twoFactor()) {
+        <p class="muted">
+          Adding a passkey turns on two-factor sign-in for this account immediately. A passkey is
+          phishing-resistant — unlike a code from an app, it cannot be handed to a fake site.
+        </p>
+      }
+
+      @if (items().length === 0) {
+        <p class="muted">No passkeys registered.</p>
+      } @else {
+        <div class="table-scroll">
+          <table mat-table [dataSource]="items()">
+            <tr mat-header-row *matHeaderRowDef="columns"></tr>
+            <tr mat-row *matRowDef="let row; columns: columns"></tr>
+
+            <ng-container matColumnDef="label">
+              <th mat-header-cell *matHeaderCellDef>Device</th>
+              <td mat-cell *matCellDef="let row">{{ row.label }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="created">
+              <th mat-header-cell *matHeaderCellDef>Added</th>
+              <td mat-cell *matCellDef="let row" class="muted nowrap">
+                {{ row.created | date: 'mediumDate' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="lastUsed">
+              <th mat-header-cell *matHeaderCellDef>Last used</th>
+              <td mat-cell *matCellDef="let row" class="muted nowrap">
+                {{ row.lastUsed ? (row.lastUsed | date: 'mediumDate') : 'never' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="backedUp">
+              <th mat-header-cell *matHeaderCellDef>Synced</th>
+              <td mat-cell *matCellDef="let row">
+                @if (row.backedUp) {
+                  <span
+                    class="muted"
+                    matTooltip="Stored in a keychain — losing this device does not lose the passkey"
+                  >
+                    yes
+                  </span>
+                } @else {
+                  <span
+                    class="muted"
+                    matTooltip="Bound to this device only — losing it loses this passkey"
+                  >
+                    device only
+                  </span>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let row">
+                <button
+                  mat-icon-button
+                  (click)="remove(row)"
+                  [disabled]="busy()"
+                  [attr.aria-label]="'Remove ' + row.label"
+                >
+                  <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="add">
+    <mat-card-header>
+      <mat-card-title>Add a passkey</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="add()">
+        <mat-form-field appearance="outline">
+          <mat-label>Device name</mat-label>
+          <input matInput formControlName="label" placeholder="MacBook Touch ID" />
+          <mat-hint>So you can tell your devices apart later.</mat-hint>
+        </mat-form-field>
+        <button mat-flat-button type="submit" [disabled]="form.invalid || busy() || !supported">
+          <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">passkey</mat-icon>
+          Add passkey
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

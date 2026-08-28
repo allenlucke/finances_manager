@@ -7,10 +7,16 @@ services:
       POSTGRES_DB: ${DATABASE_NAME:-finances}
       POSTGRES_USER: ${DATABASE_USER:-finances}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-finances}
-    ports:
-      - "${DATABASE_PORT:-5432}:5432"
+    # The database port is deliberately NOT published. Only the api container needs it, and it
+    # reaches it over the compose network by service name. Publishing it put PostgreSQL on every
+    # interface — reachable by anything on the same wifi — behind the password that ships in
+    # .env.example. Use `docker compose exec db psql -U finances -d finances` for a shell.
     volumes:
-      - db_data:/var/lib/postgresql/data
+      # Mounted at /var/lib/postgresql, NOT /var/lib/postgresql/data. Postgres 18's image stores
+      # data in a major-version subdirectory so pg_upgrade can work across a single mount; the old
+      # /data path makes it refuse to start. This matters beyond startup — a volume on the wrong
+      # path would back up an empty directory (D-16 requires a tested restore before real data).
+      - db_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-finances} -d ${DATABASE_NAME:-finances}"]
       interval: 5s
@@ -45,8 +51,23 @@ services:
       DATABASE_USER: ${DATABASE_USER:-finances}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-finances}
       AI_SERVICE_URL: http://ai:8000
+      # Local automation token (D-17). Empty by default, which disables the feature outright.
+      LOCAL_API_TOKEN: ${LOCAL_API_TOKEN:-}
+      # Off in Docker, and this is not a weakening — it is the check admitting it cannot work here.
+      # Docker NATs published traffic, so a request the host sent to 127.0.0.1:8080 reaches the API
+      # with the bridge gateway as its source address. The in-process check sees a routable address
+      # and refuses a caller that genuinely is on this machine.
+      #
+      # What actually bounds reachability is the port publishing below: `127.0.0.1:8080:8080` means
+      # nothing off this host can open the connection in the first place. That is the same boundary
+      # the whole app already relies on, not a new one taken on for this feature. Running the API
+      # natively (`make api`) keeps the in-process check, which is why it stays the default.
+      LOCAL_API_TOKEN_LOOPBACK_ONLY: ${LOCAL_API_TOKEN_LOOPBACK_ONLY:-false}
     ports:
-      - "${API_PORT:-8080}:8080"
+      # Bound to loopback. Docker's default is 0.0.0.0, which publishes to the whole local network
+      # rather than just this machine — not what "running it locally" implies, and wrong for a
+      # service that will hold financial data. See D-16: this app is never publicly routable.
+      - "127.0.0.1:${API_PORT:-8080}:8080"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
       interval: 10s
@@ -59,7 +80,7 @@ services:
     depends_on:
       - api
     ports:
-      - "${WEB_PORT:-4200}:80"
+      - "127.0.0.1:${WEB_PORT:-4200}:80"
 
 volumes:
   db_data:

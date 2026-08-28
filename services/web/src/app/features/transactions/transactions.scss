@@ -1,0 +1,71 @@
+.entry {
+  margin-bottom: 16px;
+}
+
+.entry-form {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 8px 12px;
+  align-items: start;
+}
+
+.col-account {
+  grid-column: span 3;
+}
+.col-date {
+  grid-column: span 2;
+}
+.col-direction {
+  grid-column: span 2;
+}
+.col-amount {
+  grid-column: span 2;
+}
+.col-description {
+  grid-column: span 3;
+}
+.col-category {
+  grid-column: span 4;
+}
+.col-transfer {
+  grid-column: span 2;
+  align-self: center;
+}
+.col-submit {
+  grid-column: span 2;
+  align-self: center;
+}
+
+// One column per row below tablet width. A 12-column grid squeezed into 380px is unusable.
+@media (max-width: 1000px) {
+  .entry-form > * {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+.range {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+table {
+  width: 100%;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.inline-select {
+  font: var(--mat-sys-body-medium);
+  max-width: 180px;
+}
+
+.transfer-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  vertical-align: text-bottom;
+  color: var(--mat-sys-on-surface-variant);
+}

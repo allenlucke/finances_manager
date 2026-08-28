@@ -1,0 +1,14 @@
+﻿
+
+Run Date,Account,Account Number,Action,Symbol,Description,Type,Exchange Quantity,Exchange Currency,Currency,Price,Quantity,Exchange Rate,Commission,Fees,Accrued Interest,Amount,Settlement Date
+08/24/2026,Long Term Investment (Joint WROS - TOD),Z11111111,Electronic Funds Transfer Received (Cash),"",No Description,Cash,,"",USD,"",,,"","","",1000,""
+08/20/2026,Long Term Investment (Joint WROS - TOD),Z11111111,YOU BOUGHT PROSPECTUS UNDER SEPARATE COVER FIDELITY 500 INDEX FUND (FXAIX) (Cash),FXAIX,FIDELITY 500 INDEX FUND,Cash,,"",USD,190.25,5.256,,"","","",-1000,08/21/2026
+08/15/2026,Minor One (Uniform Transfers to Minors),Z22222222,WIRE TRANSFER TO BANK (Cash),"",No Description,Cash,,"",USD,"",,,"","","",-500,""
+08/10/2026,Minor One (Uniform Transfers to Minors),Z22222222,Exchanges,"",No Description,,,"",USD,"",,,"","","",250,""
+08/05/2026,Minor Two (Uniform Transfers to Minors),Z33333333,Electronic Funds Transfer Received (Cash),"",No Description,Cash,,"",USD,"",,,"","","",50,""
+
+"Brokerage services are provided by Fidelity Brokerage Services LLC (FBS), 900 Salem Street, Smithfield, RI 02917."
+
+"12345.6.7"
+
+Date downloaded 08/27/2026 02:19 am

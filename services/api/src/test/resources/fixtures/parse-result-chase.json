@@ -1,0 +1,127 @@
+{
+  "source_format": "chase_card",
+  "transactions": [
+    {
+      "transaction_date": "2026-08-14",
+      "posted_date": "2026-08-15",
+      "description": "KROGER #4521",
+      "merchant": "KROGER",
+      "amount": "84.31",
+      "direction": "debit",
+      "external_id": null,
+      "dedupe_key": "31c3cbdbbfa78a3bbd4a6b6ba9d060d8",
+      "is_probable_transfer": false,
+      "raw": {
+        "Transaction Date": "08/14/2026",
+        "Post Date": "08/15/2026",
+        "Description": "KROGER #4521",
+        "Category": "Groceries",
+        "Type": "Sale",
+        "Amount": "-84.31",
+        "Memo": ""
+      }
+    },
+    {
+      "transaction_date": "2026-08-12",
+      "posted_date": "2026-08-13",
+      "description": "SHELL OIL 574833",
+      "merchant": "SHELL OIL",
+      "amount": "46.02",
+      "direction": "debit",
+      "external_id": null,
+      "dedupe_key": "62809d45479d8bbde8616862d0c0bd2b",
+      "is_probable_transfer": false,
+      "raw": {
+        "Transaction Date": "08/12/2026",
+        "Post Date": "08/13/2026",
+        "Description": "SHELL OIL 574833",
+        "Category": "Gas",
+        "Type": "Sale",
+        "Amount": "-46.02",
+        "Memo": ""
+      }
+    },
+    {
+      "transaction_date": "2026-08-10",
+      "posted_date": "2026-08-11",
+      "description": "Payment Thank You-Mobile",
+      "merchant": "PAYMENT THANK YOU-MOBILE",
+      "amount": "512.44",
+      "direction": "credit",
+      "external_id": null,
+      "dedupe_key": "de01c89f0901907f734d6bfae172cf42",
+      "is_probable_transfer": true,
+      "raw": {
+        "Transaction Date": "08/10/2026",
+        "Post Date": "08/11/2026",
+        "Description": "Payment Thank You-Mobile",
+        "Category": "",
+        "Type": "Payment",
+        "Amount": "512.44",
+        "Memo": ""
+      }
+    },
+    {
+      "transaction_date": "2026-08-09",
+      "posted_date": "2026-08-10",
+      "description": "NETFLIX.COM",
+      "merchant": "NETFLIX.COM",
+      "amount": "22.99",
+      "direction": "debit",
+      "external_id": null,
+      "dedupe_key": "5213825594f64282c19c407228541386",
+      "is_probable_transfer": false,
+      "raw": {
+        "Transaction Date": "08/09/2026",
+        "Post Date": "08/10/2026",
+        "Description": "NETFLIX.COM",
+        "Category": "Entertainment",
+        "Type": "Sale",
+        "Amount": "-22.99",
+        "Memo": ""
+      }
+    },
+    {
+      "transaction_date": "2026-08-08",
+      "posted_date": "2026-08-09",
+      "description": "SOME NEW MERCHANT LLC",
+      "merchant": "SOME NEW MERCHANT LLC",
+      "amount": "13.00",
+      "direction": "debit",
+      "external_id": null,
+      "dedupe_key": "d0e884ed73e54c0eae2f39cd181b8c9a",
+      "is_probable_transfer": false,
+      "raw": {
+        "Transaction Date": "08/08/2026",
+        "Post Date": "08/09/2026",
+        "Description": "SOME NEW MERCHANT LLC",
+        "Category": "",
+        "Type": "Sale",
+        "Amount": "-13.00",
+        "Memo": ""
+      }
+    },
+    {
+      "transaction_date": "2026-08-07",
+      "posted_date": "2026-08-08",
+      "description": "KROGER #4521",
+      "merchant": "KROGER",
+      "amount": "12.00",
+      "direction": "credit",
+      "external_id": null,
+      "dedupe_key": "e6043f3adc1d71d6ff1f49d9dc171c15",
+      "is_probable_transfer": true,
+      "raw": {
+        "Transaction Date": "08/07/2026",
+        "Post Date": "08/08/2026",
+        "Description": "KROGER #4521",
+        "Category": "Groceries",
+        "Type": "Return",
+        "Amount": "12.00",
+        "Memo": ""
+      }
+    }
+  ],
+  "warnings": [],
+  "statement": null
+}

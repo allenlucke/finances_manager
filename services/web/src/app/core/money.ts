@@ -1,0 +1,61 @@
+/** Formatting helpers. Deliberately no arithmetic — see the note in models.ts. */
+
+const CURRENCY = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** `-$696.31`. The sign is always shown, so colour is never the only cue. */
+export function money(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '—';
+  }
+  return CURRENCY.format(value);
+}
+
+/** Class name carrying the sign, paired with the leading "-" rather than replacing it. */
+export function amountClass(value: number | null | undefined): string {
+  if (value === null || value === undefined || value === 0) {
+    return 'amount';
+  }
+  return value < 0 ? 'amount amount--negative' : 'amount amount--positive';
+}
+
+/**
+ * "August 2026" from an ISO date, or an empty string if it is not one.
+ *
+ * <p>The empty return is the point. `toLocaleDateString` on an unparseable date does not throw and
+ * does not return nothing — it returns the literal text "Invalid Date", which is a truthy string, so
+ * it sails through a `?? ''` upstream and a `|| 'fallback'` downstream and lands in front of the
+ * user. That is exactly how it reached the dashboard: an account with no transactions yet rendered
+ * "Invalid Date" as the first thing a new user saw.
+ */
+export function monthLabel(iso: string): string {
+  const [year, month] = (iso ?? '').split('-').map(Number);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+    return '';
+  }
+  return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/** ISO yyyy-mm-dd for a Date, in local time — these are calendar dates, not instants. */
+export function isoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function firstOfThisMonth(): string {
+  const now = new Date();
+  return isoDate(new Date(now.getFullYear(), now.getMonth(), 1));
+}
+
+export function today(): string {
+  return isoDate(new Date());
+}

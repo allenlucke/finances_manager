@@ -1,0 +1,133 @@
+<div class="page">
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Loading dashboard"></mat-progress-bar>
+  }
+
+  <section class="net-worth">
+    <mat-card>
+      <mat-card-content>
+        <div class="muted">Net worth</div>
+        <div class="headline" [class]="amountClass(combined())">{{ money(combined()) }}</div>
+        <div class="entity-split">
+          @for (entity of perEntity(); track entity.name) {
+            <div class="entity">
+              <span class="muted">{{ entity.name }}</span>
+              <span [class]="amountClass(entity.netWorth)">{{ money(entity.netWorth) }}</span>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  @if (unreconciled().length) {
+    <mat-card class="alert">
+      <mat-card-content>
+        <div class="alert-head">
+          <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">balance</mat-icon>
+          <strong>{{ unreconciled().length }} statement(s) do not match the ledger</strong>
+        </div>
+        <p class="muted">
+          A difference means a transaction is missing, duplicated, or has the wrong amount.
+        </p>
+        @for (row of unreconciled(); track row.statementId) {
+          <div class="alert-row">
+            <span>Period ending {{ row.periodEnd }}</span>
+            <span [class]="amountClass(row.difference)">{{ money(row.difference) }}</span>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <div class="grid">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Accounts</mat-card-title>
+        <mat-card-subtitle>Negative means owed</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (activeAccounts().length === 0) {
+          <p class="muted">No accounts yet. <a routerLink="/accounts">Add one</a> to start.</p>
+        } @else {
+          <div class="table-scroll">
+            <table mat-table [dataSource]="activeAccounts()">
+              <tr mat-header-row *matHeaderRowDef="accountColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: accountColumns"></tr>
+
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Account</th>
+                <td mat-cell *matCellDef="let account">{{ account.name }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="type">
+                <th mat-header-cell *matHeaderCellDef>Type</th>
+                <td mat-cell *matCellDef="let account" class="muted">
+                  {{ account.accountType.replace('_', ' ') }}
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="balance">
+                <th mat-header-cell *matHeaderCellDef class="amount">Balance</th>
+                <td mat-cell *matCellDef="let account" [class]="amountClass(account.balance)">
+                  {{ money(account.balance) }}
+                </td>
+              </ng-container>
+            </table>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Spending</mat-card-title>
+        <!-- The card always shows the current month, so the label is known without any rows.
+             Reading it off the first row meant an empty month had no label at all. -->
+        <mat-card-subtitle>{{ currentMonthLabel() }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (thisMonth().length === 0) {
+          <p class="muted">
+            Nothing categorized this month yet.
+            <a routerLink="/transactions">Add a transaction</a>.
+          </p>
+        } @else {
+          @for (row of thisMonth(); track row.categoryId) {
+            <div class="spend-row">
+              <div class="spend-head">
+                <span>{{ row.categoryName }}</span>
+                <span
+                  [class]="
+                    row.targetAmount
+                      ? overBudget(row)
+                        ? 'amount amount--negative'
+                        : 'amount'
+                      : 'amount'
+                  "
+                >
+                  {{ money(row.netAmount) }}
+                  @if (row.targetAmount) {
+                    <span class="muted"> / {{ money(row.targetAmount) }}</span>
+                  }
+                </span>
+              </div>
+              @if (row.targetAmount) {
+                <mat-progress-bar
+                  [value]="progress(row)"
+                  [class.over-budget]="overBudget(row)"
+                  [attr.aria-label]="row.categoryName + ' budget used'"
+                ></mat-progress-bar>
+                @if (overBudget(row)) {
+                  <div class="over muted">{{ money(-row.remaining!) }} over</div>
+                }
+              } @else {
+                <div class="muted no-target">No target set</div>
+              }
+            </div>
+          }
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

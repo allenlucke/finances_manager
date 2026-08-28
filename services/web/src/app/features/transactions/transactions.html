@@ -1,0 +1,201 @@
+<div class="page">
+  <mat-card class="entry">
+    <mat-card-header>
+      <mat-card-title>Add a transaction</mat-card-title>
+      @if (isTransfer()) {
+        <mat-card-subtitle>Recorded on both accounts</mat-card-subtitle>
+      }
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="entry-form">
+        <mat-form-field appearance="outline" class="col-account">
+          <mat-label>Account</mat-label>
+          <mat-select formControlName="accountId">
+            @for (account of accounts(); track account.id) {
+              <mat-option [value]="account.id">{{ account.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="col-date">
+          <mat-label>Date</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="transactionDate" />
+          <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="col-direction">
+          <mat-label>Direction</mat-label>
+          <mat-select formControlName="direction">
+            <mat-option value="debit">Money out</mat-option>
+            <mat-option value="credit">Money in</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="col-amount">
+          <mat-label>Amount</mat-label>
+          <input matInput formControlName="amount" inputmode="decimal" placeholder="0.00" />
+          <span matTextPrefix>$&nbsp;</span>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="col-description">
+          <mat-label>Description</mat-label>
+          <input matInput formControlName="description" placeholder="KROGER #4521" />
+        </mat-form-field>
+
+        @if (!isTransfer()) {
+          <mat-form-field appearance="outline" class="col-category">
+            <mat-label>Category</mat-label>
+            <mat-select formControlName="categoryId">
+              <mat-option [value]="null">Uncategorized</mat-option>
+              @if (expenseCategories().length) {
+                <mat-optgroup label="Expense">
+                  @for (category of expenseCategories(); track category.id) {
+                    <mat-option [value]="category.id">{{ category.name }}</mat-option>
+                  }
+                </mat-optgroup>
+              }
+              @if (incomeCategories().length) {
+                <mat-optgroup label="Income">
+                  @for (category of incomeCategories(); track category.id) {
+                    <mat-option [value]="category.id">{{ category.name }}</mat-option>
+                  }
+                </mat-optgroup>
+              }
+            </mat-select>
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline" class="col-category">
+            <mat-label>Moved to</mat-label>
+            <mat-select formControlName="transferAccountId">
+              @for (account of otherAccounts(); track account.id) {
+                <mat-option [value]="account.id">{{ account.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+
+        <div class="col-transfer">
+          <mat-checkbox
+            formControlName="transfer"
+            matTooltip="A payment or move between your own accounts. Never counts as spending."
+          >
+            Transfer
+          </mat-checkbox>
+        </div>
+
+        <div class="col-submit">
+          <button mat-flat-button type="submit" [disabled]="form.invalid || saving()">
+            <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">add</mat-icon>
+            Add
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Ledger</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="range" class="range">
+        <mat-form-field appearance="outline">
+          <mat-label>From</mat-label>
+          <input matInput [matDatepicker]="fromPicker" formControlName="from" />
+          <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
+          <mat-datepicker #fromPicker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>To</mat-label>
+          <input matInput [matDatepicker]="toPicker" formControlName="to" />
+          <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
+          <mat-datepicker #toPicker></mat-datepicker>
+        </mat-form-field>
+      </form>
+
+      @if (loading()) {
+        <mat-progress-bar mode="indeterminate" aria-label="Loading transactions"></mat-progress-bar>
+      }
+
+      @if (!loading() && rows().length === 0) {
+        <p class="muted">Nothing in this date range.</p>
+      } @else {
+        <div class="table-scroll">
+          <table mat-table [dataSource]="rows()">
+            <tr mat-header-row *matHeaderRowDef="columns"></tr>
+            <tr mat-row *matRowDef="let row; columns: columns"></tr>
+
+            <ng-container matColumnDef="date">
+              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <td mat-cell *matCellDef="let row" class="nowrap">{{ row.transactionDate }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="description">
+              <th mat-header-cell *matHeaderCellDef>Description</th>
+              <td mat-cell *matCellDef="let row">
+                {{ row.description }}
+                @if (row.transfer) {
+                  <mat-icon
+                    class="transfer-icon"
+                    fontSet="material-symbols-outlined"
+                    [matTooltip]="'Transfer with ' + accountName(row.transferAccountId)"
+                  >
+                    swap_horiz
+                  </mat-icon>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="account">
+              <th mat-header-cell *matHeaderCellDef>Account</th>
+              <td mat-cell *matCellDef="let row" class="muted">{{ accountName(row.accountId) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="category">
+              <th mat-header-cell *matHeaderCellDef>Category</th>
+              <td mat-cell *matCellDef="let row">
+                @if (row.transfer) {
+                  <span class="muted">not spending</span>
+                } @else {
+                  <mat-select
+                    class="inline-select"
+                    [value]="row.categoryId"
+                    (valueChange)="recategorize(row, $event)"
+                    [attr.aria-label]="'Category for ' + row.description"
+                  >
+                    <mat-option [value]="null">Uncategorized</mat-option>
+                    @for (category of categories(); track category.id) {
+                      <mat-option [value]="category.id">{{ category.name }}</mat-option>
+                    }
+                  </mat-select>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef class="amount">Amount</th>
+              <td mat-cell *matCellDef="let row" [class]="amountClass(row.signedAmount)">
+                {{ money(row.signedAmount) }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let row">
+                <button
+                  mat-icon-button
+                  (click)="remove(row)"
+                  [attr.aria-label]="'Remove ' + row.description"
+                  [matTooltip]="row.transferGroupId ? 'Removes both sides' : 'Remove'"
+                >
+                  <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

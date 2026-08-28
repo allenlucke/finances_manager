@@ -90,3 +90,29 @@ def test_bad_rows_become_warnings_not_failures():
 def test_unknown_format_raises():
     with pytest.raises(ParserNotFoundError):
         parse_csv("Col1,Col2\n1,2\n")
+
+
+def test_chase_type_column_marks_payments_as_probable_transfers():
+    """The Type column is the institution stating what a row is, not a guess about it."""
+    content = (
+        "Transaction Date,Post Date,Description,Category,Type,Amount,Memo\n"
+        "08/14/2026,08/15/2026,KROGER #4521,Groceries,Sale,-84.31,\n"
+        "08/10/2026,08/11/2026,AUTOPAY 1234,,Payment,512.44,\n"
+        "08/09/2026,08/10/2026,KROGER #4521,Groceries,Return,12.00,\n"
+    )
+    result = parse_csv(content, account_ref="chase-1234")
+
+    purchase, payment, refund = result.transactions
+    assert purchase.is_probable_transfer is False
+    assert payment.is_probable_transfer is True
+    assert refund.is_probable_transfer is True
+
+
+def test_generic_format_has_no_type_column_so_never_guesses_a_transfer():
+    """Absence of the signal must read as "unknown", never as "not a transfer"."""
+    content = "Date,Description,Amount\n08/14/2026,PAYMENT THANK YOU,512.44\n"
+    result = parse_csv(content, account_ref="acct")
+
+    # The description looks like a payment, but this format carries no Type column, so the parser
+    # reports nothing. Deciding is the categorizer's job.
+    assert result.transactions[0].is_probable_transfer is False

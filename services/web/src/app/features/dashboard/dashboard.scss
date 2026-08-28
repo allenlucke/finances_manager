@@ -1,0 +1,71 @@
+.net-worth {
+  margin-bottom: 16px;
+}
+
+.headline {
+  font: var(--mat-sys-display-small);
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 12px;
+}
+
+.entity-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.entity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: var(--mat-sys-body-medium);
+}
+
+.grid {
+  display: grid;
+  // Single column until there is genuinely room for two; a squeezed table is worse than a tall one.
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+table {
+  width: 100%;
+}
+
+.alert {
+  margin-bottom: 16px;
+  border-left: 4px solid var(--mat-sys-error);
+}
+
+.alert-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.alert-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.spend-row {
+  padding: 10px 0;
+}
+
+// .over-budget is styled in src/styles.scss — see the note there about view encapsulation.
+
+.spend-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.over,
+.no-target {
+  font: var(--mat-sys-body-small);
+  margin-top: 4px;
+}

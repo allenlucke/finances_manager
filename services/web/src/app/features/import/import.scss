@@ -1,0 +1,77 @@
+.upload {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.upload mat-form-field {
+  min-width: 220px;
+}
+
+.file-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--mat-sys-surface-container-high);
+}
+
+.result--none {
+  opacity: 0.8;
+}
+
+.section {
+  margin-top: 16px;
+}
+
+table {
+  width: 100%;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.inline-select {
+  max-width: 180px;
+  font: var(--mat-sys-body-medium);
+}
+
+.failed {
+  color: var(--mat-sys-error);
+}
+
+// A skipped row is not a failure, but it is not nothing either — it needs the user to create or
+// link an account before the data will land.
+.attention {
+  color: var(--mat-sys-tertiary);
+}
+
+.note {
+  margin-top: 8px;
+  border-left: 4px solid var(--mat-sys-tertiary);
+}
+
+.unlinked {
+  margin: 8px 0 12px;
+  padding-left: 18px;
+}
+
+.unlinked li {
+  padding: 2px 0;
+}
+
+.after {
+  font: var(--mat-sys-body-small);
+  margin-top: 8px;
+}

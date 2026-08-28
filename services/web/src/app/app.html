@@ -1,1 +1,43 @@
-<router-outlet />
+@if (state() === 'unknown') {
+  <mat-progress-bar mode="indeterminate" aria-label="Loading"></mat-progress-bar>
+} @else {
+  @if (showChrome()) {
+    <mat-toolbar color="primary" class="app-bar">
+      <span class="brand">finances</span>
+
+      <nav class="nav">
+        <a mat-button routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+        <a mat-button routerLink="/transactions" routerLinkActive="active">Transactions</a>
+        <a mat-button routerLink="/accounts" routerLinkActive="active">Accounts</a>
+        <a mat-button routerLink="/budget" routerLinkActive="active">Budget</a>
+        <a mat-button routerLink="/import" routerLinkActive="active">Import</a>
+      </nav>
+
+      <span class="spacer"></span>
+
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="account"
+        [attr.aria-label]="'Account menu for ' + user()?.displayName"
+      >
+        <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">account_circle</mat-icon>
+      </button>
+      <mat-menu #account="matMenu">
+        <div class="menu-header">
+          <div>{{ user()?.displayName }}</div>
+          <div class="muted">{{ user()?.email }}</div>
+        </div>
+        <a mat-menu-item routerLink="/security">
+          <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">passkey</mat-icon>
+          <span>Sign-in security</span>
+        </a>
+        <button mat-menu-item (click)="logout()">
+          <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">logout</mat-icon>
+          <span>Sign out</span>
+        </button>
+      </mat-menu>
+    </mat-toolbar>
+  }
+
+  <main><router-outlet /></main>
+}

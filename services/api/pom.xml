@@ -28,6 +28,13 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webmvc</artifactId>
     </dependency>
+    <!-- NOTE (Spring Boot 4): autoconfiguration is split per-technology. RestClient.Builder is
+         NOT provided by spring-boot-starter-webmvc; without this starter the app fails to start
+         with "No qualifying bean of type RestClient$Builder". -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-restclient</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
@@ -39,6 +46,24 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <!-- Passkeys / WebAuthn (D-12). Ships separately from spring-security-web; version is managed
+         by the Spring Security BOM that spring-boot-starter-parent imports. -->
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-webauthn</artifactId>
+    </dependency>
+    <!-- Server-side sessions persisted to Postgres rather than held in Tomcat's memory. D-12 chose
+         sessions over JWTs specifically for instant revocation; in-memory sessions would also drop
+         every login on restart. Schema is owned by Flyway (V3), not auto-created.
+
+         NOTE (Spring Boot 4): the starter is required, not just spring-session-jdbc. Boot 4 splits
+         autoconfiguration per technology, so the library alone gives you no auto-config and
+         sessions silently fall back to Tomcat's in-memory HttpSession — the same trap as
+         spring-boot-starter-restclient above, and it fails silently rather than loudly. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-session-jdbc</artifactId>
     </dependency>
     <!-- Persistence. See docs/DECISIONS.md D-11 — this choice is OPEN. -->
     <dependency>
@@ -68,6 +93,26 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Integration tests run against real PostgreSQL 18, not H2. The reporting views use window
+         functions, GROUPING SETS, and daterange exclusion constraints; an in-memory stand-in would
+         either reject them or quietly behave differently, which is worse than no test. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <!-- Testcontainers 2.x renamed its modules: testcontainers-postgresql, not postgresql.
+           Version comes from the testcontainers-bom that spring-boot-starter-parent imports. -->
+      <artifactId>testcontainers-postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

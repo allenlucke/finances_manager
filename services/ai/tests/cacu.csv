@@ -1,0 +1,9 @@
+"Account Name : Cashback Free Checking"
+"Account Number : 1234567K8901"
+"Date Range : 08/01/2026-08/27/2026"
+Transaction Number,Date,Description,Memo,Amount Debit,Amount Credit,Balance,Check Number,Fees  
+"20260826",08/26/2026,"Point Of Sale Withdrawal KROGER","4521 ANYTOWN KSUS",-84.31,,"1000.00",,
+"20260820",08/20/2026,"Transfer To Credit Card","ONLINE PAYMENT",-500.00,,"1084.31",,
+"20260815",08/15/2026,"Descriptive Deposit Payroll","Direct Deposit",,2000.00,"1584.31",,
+"20260810",08/10/2026,"Point Of Sale Withdrawal CASEYS","0123 4567 QANYTOWN KSUS",-46.02,,"-415.69",,
+"20260801",08/01/2026,"Point Of Sale Deposit WAL-MART","1234 ANYTOWN KSUS",,12.00,"-369.67",,

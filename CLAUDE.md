@@ -1,8 +1,9 @@
 # CLAUDE.md — finances_manager
 
-> **Read this first, then `docs/DECISIONS.md`.** Several stack choices in this scaffold are
-> *provisional defaults*, deliberately flagged as open. Allen wants to talk them through with you
-> before you build on top of them. Do not treat the scaffold as settled architecture.
+> **Read this first, then `docs/DECISIONS.md`.** The stack is now settled — the seven provisional
+> defaults left open by the M0 scaffold (D-10 through D-16) were decided with Allen on 2026-08-22.
+> Treat `docs/DECISIONS.md` as binding, and read the *Why* under each entry before changing anything
+> that depends on it.
 
 ---
 
@@ -36,16 +37,19 @@ automatically, and layer AI/ML on top of the whole picture.
 ├── services/
 │   ├── api/               ← Java + Spring Boot. System of record. Owns the database.
 │   ├── web/               ← Angular SPA. Talks only to services/api.
-│   └── ai/                ← Python + FastAPI. Statement parsing, categorization, ML/LLM work.
+│   ├── ai/                ← Python + FastAPI. Statement parsing, categorization, ML/LLM work.
+│   └── mcp/               ← Python. MCP server so Claude Code can drive the app (D-17).
 ├── infra/
-│   └── docker-compose.yml ← postgres + all three services for local dev
+│   └── docker-compose.yml ← postgres + api/web/ai for local dev
+├── .mcp.json              ← registers services/mcp with Claude Code
 ├── legacy/                ← the 2021 codebase, frozen. Reference only. Never build it.
 └── .github/workflows/     ← CI
 ```
 
 **Rule:** `services/api` is the only thing that talks to PostgreSQL. `services/ai` is a stateless
 worker that receives documents/transactions over HTTP and returns structured results. The web app
-never calls the AI service directly.
+never calls the AI service directly. `services/mcp` calls only `services/api`, adds no rules of its
+own, and is not part of the compose stack — Claude Code launches it.
 
 ---
 
@@ -64,6 +68,43 @@ never calls the AI service directly.
 - **Tests are part of "done."** A feature PR with no tests is not finished. The legacy repo had
   ~150 stub `.spec.ts` files that never got written; don't repeat that.
 - **Prefer boring.** This is a system that handles real money for one real person. Novelty is a cost.
+- **Audit records get their own transaction.** Anything written to explain a failure —
+  `import_batch` status, `login_attempt` — must use `REQUIRES_NEW`, or the rollback that follows the
+  failure destroys the evidence of it. This has bitten twice. On `login_attempt` the consequence is
+  worse than a missing row: failures are what lockout counts, so losing them makes brute-force
+  protection **fail open**, silently. `AuditDurabilityTest` pins it.
+- **Anything calling `services/ai` must pin HTTP/1.1.** Uvicorn speaks HTTP/1.1 only, while the
+  JDK's `HttpClient` defaults to HTTP/2 and opens cleartext connections with an h2c upgrade attempt.
+  The upgrade fails, the request framing is mangled, and a multipart body arrives with no parts —
+  reported by FastAPI as a *missing field*, which points at entirely the wrong thing. Also never set
+  `Content-Type: multipart/form-data` by hand: that pins the header without a boundary and produces
+  the identical symptom. Let Spring's form converter write it.
+- **Never signal an auth condition by throwing from `loadUserByUsername`.**
+  `DaoAuthenticationProvider` catches everything that method throws except `UsernameNotFoundException`
+  and rewraps it as `InternalAuthenticationServiceException` — so a `LockedException` raised there
+  arrives at the caller looking like a server fault and gets answered as bad credentials. Report the
+  condition on the returned `UserDetails` (`accountLocked`, `disabled`) and let Spring's own
+  pre-authentication checks raise it; those still run before the password is compared, so nothing is
+  leaked by timing. `GapsClosedTest.lockoutAfterRepeatedFailures` asserts the 429.
+- **Test fixtures never use Allen's real identifiers.** The browser suite used to create an account
+  under his own email address, so a leftover test account was indistinguishable from one he had made
+  himself — he hit a sign-in screen for an account he had no memory of creating, whose passphrase
+  lived only in a spec file. Suite-owned data is now at a reserved `.invalid` domain, and the suite
+  clears up after itself so a passing run never leaves an account nobody can sign in as.
+- **A security filter must handle the ERROR dispatch.** `OncePerRequestFilter` skips it by default,
+  and Spring sends every controller error back through the chain. A filter that authenticates a
+  request will not re-authenticate the error dispatch, so the context is empty by the time the
+  authorization filter sees `/error` — and *every* 4xx comes back as **401**. "No such transaction"
+  then reads as "your credentials are wrong", which sends you to check the one thing that was never
+  broken. Override `shouldNotFilterErrorDispatch()` to return false.
+- **`getAuthentication() == null` is not "nobody is signed in."** `AnonymousAuthenticationFilter`
+  puts an `AnonymousAuthenticationToken` in the context for every unauthenticated request, so that
+  check is false almost everywhere and any filter guarded on it silently does nothing. Use an
+  `AuthenticationTrustResolver`.
+- **Browser tests run on their own stack, never the dev one.** `make e2e` builds a separate compose
+  project (`finances-e2e`, ports 4201/8081) with its own volume, and Playwright's defaults point
+  there. The suite truncates, and a truncate against a database in use destroys real statements with
+  no undo — so the separation is structural rather than a guard promising to behave.
 
 ## Commands
 
@@ -77,6 +118,9 @@ make api         # run the Spring Boot API on :8080
 make web         # run the Angular dev server on :4200
 make ai          # run the FastAPI service on :8000
 make test        # run every test suite
+make e2e         # browser tests on their own throwaway stack (4201/8081)
+make e2e-down    # dispose of that stack
+make mcp-token   # generate LOCAL_API_TOKEN into .env, for Claude Code (D-17)
 make fmt         # format everything
 ```
 
@@ -89,6 +133,7 @@ make fmt         # format everything
 | DB migrations | `services/api/src/main/resources/db/migration/` |
 | Angular features | `services/web/src/app/features/` |
 | Statement parsers | `services/ai/src/finances_ai/ingest/` |
+| MCP tools for Claude Code | `services/mcp/src/finances_mcp/server.py` |
 | Categorization | `services/ai/src/finances_ai/categorize/` |
 
 ---
@@ -97,10 +142,21 @@ make fmt         # format everything
 
 When Allen starts a session on this repo, the useful opening moves are:
 
-1. Read `docs/DECISIONS.md` and walk him through the open questions marked **OPEN**. Several are
-   genuinely his call (build tool, ORM vs. SQL-first, Material vs. Tailwind, aggregator vendor).
+1. Read `docs/DECISIONS.md`. **All of D-10 through D-16 were resolved on 2026-08-22** — there are no
+   OPEN items left. Do not re-litigate them; several carry downstream consequences recorded in that
+   file, so re-opening one means re-checking what depends on it.
 2. Read `docs/DOMAIN.md` — the legacy budget model is more subtle than it looks, especially the
    credit-card handling. Confirm the parts he still wants before you migrate them.
 3. Confirm milestone 1 scope in `docs/ROADMAP.md`, then build it.
 
 Do not start writing feature code before steps 1–3.
+
+### Carried into M1 from the decisions session
+
+* **Reporting SQL lives in Flyway-created views** (D-11), not `@Query` strings. JPA will not
+  generate the balance-sheet queries; that is expected, not a surprise.
+* **CSRF protection must come back on** when session cookies land (D-12). The scaffold's
+  `SecurityConfig` disables it, which is correct for M0 and wrong for cookies.
+* **The transaction schema must be aggregator-ready in M2** (D-14) — pending-transaction linkage
+  above all, or the dedupe key double-counts pending→posted.
+* **A tested restore path precedes real data** (D-16). It does not depend on the hosting choice.

@@ -1,16 +1,45 @@
+# =================================================================================================
+# THIS REPOSITORY IS PUBLIC.
+#
+# It is tooling for one person's real finances, so the rules below are default-deny for the file
+# types that carry financial data: statement exports, positions files, and PDFs. Fixtures are
+# allow-listed back in by path. If you add a real export anywhere in this tree, git will refuse to
+# see it — that is the intended behaviour, not an obstacle to work around with `git add -f`.
+#
+# Every fixture in this repo is synthesized: it reproduces the quirks of a real export (metadata
+# preambles, split debit/credit columns, newest-first ordering) with invented figures, invented
+# account numbers, and no real person's name on any account.
+# =================================================================================================
+
 # --- Secrets: never commit ---
 .env
 .env.*
 !.env.example
 *.pem
 *.key
+*.p12
+*.keystore
 
-# --- Financial data: never commit ---
-# Statement files, exports, and anything derived from real accounts.
+# --- Financial data: default-deny ---
+# Statement and transaction exports, in every format this project can read.
+*.csv
 *.ofx
 *.qfx
+*.qif
+*.pdf
+*.xls
+*.xlsx
+# Somewhere to put real files while working on them, ignored by construction.
 statements/
+imports/
 data/
+
+# Synthesized fixtures, allow-listed back in by exact path. Add a path here only after checking
+# the file contains no real figures, no real account digits, and no real names.
+!services/ai/tests/*.csv
+!services/ai/tests/*.ofx
+!services/api/src/test/resources/**/*.csv
+!services/web/e2e/fixtures/*.csv
 
 # --- Java ---
 services/api/target/
@@ -21,6 +50,8 @@ services/api/.mvn/wrapper/maven-wrapper.jar
 node_modules/
 services/web/dist/
 services/web/.angular/
+services/web/test-results/
+services/web/playwright-report/
 
 # --- Python ---
 __pycache__/

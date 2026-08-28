@@ -1,20 +1,94 @@
-:root {
+// Angular Material theming, plus the handful of app-wide rules that are genuinely global.
+// Everything else belongs to a component's own stylesheet.
+@use '@angular/material' as mat;
+
+// Roboto and Material Symbols are bundled locally via angular.json's styles array — not fetched
+// from Google Fonts. This app runs on a VPN-only host with no outbound internet (D-16), where a
+// CDN font would simply never load. They are listed there rather than @use'd here because Sass
+// rejects "400" as a namespace identifier.
+
+html {
   color-scheme: light dark;
+
+  // One theme definition serves both light and dark: Material 3 emits both palettes and the
+  // browser picks per color-scheme. A finance app gets looked at late at night.
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$green-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+* {
+  box-sizing: border-box;
 }
 
 html,
 body {
+  height: 100%;
   margin: 0;
-  padding: 0;
-  min-height: 100%;
-  background: #f9fafb;
-  color: #111827;
 }
 
-@media (prefers-color-scheme: dark) {
-  html,
-  body {
-    background: #0b1120;
-    color: #e5e7eb;
-  }
+body {
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+}
+
+// Money must line up vertically to be scannable, and must never be mistaken for prose.
+// Tabular figures keep digits the same width so columns of amounts align.
+.amount {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  text-align: right;
+  white-space: nowrap;
+}
+
+// Red/green alone fails for the ~8% of men with colour-vision deficiency, so sign is always
+// carried by the leading "-" as well. The colour is reinforcement, not the message.
+.amount--negative {
+  color: var(--mat-sys-error);
+}
+.amount--positive {
+  color: light-dark(#1b5e20, #7cc47f);
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+// Wide tables scroll inside their own container rather than making the page scroll sideways.
+.table-scroll {
+  overflow-x: auto;
+  width: 100%;
+}
+
+// An over-budget category must not look like one comfortably under — it is the single signal the
+// dashboard's spending rows exist to give.
+//
+// This lives in the GLOBAL stylesheet, not the dashboard component's, and that is the whole point:
+// the element being coloured belongs to Angular Material's own view, so a component-scoped rule is
+// rewritten by view encapsulation and never matches. Two other approaches also fail and both look
+// correct — `[color]="warn"` is ignored by Material 3, and overriding
+// `--mdc-linear-progress-active-indicator-color` sets the variable but loses to Material's own
+// `border-color` rule on the inner element.
+.over-budget .mdc-linear-progress__bar-inner {
+  border-color: var(--mat-sys-error);
 }

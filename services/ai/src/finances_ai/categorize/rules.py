@@ -24,14 +24,30 @@ from finances_ai.models import CategorySuggestion, ParsedTransaction
 _TRANSFER_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
     re.compile(pattern)
     for pattern in (
-        r"\bAUTOPAY\b",
-        r"\bPAYMENT\s+THANK\s*YOU\b",
+        # NOTE: a bare \bAUTOPAY\b rule used to live here and was removed. On a card statement
+        # "autopay" means paying the card; on a checking account it means auto-paying a bill, so it
+        # matched "ACH PAYMENT EVERGY METRO ... AUTOPAY" — an electric bill — and silently deleted
+        # a real expense from the budget. Generic words describing *how* a payment was made say
+        # nothing about *what* it was.
+        # "Thank you" only means a card payment when it accompanies a payment word. Requiring both
+        # keeps "AUTOPAY 1234 THANK YOU" while refusing to fire on autopay alone, which is how a
+        # utility bill got misread as a transfer.
+        r"\b(PAYMENT|AUTOPAY|PMT)\b.{0,40}\bTHANK\s*YOU\b",
         r"\bONLINE\s+PAYMENT\b",
         r"\bCARDMEMBER\s+SERV\b",
         r"\bE-?PAYMENT\b",
         r"\bTRANSFER\s+(TO|FROM)\b",
         r"\bZELLE\b",
         r"\bINTERNAL\s+TRANSFER\b",
+        # Money moving to the user's own brokerage. Found in a real checking export as
+        # "ACH PAYMENT FID BKG SVC LLC" — eight times in one month, every one of them counted as
+        # spending, which inflates the budget by the whole amount being invested.
+        r"\bFID\s+BKG\s+SVC\b",
+        r"\bFIDELITY\s+(BROKERAGE|INVESTMENTS)\b",
+        # A card payment described from the paying account's side rather than the card's.
+        # "ACH PAYMENT CHASE CREDIT CRD" is the other half of "PAYMENT THANK YOU".
+        r"\bCREDIT\s+CRD\b",
+        r"\bCREDIT\s+CARD\s+(PAYMENT|PMT)\b",
     )
 )
 
@@ -59,6 +75,33 @@ def categorize_one(transaction: ParsedTransaction) -> CategorySuggestion:
     """Suggest a category for a single transaction using deterministic rules only."""
     haystack = (transaction.merchant or transaction.description).upper()
 
+    # The source file's own row type outranks any description pattern. Chase labelling a row
+    # "Payment" is the institution stating what it is; a regex over the description is a guess.
+    # Checked first so a card payment with an unusual description is still caught.
+    if transaction.is_probable_transfer:
+        return CategorySuggestion(
+            dedupe_key=transaction.dedupe_key,
+            category=None,
+            confidence=0.99,
+            method="rule",
+            rationale="Source file marks this row as a payment, refund or adjustment",
+            is_transfer=True,
+        )
+
+    # Named merchants are checked BEFORE the transfer wording, and the order is deliberate.
+    # Transfer patterns match generic phrasing that describes how money moved; a merchant match
+    # identifies who it went to, which is far stronger evidence. With the weaker check first, an
+    # electric bill paid by autopay was classified as a transfer and vanished from spending.
+    for pattern, category in _COMPILED_RULES:
+        if pattern.search(haystack):
+            return CategorySuggestion(
+                dedupe_key=transaction.dedupe_key,
+                category=category,
+                confidence=0.9,
+                method="rule",
+                rationale=f"Matched merchant pattern {pattern.pattern!r}",
+            )
+
     for pattern in _TRANSFER_PATTERNS:
         if pattern.search(haystack):
             return CategorySuggestion(
@@ -68,16 +111,6 @@ def categorize_one(transaction: ParsedTransaction) -> CategorySuggestion:
                 method="rule",
                 rationale=f"Matched transfer pattern {pattern.pattern!r}",
                 is_transfer=True,
-            )
-
-    for pattern, category in _COMPILED_RULES:
-        if pattern.search(haystack):
-            return CategorySuggestion(
-                dedupe_key=transaction.dedupe_key,
-                category=category,
-                confidence=0.9,
-                method="rule",
-                rationale=f"Matched merchant pattern {pattern.pattern!r}",
             )
 
     # No rule matched. Tiers 2 and 3 are not built yet; until they are, this is an honest

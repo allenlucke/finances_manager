@@ -1,0 +1,34 @@
+.page {
+  max-width: 900px;
+}
+
+table {
+  width: 100%;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.add {
+  margin-top: 16px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+form mat-form-field {
+  width: 100%;
+  max-width: 360px;
+}
+
+.warn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mat-sys-error);
+}
