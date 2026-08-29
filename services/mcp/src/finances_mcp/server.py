@@ -206,6 +206,24 @@ def import_history() -> Any:
 
 
 @mcp.tool(annotations=READS)
+def list_holdings(account_id: int | None = None) -> Any:
+    """What is owned — the most recent positions snapshot, largest position first.
+
+    Args:
+        account_id: limit to one account. Omit for everything.
+
+    Each row carries ``asOf``, the date of the snapshot it came from. A market value is only as
+    current as the last positions file imported, so check it before quoting a figure as today's.
+
+    ``marketValue`` is always positive here — a holding is a magnitude, not a signed ledger amount.
+    Cash and money-market rows (``cash: true``) are included, because a brokerage's uninvested cash
+    is part of what the account is worth.
+    """
+    path = "/api/v1/holdings" if account_id is None else f"/api/v1/holdings/account/{account_id}"
+    return _guard(lambda: client().get(path))
+
+
+@mcp.tool(annotations=READS)
 def list_deleted_transactions(page: int = 0, size: int = 100) -> Any:
     """Transactions that have been deleted, most recently deleted first.
 
@@ -427,6 +445,34 @@ def import_statement(file_path: str, account_id: int | None = None) -> Any:
         return {"error": f"No file at {path}", "status": 400}
     return _guard(
         lambda: client().upload("/api/v1/imports", path.name, path.read_bytes(), account_id)
+    )
+
+
+@mcp.tool(annotations=WRITES)
+def import_positions(file_path: str) -> Any:
+    """Import a brokerage positions export (a holdings snapshot) from this machine.
+
+    Args:
+        file_path: path to the file, e.g. "~/Downloads/Portfolio_Positions_Aug-27-2026.csv".
+
+    A positions file is a *snapshot* of what is held, not a transaction history — it records no
+    money movement and adds nothing to the ledger. Use ``import_statement`` for a transactions
+    export such as Fidelity's Accounts History; the two files are different and are not
+    interchangeable.
+
+    Importing one changes how the account's balance is computed: from then on the account is worth
+    its holdings' market value rather than the sum of cash paid in, which is the difference between
+    a correct net worth and one understated by every dollar of growth.
+
+    Safe to repeat. Re-importing the same file updates each position in place; a file downloaded on
+    a later date lands as a new snapshot beside the old one, which is what gives a position any
+    history at all.
+    """
+    path = Path(file_path).expanduser()
+    if not path.is_file():
+        return {"error": f"No file at {path}", "status": 400}
+    return _guard(
+        lambda: client().upload("/api/v1/imports/positions", path.name, path.read_bytes(), None)
     )
 
 

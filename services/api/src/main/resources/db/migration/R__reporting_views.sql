@@ -52,6 +52,19 @@ WHERE t.deleted_at IS NULL;
 
 -- Current balance per account. LEFT JOIN so an account with no transactions reports 0 rather than
 -- vanishing from the list.
+--
+-- TWO SOURCES, and which one wins matters (M4, V5). For most accounts the balance is the sum of
+-- its transactions. For an account with a holdings snapshot — a brokerage — it is the market value
+-- of those holdings instead, because the transaction sum is the cash that went *in*, not what it
+-- grew to. Summing deposits would understate a brokerage by every dollar of gain, and would do it
+-- with a figure that looks perfectly reasonable.
+--
+-- Fidelity's positions export lists money-market and cash rows (SPAXX, USD) as holdings, so the
+-- snapshot covers uninvested cash too — switching sources drops nothing.
+--
+-- `balance_source` and `balance_as_of` are exposed rather than hidden. A market value is only as
+-- current as its last snapshot, and a stale figure whose date you can see beats a fresh-looking one
+-- that is wrong.
 CREATE OR REPLACE VIEW v_account_balance AS
 SELECT a.user_id,
        a.id                AS account_id,
@@ -60,12 +73,22 @@ SELECT a.user_id,
        a.ledger_entity_id,
        a.currency,
        a.is_active,
-       COALESCE(SUM(r.signed_amount), 0)::NUMERIC(19,4) AS balance,
-       COUNT(r.id)                                      AS transaction_count,
-       MAX(r.transaction_date)                          AS last_activity
+       COALESCE(mv.market_value, t.transaction_balance, 0)::NUMERIC(19,4) AS balance,
+       COALESCE(t.transaction_count, 0)                                   AS transaction_count,
+       t.last_activity,
+       CASE WHEN mv.market_value IS NOT NULL THEN 'holdings' ELSE 'transactions' END AS balance_source,
+       mv.as_of                                                           AS balance_as_of,
+       mv.cost_basis
 FROM account a
-LEFT JOIN v_transaction_resolved r ON r.account_id = a.id
-GROUP BY a.user_id, a.id, a.name, a.account_type, a.ledger_entity_id, a.currency, a.is_active;
+LEFT JOIN (
+    SELECT r.account_id,
+           SUM(r.signed_amount)   AS transaction_balance,
+           COUNT(r.id)            AS transaction_count,
+           MAX(r.transaction_date) AS last_activity
+    FROM v_transaction_resolved r
+    GROUP BY r.account_id
+) t ON t.account_id = a.id
+LEFT JOIN v_account_market_value mv ON mv.account_id = a.id;
 
 
 -- Net worth, per entity and overall. Because liabilities are already negative this is a plain SUM:

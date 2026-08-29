@@ -73,6 +73,45 @@ public class AiServiceClient {
         return parse("/parse/ofx", content, filename, accountRef, "statement.ofx");
     }
 
+    /**
+     * Parses a brokerage positions export into a holdings snapshot.
+     *
+     * <p>No {@code account_ref}: a positions file names an account on every row, so there is
+     * nothing for the caller to nominate. Unlike the statement parsers this returns no
+     * transactions — a positions file records no money movement at all.
+     */
+    public PositionsResult parsePositions(byte[] content, String filename) {
+        MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
+        form.add("file", new ByteArrayResource(content) {
+            @Override
+            public String getFilename() {
+                return filename == null ? "positions.csv" : filename;
+            }
+        });
+
+        try {
+            PositionsResult result = restClient.post()
+                .uri("/parse/positions")
+                // Content-Type deliberately unset — see the note in parse() below.
+                .body(form)
+                .retrieve()
+                .body(PositionsResult.class);
+
+            if (result == null) {
+                throw new AiServiceException("The parser returned an empty response.");
+            }
+            return result;
+        } catch (AiServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            if (e instanceof org.springframework.web.client.RestClientResponseException response) {
+                log.debug("Parser rejected the positions upload: {} {}", response.getStatusCode(),
+                    response.getResponseBodyAsString());
+            }
+            throw new AiServiceException("The positions file could not be parsed.", e);
+        }
+    }
+
     private ParseResult parse(String path, byte[] content, String filename, String accountRef,
                               String fallbackFilename) {
         MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();

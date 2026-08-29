@@ -45,7 +45,8 @@ public class AccountController {
     public List<AccountView> list() {
         return jdbc.query("""
             SELECT account_id, account_name, account_type, ledger_entity_id, currency,
-                   is_active, balance, transaction_count, last_activity
+                   is_active, balance, transaction_count, last_activity,
+                   balance_source, balance_as_of, cost_basis
             FROM v_account_balance
             WHERE user_id = ?
             ORDER BY is_active DESC, account_name
@@ -59,7 +60,10 @@ public class AccountController {
                 rs.getBoolean("is_active"),
                 rs.getBigDecimal("balance"),
                 rs.getInt("transaction_count"),
-                rs.getObject("last_activity", LocalDate.class)),
+                rs.getObject("last_activity", LocalDate.class),
+                rs.getString("balance_source"),
+                rs.getObject("balance_as_of", LocalDate.class),
+                rs.getBigDecimal("cost_basis")),
             currentUser.id());
     }
 
@@ -81,7 +85,8 @@ public class AccountController {
         var saved = accounts.save(account);
 
         return new AccountView(saved.getId(), saved.getName(), saved.getAccountType().code(),
-            entity.getId(), saved.getCurrency(), saved.isActive(), BigDecimal.ZERO, 0, null);
+            entity.getId(), saved.getCurrency(), saved.isActive(), BigDecimal.ZERO, 0, null,
+            "transactions", null, null);
     }
 
     @GetMapping("/{id}")
@@ -93,9 +98,19 @@ public class AccountController {
             .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    /**
+     * @param balanceSource {@code holdings} when the balance is the market value of a positions
+     *     snapshot, {@code transactions} when it is the sum of the ledger. A brokerage switches to
+     *     the former the moment a positions file is imported, because summing the cash paid in
+     *     understates it by every dollar of growth.
+     * @param balanceAsOf the snapshot's date, null for a transaction-derived balance. Surfaced so
+     *     a stale market value is visibly stale rather than quietly wrong.
+     * @param costBasis what the holdings cost, when known — the other half of a gain figure.
+     */
     public record AccountView(Long id, String name, String accountType, Long ledgerEntityId,
                               String currency, boolean active, BigDecimal balance,
-                              int transactionCount, LocalDate lastActivity) {
+                              int transactionCount, LocalDate lastActivity,
+                              String balanceSource, LocalDate balanceAsOf, BigDecimal costBasis) {
     }
 
     public record CreateAccount(

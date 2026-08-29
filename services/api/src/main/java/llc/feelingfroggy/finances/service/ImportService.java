@@ -3,17 +3,22 @@ package llc.feelingfroggy.finances.service;
 import java.util.List;
 import java.util.Optional;
 import llc.feelingfroggy.finances.ai.AiServiceClient;
+import llc.feelingfroggy.finances.ai.ParsedPosition;
 import llc.feelingfroggy.finances.ai.ParsedTransaction;
 import llc.feelingfroggy.finances.ai.ParseResult;
+import llc.feelingfroggy.finances.ai.PositionsResult;
 import llc.feelingfroggy.finances.domain.Account;
 import llc.feelingfroggy.finances.domain.Direction;
+import llc.feelingfroggy.finances.domain.Holding;
 import llc.feelingfroggy.finances.domain.ImportBatch;
 import llc.feelingfroggy.finances.domain.ImportFormat;
 import llc.feelingfroggy.finances.domain.Statement;
 import llc.feelingfroggy.finances.domain.Transaction;
 import llc.feelingfroggy.finances.domain.TxnSource;
 import llc.feelingfroggy.finances.repo.AccountRepository;
+import llc.feelingfroggy.finances.repo.HoldingRepository;
 import llc.feelingfroggy.finances.repo.ImportBatchRepository;
+import llc.feelingfroggy.finances.repo.SecurityRepository;
 import llc.feelingfroggy.finances.repo.StatementRepository;
 import llc.feelingfroggy.finances.repo.TransactionRepository;
 import org.slf4j.Logger;
@@ -39,16 +44,21 @@ public class ImportService {
     private final ImportBatchRepository batches;
     private final ImportBatchRecorder recorder;
     private final StatementRepository statements;
+    private final SecurityRepository securities;
+    private final HoldingRepository holdings;
 
     public ImportService(AiServiceClient aiService, TransactionRepository transactions,
                          AccountRepository accounts, ImportBatchRepository batches,
-                         ImportBatchRecorder recorder, StatementRepository statements) {
+                         ImportBatchRecorder recorder, StatementRepository statements,
+                         SecurityRepository securities, HoldingRepository holdings) {
         this.aiService = aiService;
         this.transactions = transactions;
         this.accounts = accounts;
         this.batches = batches;
         this.recorder = recorder;
         this.statements = statements;
+        this.securities = securities;
+        this.holdings = holdings;
     }
 
     /**
@@ -91,22 +101,22 @@ public class ImportService {
      * <p>When a row matches by mask alone, the key is written onto the account so every later
      * import matches exactly. The link is learned once rather than re-guessed each time.
      */
-    private Optional<Account> resolveAccount(Long userId, ParsedTransaction row) {
-        Optional<Account> byKey = accounts.findByUserIdAndExternalId(userId, row.accountKey());
+    private Optional<Account> resolveAccount(Long userId, String accountKey, String accountMask) {
+        Optional<Account> byKey = accounts.findByUserIdAndExternalId(userId, accountKey);
         if (byKey.isPresent()) {
             return byKey;
         }
 
-        List<Account> byMask = row.accountMask() == null
+        List<Account> byMask = accountMask == null
             ? List.of()
-            : accounts.findByUserIdAndMask(userId, row.accountMask());
+            : accounts.findByUserIdAndMask(userId, accountMask);
         if (byMask.size() != 1) {
             return Optional.empty();
         }
 
         Account matched = byMask.getFirst();
         if (matched.getExternalId() == null) {
-            matched.setExternalId(row.accountKey());
+            matched.setExternalId(accountKey);
             accounts.save(matched);
         }
         return Optional.of(matched);
@@ -155,7 +165,7 @@ public class ImportService {
             // history spans accounts, and applying all of it to one would be silently wrong.
             Account target = account;
             if (row.carriesAccount()) {
-                var resolved = resolveAccount(userId, row);
+                var resolved = resolveAccount(userId, row.accountKey(), row.accountMask());
                 if (resolved.isEmpty()) {
                     // Skipped rather than filed against a fallback account. An unimported row is
                     // visible and fixable; a row on the wrong account is neither.
@@ -223,6 +233,131 @@ public class ImportService {
             parsed.warnings() == null ? 0 : parsed.warnings().size());
 
         return completed;
+    }
+
+    /**
+     * Imports a brokerage positions export as a holdings snapshot.
+     *
+     * <p>Deliberately separate from {@link #importStatement}: a positions file contains no money
+     * movements, so nothing here touches the ledger. Forcing a snapshot into the transaction model
+     * would invent money movements that never happened — docs/DOMAIN.md is explicit about it.
+     *
+     * <p><strong>Idempotent by snapshot.</strong> The key is (account, security, as_of), so
+     * re-importing the same file updates each position rather than adding a second copy, while a
+     * file downloaded on a later date lands as a new snapshot and the old one is kept. That is what
+     * gives a position any history at all — the file itself has none.
+     *
+     * <p>No account is nominated, because every row names its own. Rows whose account does not
+     * exist here are collected and reported rather than filed against a guess.
+     */
+    @Transactional
+    public ImportBatch importPositions(Long userId, byte[] content, String filename) {
+        Long batchId = recorder.begin(userId, null, ImportFormat.CSV, filename);
+        var batch = batches.findById(batchId).orElseThrow();
+
+        PositionsResult parsed;
+        try {
+            parsed = aiService.parsePositions(content, filename);
+        } catch (RuntimeException e) {
+            recorder.fail(batchId, e.getMessage());
+            throw e;
+        }
+
+        if (parsed.asOf() == null) {
+            // Without a date the snapshot cannot be keyed, and every later import would overwrite
+            // this one instead of accumulating beside it. Refusing beats silently losing history.
+            recorder.fail(batchId, "This file carries no 'as of' date, so the snapshot cannot be dated.");
+            throw new IllegalStateException(
+                "This file carries no 'as of' date, so the snapshot cannot be dated.");
+        }
+
+        int applied = 0;
+        int updated = 0;
+        var unlinked = new java.util.LinkedHashMap<String, UnlinkedAccount>();
+
+        for (var row : parsed.positions()) {
+            var resolved = resolveAccount(userId, row.accountKey(), row.accountMask());
+            if (resolved.isEmpty()) {
+                unlinked.merge(row.accountKey(),
+                    new UnlinkedAccount(row.accountKey(), row.accountMask(), row.accountName(), 1),
+                    UnlinkedAccount::plusOne);
+                continue;
+            }
+            var account = resolved.get();
+            var security = findOrCreateSecurity(userId, row);
+
+            var existing = holdings.findSnapshot(account.getId(), security.getId(), parsed.asOf());
+            var holding = existing.orElseGet(
+                () -> new Holding(userId, account, security, parsed.asOf(), row.currentValue()));
+
+            holding.setMarketValue(row.currentValue());
+            holding.setQuantity(row.quantity());
+            holding.setLastPrice(row.lastPrice());
+            holding.setCostBasis(row.costBasisTotal());
+            holding.setAverageCost(row.averageCostBasis());
+            holding.setTotalGainLoss(row.totalGainLoss());
+            holding.setImportBatch(batch);
+            holdings.save(holding);
+
+            if (existing.isPresent()) {
+                updated++;
+            } else {
+                applied++;
+            }
+        }
+
+        if (!unlinked.isEmpty()) {
+            String names = unlinked.values().stream()
+                .map(UnlinkedAccount::describe)
+                .collect(java.util.stream.Collectors.joining(", "));
+            recorder.note(batchId, unlinked.size() + " account(s) in this file are not set up yet: "
+                + names + ". Nothing was guessed — create them and import again.");
+        }
+        lastUnlinked.set(List.copyOf(unlinked.values()));
+
+        var completed = recorder.complete(batchId, parsed.positions().size(), applied, updated);
+
+        // Counts only — docs/SECURITY.md keeps holdings, values and account identifiers out of the log.
+        log.info("positions batch={} rows={} new={} updated={} asOf={}",
+            batch.getId(), parsed.positions().size(), applied, updated, parsed.asOf());
+
+        return completed;
+    }
+
+    /**
+     * Finds the instrument, creating it the first time it is seen.
+     *
+     * <p>One row per symbol per user, shared across accounts, so "how much of this do I hold in
+     * total" is answerable. The name is refreshed on later imports because an export can carry a
+     * fuller description than the one that created the row.
+     */
+    private llc.feelingfroggy.finances.domain.Security findOrCreateSecurity(Long userId,
+                                                                           ParsedPosition row) {
+        var existing = securities.findByUserIdAndSymbol(userId, row.symbol());
+        if (existing.isPresent()) {
+            var security = existing.get();
+            if (row.description() != null && !row.description().isBlank()) {
+                security.setName(row.description());
+            }
+            return securities.save(security);
+        }
+        return securities.save(new llc.feelingfroggy.finances.domain.Security(
+            userId, row.symbol(), row.description(), classify(row), row.isCash()));
+    }
+
+    /**
+     * A coarse instrument type, from what the export actually tells us.
+     *
+     * <p>Deliberately shallow. A positions file does not say whether something is an ETF or an
+     * index fund, and guessing from the ticker would be inventing data — {@code unknown} is honest
+     * and can be corrected later, whereas a confident wrong classification would not be noticed.
+     */
+    private static String classify(ParsedPosition row) {
+        if (row.isCash()) {
+            // The parser decides cash by symbol; money-market sweeps and dollar lines both land here.
+            return row.quantity() == null ? "cash" : "money_market";
+        }
+        return "unknown";
     }
 
     /**

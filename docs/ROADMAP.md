@@ -452,9 +452,45 @@ Quirks the parser handles, every one found in the real file rather than imagined
 through the `raw` passthrough, which defeated the masking beside it; that is now filtered and
 tested. Real exports are gitignored, and every fixture in the repo is synthesized.
 
+### Built 2026-08-29: securities, holdings, and the balance rule they change
+
+`V5__securities_and_holdings.sql` adds `security` and `holding`, and rewrites `v_account_balance`.
+That rewrite is the substance; the tables are the easy part.
+
+**A brokerage is worth its holdings, not the cash paid into it.** The balance view summed
+transactions for every account. For a brokerage that is the money that went *in* — deposit $10,000
+over three years, watch it become $14,000, and the ledger still says $10,000. Understated by every
+dollar of growth, silently, with a figure that looks entirely reasonable. So an account with a
+holdings snapshot now takes its balance from the snapshot; everything else still sums transactions.
+`v_net_worth` inherits it with no case of its own, which is the payoff of keeping the rule in one
+view. `HoldingsTest.brokerageValueComesFromHoldingsNotDeposits` is the test that matters here.
+
+Switching sources drops nothing, because Fidelity lists money-market and cash rows (SPAXX, USD) as
+holdings — uninvested cash is inside the snapshot. Verified end to end: a fixture across three
+accounts imported to the right two, refused to guess the third, and produced a market value that
+included the cash sweep.
+
+**A snapshot has a date, and the view says so.** `balance_source` and `balance_as_of` are exposed
+rather than hidden. A market value is only as current as the last file imported, and a stale figure
+whose date you can see is worth far more than a fresh-looking one that is wrong.
+
+Two smaller decisions worth keeping:
+
+* **`quantity` is `NUMERIC(28,8)`, not `(19,4)`.** A share count is not money. Funds settle to three
+  decimals and crypto to eight; rounding to cents would change what someone owns.
+* **The snapshot key is (account, security, as_of).** Re-importing updates in place, while a file
+  downloaded later lands beside the old one. Keeping both is the only way a position acquires a
+  history — a positions file contains none.
+
+*Found while building:* `/api/v1/holdings` answered 500 on its first call. `open-in-view` is off, so
+the lazy `security` association threw when the response was built outside the transaction. Fetch
+joins fixed it and removed an N+1 at the same time. Worth noting the unit tests were green — it took
+calling the endpoint.
+
 ### Still to build for M4
-Personal vs. Feeling Froggy LLC separation. Securities, holdings, cost basis, market value. Net
-worth across everything. Business expense flagging with an eye toward tax time.
+Personal vs. Feeling Froggy LLC separation, and business expense flagging with an eye toward tax
+time. Holdings are not yet shown in the UI; they are reachable over the API and through the MCP
+server (`list_holdings`, `import_positions`).
 
 ## M5 — Aggregator connection
 Whichever vendor wins D-14, behind the `AccountConnector` port built in M2. Automatic sync,

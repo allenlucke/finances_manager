@@ -88,6 +88,43 @@ public class ImportController {
         }
     }
 
+    /**
+     * Uploads a brokerage positions export as a holdings snapshot.
+     *
+     * <p>A separate endpoint rather than a flag on the one above, because the two files mean
+     * different things: a statement records money moving, a positions file records what is owned
+     * at a moment. Nothing here reaches the ledger. See ImportService#importPositions.
+     *
+     * <p>No {@code accountId} parameter — a positions file names an account on every row.
+     */
+    @PostMapping("/positions")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ImportResult uploadPositions(@RequestParam("file") MultipartFile file) {
+        Long userId = currentUser.id();
+
+        if (file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The file is empty");
+        }
+        if (file.getSize() > MAX_BYTES) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE,
+                "Statements are limited to 10 MB");
+        }
+
+        byte[] content;
+        try {
+            content = file.getBytes();
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The upload could not be read");
+        }
+
+        try {
+            var batch = imports.importPositions(userId, content, file.getOriginalFilename());
+            return ImportResult.of(batch, imports.unlinkedFromLastImport());
+        } catch (RuntimeException e) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+        }
+    }
+
     @GetMapping
     public List<ImportResult> recent() {
         return imports.recent(currentUser.id()).stream()
