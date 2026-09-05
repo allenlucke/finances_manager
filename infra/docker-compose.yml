@@ -126,7 +126,11 @@ services:
       # nginx-unprivileged listens on 8080; see services/web/Dockerfile.
       - "${BIND_ADDR:-127.0.0.1}:${WEB_PORT:-4200}:8080"
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/"]
+      # 127.0.0.1, not localhost: inside the container localhost resolves to ::1 first and nginx
+      # listens on IPv4 only, so the check was refused every time and the container sat at
+      # "unhealthy" for its whole life while serving perfectly. Nothing waits on this service's
+      # health, which is the only reason it went unnoticed.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -15,8 +15,21 @@ The scratch stack has its own database and its own volume, and the browser suite
 **empty** — Cowork will see the first-run setup screen and create its own account. Nothing it does
 can touch yours. When you're finished, `make e2e-down` disposes of it.
 
-If Cowork can't reach `localhost` from where it runs, it can still do everything in **Part 1** —
-that part is a code and copy review and needs only the repository.
+If Cowork can't reach `localhost` from where it runs — and on 2026-09-05 it could not, while its
+browser worked fine otherwise — publish the scratch stack on this Mac's LAN address instead and
+hand it that URL:
+
+```bash
+BIND_ADDR=$(ipconfig getifaddr en0) make e2e     # then use http://<that address>:4201
+```
+
+Two consequences of a non-`localhost` address. The stack is visible to anything on the home
+network for as long as it runs — fine for an empty throwaway database, so dispose of it after. And
+browsers only allow passkeys on a secure context, which plain `http://` on a LAN address is not, so
+the Sign-in security page will say the browser does not support passkeys; that is the browser, not
+a bug, and the passkey flow stays covered by the automated suite. If even the LAN address is
+unreachable, Cowork's browser is off the network entirely: it can still do everything in
+**Part 1** — a code and copy review that needs only the repository — and Part 2 is mine to run.
 
 ---
 
