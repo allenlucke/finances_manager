@@ -188,10 +188,18 @@ GROUP BY r.user_id, r.ledger_entity_id, r.category_id, c.name, c.kind,
 
 -- Spend against the target in force for that month.
 --
--- The join is on the target's effective range rather than on a month column, because a target is
--- an open-ended interval rather than a per-month row — that is what removing user-defined periods
--- bought. At most one target can match: the ex_target_no_overlap exclusion constraint makes
--- overlapping ranges unstorable, so this cannot silently pick between two contradictory numbers.
+-- THE TARGET IS NORMALIZED TO A MONTHLY FIGURE. Targets carry a cadence, and this view used to
+-- ignore it: a $1,200/year target against $150 of monthly spend reported "$1,050 remaining".
+-- weekly × 52/12, quarterly ÷ 3, yearly ÷ 12. `target_cadence` still says what was entered.
+--
+-- WHICH TARGET GOVERNS A MONTH: the most recently started one that had begun before the month
+-- ended and had not ended before the month began. The previous `effective_from <= month` compared
+-- against the 1st, so a target set on the 15th did not apply to its own month at all. Two targets
+-- can now touch one month (one ending mid-month, its replacement starting the same day), so the
+-- LATERAL picks exactly one — the later — rather than producing two rows.
+--
+-- user_id is part of the join. It was safe without it only because category ids are globally
+-- unique; every other view here states the tenant rule rather than relying on a transitive one.
 --
 -- target_amount is NULL where no target exists, which is the normal case: targets are optional and
 -- most categories are better served by a baseline derived from history (M3/M6).
@@ -204,17 +212,29 @@ SELECT s.user_id,
        s.month,
        s.net_amount,
        s.transaction_count,
-       tg.amount   AS target_amount,
-       tg.cadence  AS target_cadence,
-       CASE WHEN tg.amount IS NULL THEN NULL
-            ELSE (tg.amount - s.net_amount)::NUMERIC(19,4)
+       tg.monthly_amount AS target_amount,
+       tg.cadence        AS target_cadence,
+       CASE WHEN tg.monthly_amount IS NULL THEN NULL
+            ELSE (tg.monthly_amount - s.net_amount)::NUMERIC(19,4)
        END AS remaining
 FROM v_monthly_category_spend s
-LEFT JOIN target tg
-       ON tg.category_id = s.category_id
-      AND tg.ledger_entity_id = s.ledger_entity_id
-      AND tg.effective_from <= s.month
-      AND (tg.effective_to IS NULL OR tg.effective_to > s.month);
+LEFT JOIN LATERAL (
+    SELECT t.cadence,
+           (CASE t.cadence
+                WHEN 'weekly'    THEN t.amount * 52 / 12
+                WHEN 'monthly'   THEN t.amount
+                WHEN 'quarterly' THEN t.amount / 3
+                WHEN 'yearly'    THEN t.amount / 12
+            END)::NUMERIC(19,4) AS monthly_amount
+    FROM target t
+    WHERE t.user_id          = s.user_id
+      AND t.category_id      = s.category_id
+      AND t.ledger_entity_id = s.ledger_entity_id
+      AND t.effective_from   <  s.month + INTERVAL '1 month'
+      AND (t.effective_to IS NULL OR t.effective_to > s.month)
+    ORDER BY t.effective_from DESC
+    LIMIT 1
+) tg ON TRUE;
 
 
 -- ---------------------------------------------------------------------------------------------
@@ -223,9 +243,20 @@ LEFT JOIN target tg
 
 -- Does the ledger agree with what the institution said?
 --
--- This is the point of keeping statement checkpoints at all, and the M1a "done when" test. A
--- non-zero difference means the ledger is missing transactions, has duplicates, or has a wrong
--- amount — and it says so in dollars rather than requiring a manual tally.
+-- This is the point of keeping statement checkpoints at all. A non-zero difference means the
+-- ledger is missing transactions, has duplicates, or has a wrong amount — and it says so in
+-- dollars rather than requiring a manual tally.
+--
+-- TWO BASELINES. When the statement carries an opening balance, the computed figure is that
+-- balance plus the period's movements: correct from any starting point, which is how every real
+-- account arrives — nobody imports from the day the account opened. Without one, the only
+-- possible check is the whole history summed against the closing balance, which is right only if
+-- the whole history is present. `baseline` says which was used, so a difference on a
+-- 'full_history' row can be read for what it is: not necessarily an error, possibly just an
+-- account whose early history is not here.
+--
+-- Computed once, in a LATERAL, and referenced twice. The previous version wrote the correlated
+-- subquery out twice, which is the kind of duplication that drifts on the next edit.
 CREATE OR REPLACE VIEW v_statement_reconciliation AS
 SELECT st.id AS statement_id,
        st.user_id,
@@ -234,17 +265,23 @@ SELECT st.id AS statement_id,
        st.period_end,
        st.opening_balance,
        st.closing_balance,
-       COALESCE((
-           SELECT SUM(r.signed_amount)
-           FROM v_transaction_resolved r
-           WHERE r.account_id = st.account_id
-             AND r.transaction_date <= st.period_end
-       ), 0)::NUMERIC(19,4) AS computed_balance,
-       (st.closing_balance - COALESCE((
-           SELECT SUM(r.signed_amount)
-           FROM v_transaction_resolved r
-           WHERE r.account_id = st.account_id
-             AND r.transaction_date <= st.period_end
-       ), 0))::NUMERIC(19,4) AS difference,
-       st.reconciled_at
-FROM statement st;
+       c.computed_balance,
+       (st.closing_balance - c.computed_balance)::NUMERIC(19,4) AS difference,
+       st.reconciled_at,
+       CASE WHEN st.opening_balance IS NULL THEN 'full_history' ELSE 'opening_balance' END AS baseline
+FROM statement st
+CROSS JOIN LATERAL (
+    SELECT (CASE
+        WHEN st.opening_balance IS NOT NULL THEN
+            st.opening_balance + COALESCE((
+                SELECT SUM(r.signed_amount) FROM v_transaction_resolved r
+                WHERE r.account_id = st.account_id
+                  AND r.transaction_date >= st.period_start
+                  AND r.transaction_date <= st.period_end), 0)
+        ELSE
+            COALESCE((
+                SELECT SUM(r.signed_amount) FROM v_transaction_resolved r
+                WHERE r.account_id = st.account_id
+                  AND r.transaction_date <= st.period_end), 0)
+    END)::NUMERIC(19,4) AS computed_balance
+) c;

@@ -37,11 +37,7 @@ public class HoldingController {
 
     @GetMapping("/account/{accountId}")
     public List<HoldingView> forAccount(@PathVariable Long accountId) {
-        // Scoped by the join to an account the user owns: findLatestForAccount is keyed on
-        // account_id alone, so filtering by user here is what stops another tenant's id working.
-        Long userId = currentUser.id();
-        return holdings.findLatestForAccount(accountId).stream()
-            .filter(holding -> holding.getUserId().equals(userId))
+        return holdings.findLatestForAccount(accountId, currentUser.id()).stream()
             .map(HoldingView::of)
             .toList();
     }

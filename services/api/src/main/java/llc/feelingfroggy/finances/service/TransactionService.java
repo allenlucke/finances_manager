@@ -13,6 +13,7 @@ import java.util.UUID;
 import llc.feelingfroggy.finances.domain.Account;
 import llc.feelingfroggy.finances.domain.Category;
 import llc.feelingfroggy.finances.domain.Direction;
+import llc.feelingfroggy.finances.domain.DomainRuleViolation;
 import llc.feelingfroggy.finances.domain.Transaction;
 import llc.feelingfroggy.finances.repo.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -75,7 +76,7 @@ public class TransactionService {
                                             BigDecimal amount, Direction direction,
                                             String description) {
         if (from.getId().equals(to.getId())) {
-            throw new IllegalStateException("A transfer needs two different accounts");
+            throw new DomainRuleViolation("A transfer needs two different accounts");
         }
 
         UUID group = UUID.randomUUID();

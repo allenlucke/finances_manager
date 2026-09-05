@@ -187,7 +187,7 @@ public class Transaction extends UserOwned {
     /** Rejects the double-count rather than letting the database do it, so the error is readable. */
     public void setCategory(Category category) {
         if (category != null && transfer) {
-            throw new IllegalStateException(
+            throw new DomainRuleViolation(
                 "A transfer cannot be categorized: doing so would double-count the spend, "
                     + "because the budget was already charged when the purchase happened. "
                     + "See docs/DOMAIN.md.");

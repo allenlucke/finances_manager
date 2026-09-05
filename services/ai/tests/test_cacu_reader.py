@@ -140,3 +140,41 @@ def test_trailing_space_in_a_column_name_does_not_break_lookup():
     result = parse_csv(read_sample(), account_ref="cacu")
 
     assert len(result.transactions) == 5
+
+
+_CACU_PREAMBLE = (
+    '"Account Name : Cashback Free Checking"\n'
+    '"Account Number : 1234567K8901"\n'
+    '"Date Range : 08/01/2026-08/27/2026"\n'
+    "Transaction Number,Date,Description,Memo,Amount Debit,Amount Credit,Balance,Check Number,Fees  \n"
+)
+_NEWEST = '"20260826",08/26/2026,"Point Of Sale Withdrawal KROGER","ANYTOWN",-84.31,,"1000.00",,\n'
+_MIDDLE = (
+    '"20260815",08/15/2026,"Descriptive Deposit Payroll","Direct Deposit",,2000.00,"1084.31",,\n'
+)
+_OLDEST = '"20260801",08/01/2026,"Point Of Sale Deposit WAL-MART","ANYTOWN",,12.00,"-915.69",,\n'
+
+
+def _summary(order: str):
+    rows = {
+        "newest_first": [_NEWEST, _MIDDLE, _OLDEST],
+        "oldest_first": [_OLDEST, _MIDDLE, _NEWEST],
+        "shuffled": [_MIDDLE, _NEWEST, _OLDEST],
+    }[order]
+    return parse_csv(_CACU_PREAMBLE + "".join(rows), account_ref="cacu").statement
+
+
+def test_closing_balance_is_the_newest_row_whatever_the_file_order():
+    """The old heuristic compared the first and last dates and chose wrong for anything else."""
+    for order in ("newest_first", "oldest_first", "shuffled"):
+        assert _summary(order).closing_balance == Decimal("1000.00"), order
+
+
+def test_opening_balance_is_derived_from_the_oldest_row():
+    """Oldest row: balance -915.69 after a 12.00 credit, so the period started at -927.69.
+
+    This is what lets reconciliation work for an account whose history was not imported from the
+    day it opened — every account, the first time.
+    """
+    for order in ("newest_first", "oldest_first", "shuffled"):
+        assert _summary(order).opening_balance == Decimal("-927.69"), order

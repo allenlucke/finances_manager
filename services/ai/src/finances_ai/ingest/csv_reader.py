@@ -287,9 +287,10 @@ def parse_csv(content: str | bytes, account_ref: str = "unknown") -> ParseResult
 
     transactions: list[ParsedTransaction] = []
     warnings: list[str] = []
-    # Paired with the row's date, because which end of the file holds the closing balance depends
-    # on the export's ordering — see _statement_summary.
-    balances: list[tuple[date, Decimal]] = []
+    # (date, running balance after this row, this row's signed movement). The date because which
+    # end of the file holds the closing balance depends on the export's ordering; the movement so
+    # the opening balance can be derived — see _statement_summary.
+    balances: list[tuple[date, Decimal, Decimal]] = []
 
     for offset, values in enumerate(rows[header_index + 1 :]):
         line_number = header_index + offset + 2
@@ -310,7 +311,13 @@ def parse_csv(content: str | bytes, account_ref: str = "unknown") -> ParseResult
         if fmt.balance_column:
             running = _parse_optional_amount(row.get(fmt.balance_column))
             if running is not None:
-                balances.append((transactions[-1].transaction_date, running))
+                latest = transactions[-1]
+                signed = (
+                    latest.amount
+                    if latest.direction == TransactionDirection.CREDIT
+                    else -latest.amount
+                )
+                balances.append((latest.transaction_date, running, signed))
 
     return ParseResult(
         source_format=fmt.name,
@@ -323,7 +330,7 @@ def parse_csv(content: str | bytes, account_ref: str = "unknown") -> ParseResult
 def _statement_summary(
     preamble: dict[str, str],
     transactions: list[ParsedTransaction],
-    balances: list[tuple[date, Decimal]],
+    balances: list[tuple[date, Decimal, Decimal]],
 ) -> StatementSummary | None:
     """Build a reconciliation checkpoint when the file carries enough to support one.
 
@@ -344,19 +351,36 @@ def _statement_summary(
     if end is None and transactions:
         end = max(t.transaction_date for t in transactions)
 
-    # The closing balance is the running balance after the MOST RECENT transaction, which is not
-    # simply the last row: real exports come newest-first at least as often as oldest-first.
-    # Taking the last row from a newest-first file reports the oldest balance as the closing one —
-    # a wrong figure that looks entirely plausible, and the reconciliation view would then accuse
-    # a correct ledger of being out by the whole period's movement.
+    # The closing balance is the running balance after the MOST RECENT transaction. That used to
+    # be inferred from the file's ordering by comparing the first and last dates — which chose
+    # wrong whenever those two dates were equal, whenever the file was unsorted, and whenever the
+    # newest row failed to parse. Now: the row with the greatest date, full stop, and on a tie
+    # the one nearest the top for a newest-first file and the bottom for an oldest-first one.
+    #
+    # The opening balance is the oldest row's balance with that row's own movement removed: the
+    # balance the period started from. It is what lets reconciliation work for an account whose
+    # history was not imported from the day it opened — which is every account, the first time.
     closing = None
+    opening = None
     if balances:
-        newest_first = balances[0][0] > balances[-1][0]
-        closing = balances[0][1] if newest_first else balances[-1][1]
+        first_date, last_date = balances[0][0], balances[-1][0]
+        newest_first = first_date > last_date
+        newest = max(balances, key=lambda b: b[0])
+        oldest = min(balances, key=lambda b: b[0])
+        if newest_first:
+            newest = next(b for b in balances if b[0] == newest[0])
+            oldest = next(b for b in reversed(balances) if b[0] == oldest[0])
+        else:
+            newest = next(b for b in reversed(balances) if b[0] == newest[0])
+            oldest = next(b for b in balances if b[0] == oldest[0])
+        closing = newest[1]
+        opening = oldest[1] - oldest[2]
 
     if start is None and end is None and closing is None:
         return None
-    return StatementSummary(period_start=start, period_end=end, closing_balance=closing)
+    return StatementSummary(
+        period_start=start, period_end=end, opening_balance=opening, closing_balance=closing
+    )
 
 
 def _try_date(value: str) -> date | None:

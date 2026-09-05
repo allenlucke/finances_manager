@@ -306,4 +306,109 @@ class ReportingViewsTest extends PostgresIntegrationTest {
         assertThat(august).isEqualByComparingTo("10.00");
         assertThat(july).isEqualByComparingTo("20.00");
     }
+
+    @Test
+    @DisplayName("reconciliation works from an opening balance, not only from the account's birth")
+    void reconciliationFromAnOpeningBalance() {
+        // Two years of history nobody imported. Before: the view summed every transaction ever
+        // against the closing balance, so an account not imported from the day it opened showed a
+        // large, spurious difference — the feature accusing a correct import of being wrong.
+        txn(checkingId, "2024-03-01", "5000.00", "credit", "OLD PAYROLL", null, "k-old-1");
+        txn(checkingId, "2024-03-05", "1200.00", "debit", "OLD RENT", null, "k-old-2");
+        // The period itself.
+        txn(checkingId, "2026-08-14", "84.31", "debit", "KROGER", groceriesId, "k-aug-1");
+        txn(checkingId, "2026-08-15", "2000.00", "credit", "PAYROLL", null, "k-aug-2");
+        // The statement says: started the month at 500.00, ended at 2415.69.
+        jdbc.update("""
+            INSERT INTO statement (user_id, account_id, period_start, period_end,
+                                   opening_balance, closing_balance)
+            VALUES (?, ?, '2026-08-01', '2026-08-31', 500.00, 2415.69)
+            """, userId, checkingId);
+
+        var row = jdbc.queryForMap(
+            "SELECT computed_balance, difference, baseline FROM v_statement_reconciliation WHERE account_id = ?",
+            checkingId);
+
+        assertThat((BigDecimal) row.get("computed_balance")).isEqualByComparingTo("2415.69");
+        assertThat((BigDecimal) row.get("difference")).isEqualByComparingTo("0.00");
+        assertThat(row.get("baseline")).isEqualTo("opening_balance");
+    }
+
+    @Test
+    @DisplayName("without an opening balance the view says it summed the whole history")
+    void reconciliationWithoutOpeningBalanceSaysSo() {
+        txn(checkingId, "2026-08-14", "84.31", "debit", "KROGER", groceriesId, "k-1");
+        jdbc.update("""
+            INSERT INTO statement (user_id, account_id, period_start, period_end, closing_balance)
+            VALUES (?, ?, '2026-08-01', '2026-08-31', -84.31)
+            """, userId, checkingId);
+
+        var row = jdbc.queryForMap(
+            "SELECT difference, baseline FROM v_statement_reconciliation WHERE account_id = ?",
+            checkingId);
+
+        // Still correct when the history is complete — and labelled, so a difference on such a
+        // row can be read as "maybe the early history is missing" rather than "the ledger is wrong".
+        assertThat((BigDecimal) row.get("difference")).isEqualByComparingTo("0.00");
+        assertThat(row.get("baseline")).isEqualTo("full_history");
+    }
+
+    @Test
+    @DisplayName("a yearly target is compared as a twelfth, not as a whole")
+    void cadenceIsNormalizedToTheMonth() {
+        // $1,200 a year against $150 this month used to report "$1,050 remaining".
+        jdbc.update("""
+            INSERT INTO target (user_id, category_id, ledger_entity_id, amount, cadence, effective_from)
+            VALUES (?, ?, ?, 1200.00, 'yearly', '2026-01-01')
+            """, userId, groceriesId, personalId);
+        txn(cardId, "2026-08-14", "150.00", "debit", "KROGER", groceriesId, "k-1");
+
+        var row = jdbc.queryForMap("""
+            SELECT target_amount, target_cadence, remaining FROM v_spend_vs_target
+            WHERE category_id = ? AND month = '2026-08-01'
+            """, groceriesId);
+
+        assertThat((BigDecimal) row.get("target_amount")).isEqualByComparingTo("100.00");
+        assertThat(row.get("target_cadence")).isEqualTo("yearly");
+        assertThat((BigDecimal) row.get("remaining")).isEqualByComparingTo("-50.00");
+    }
+
+    @Test
+    @DisplayName("a target set mid-month governs that month")
+    void midMonthTargetAppliesToItsOwnMonth() {
+        // effective_from <= month compared against the 1st, so a target set on the 15th did not
+        // apply to August at all — the month the person was looking at when they set it.
+        jdbc.update("""
+            INSERT INTO target (user_id, category_id, ledger_entity_id, amount, effective_from)
+            VALUES (?, ?, ?, 400.00, '2026-08-15')
+            """, userId, groceriesId, personalId);
+        txn(cardId, "2026-08-14", "150.00", "debit", "KROGER", groceriesId, "k-1");
+
+        var row = jdbc.queryForMap("""
+            SELECT target_amount FROM v_spend_vs_target WHERE category_id = ? AND month = '2026-08-01'
+            """, groceriesId);
+
+        assertThat((BigDecimal) row.get("target_amount")).isEqualByComparingTo("400.00");
+    }
+
+    @Test
+    @DisplayName("two targets touching one month yield one row, governed by the later")
+    void adjacentTargetsDoNotDuplicateRows() {
+        jdbc.update("""
+            INSERT INTO target (user_id, category_id, ledger_entity_id, amount, effective_from, effective_to)
+            VALUES (?, ?, ?, 300.00, '2026-07-01', '2026-08-15')
+            """, userId, groceriesId, personalId);
+        jdbc.update("""
+            INSERT INTO target (user_id, category_id, ledger_entity_id, amount, effective_from)
+            VALUES (?, ?, ?, 400.00, '2026-08-15')
+            """, userId, groceriesId, personalId);
+        txn(cardId, "2026-08-14", "150.00", "debit", "KROGER", groceriesId, "k-1");
+
+        var rows = jdbc.queryForList("""
+            SELECT target_amount FROM v_spend_vs_target WHERE category_id = ? AND month = '2026-08-01'
+            """, groceriesId);
+
+        assertThat(rows).hasSize(1);
+        assertThat((BigDecimal) rows.get(0).get("target_amount")).isEqualByComparingTo("400.00");
+    }
 }

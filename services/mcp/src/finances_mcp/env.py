@@ -14,14 +14,24 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+# The only variables this process has any business reading. It used to import the entire file —
+# the Postgres password among them — into a long-lived process inherited by every subprocess.
+WANTED = frozenset({"LOCAL_API_TOKEN", "API_URL"})
+
+# Walk up to the repository and no further. Without the marker the search went to `/`, and a
+# .env in a shared parent directory would have been loaded silently.
+_REPO_MARKERS = (".mcp.json", ".git")
+
 
 def find_env_file(start: Path | None = None) -> Path | None:
-    """Walks up from `start` looking for a .env, stopping at the filesystem root."""
+    """Walks up from `start` looking for a .env, stopping at the repository root."""
     current = (start or Path.cwd()).resolve()
     for directory in [current, *current.parents]:
         candidate = directory / ".env"
         if candidate.is_file():
             return candidate
+        if any((directory / marker).exists() for marker in _REPO_MARKERS):
+            return None
     return None
 
 
@@ -59,5 +69,6 @@ def load(start: Path | None = None) -> Path | None:
     if path is None:
         return None
     for key, value in parse(path.read_text(encoding="utf-8")).items():
-        os.environ.setdefault(key, value)
+        if key in WANTED:
+            os.environ.setdefault(key, value)
     return path

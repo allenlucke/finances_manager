@@ -1,7 +1,22 @@
 name: finances-manager
 
+# Every service restarts unless stopped by hand. D-16 puts this on an always-on box; without a
+# policy a power blip left the stack down until someone SSHed in. Note `make e2e` reuses this
+# file as a second project, and `make e2e-down` is what stops those from restarting too.
+x-restart: &restart
+  restart: unless-stopped
+
+# Bounded logs. json-file grows without limit by default, on a box that is meant to run for years.
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
   db:
+    <<: [*restart, *logging]
     image: postgres:18-alpine
     environment:
       POSTGRES_DB: ${DATABASE_NAME:-finances}
@@ -24,8 +39,18 @@ services:
       retries: 10
 
   ai:
+    <<: [*restart, *logging]
     build:
       context: ../services/ai
+    # A stateless parser of untrusted files. It writes nothing, so it gets nothing to write to,
+    # and it runs with no capabilities it could escalate through. The image also drops root.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     # Not published to the host by default: the AI service is internal-only.
@@ -39,6 +64,7 @@ services:
       retries: 5
 
   api:
+    <<: [*restart, *logging]
     build:
       context: ../services/api
     depends_on:
@@ -67,10 +93,12 @@ services:
       # natively (`make api`) keeps the in-process check, which is why it stays the default.
       LOCAL_API_TOKEN_LOOPBACK_ONLY: ${LOCAL_API_TOKEN_LOOPBACK_ONLY:-false}
     ports:
-      # Bound to loopback. Docker's default is 0.0.0.0, which publishes to the whole local network
-      # rather than just this machine — not what "running it locally" implies, and wrong for a
-      # service that will hold financial data. See D-16: this app is never publicly routable.
-      - "127.0.0.1:${API_PORT:-8080}:8080"
+      # BIND_ADDR defaults to loopback. Docker's default is 0.0.0.0, which publishes to the whole
+      # local network — not what "running it locally" implies, and wrong for a service holding
+      # financial data. On the homelab (D-16) set BIND_ADDR to the box's Tailscale address, and
+      # read the note on LOCAL_API_TOKEN below before you do: this line is the only thing keeping
+      # that token off the network.
+      - "${BIND_ADDR:-127.0.0.1}:${API_PORT:-8080}:8080"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
       interval: 10s
@@ -78,12 +106,23 @@ services:
       retries: 10
 
   web:
+    <<: [*restart, *logging]
     build:
       context: ../services/web
+    # Only start serving once the API is actually healthy. nginx serves the SPA the instant it
+    # starts, and with the short-form depends_on it did so while the API was still running
+    # migrations — the flake reset-database.ts had to work around with a 60-second poll.
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
-      - "127.0.0.1:${WEB_PORT:-4200}:80"
+      # nginx-unprivileged listens on 8080; see services/web/Dockerfile.
+      - "${BIND_ADDR:-127.0.0.1}:${WEB_PORT:-4200}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   db_data:

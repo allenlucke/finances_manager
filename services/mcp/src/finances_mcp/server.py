@@ -54,20 +54,25 @@ def _page(result: Any, page: int, size: int) -> Any:
     therefore answers the same shape, with ``has_more`` stated rather than left to be inferred from
     arithmetic on totals.
     """
-    if isinstance(result, dict) and "error" in result:
-        return result
     if isinstance(result, dict) and "content" in result:
         rows = result["content"]
         total = result.get("totalElements", len(rows))
-    else:
-        rows = result or []
+        has_more = not result["last"] if "last" in result else (page + 1) * size < total
+    elif isinstance(result, list):
+        rows = result
         total = len(rows)
+        has_more = False
+    else:
+        # An error, or some other single object. Wrapping it would produce exactly the trap this
+        # function exists to prevent: len(dict) is a key count, and the model would read
+        # "total: 1" over a payload whose "transactions" is a bag of field names.
+        return result
     return {
         "transactions": rows,
         "total": total,
         "page": page,
         "page_size": size,
-        "has_more": (page + 1) * size < total,
+        "has_more": has_more,
     }
 
 
@@ -425,6 +430,56 @@ def restore_transaction(transaction_id: int) -> Any:
     return _guard(lambda: client().post(f"/api/v1/transactions/{transaction_id}/restore"))
 
 
+# Where statement files are allowed to come from. Downloads and Desktop, the repo's own ignored
+# drop folders, and anything named in FINANCES_IMPORT_ROOTS (colon-separated). Everything is
+# resolved before it is compared, so a symlink or a ../ that lands outside is refused on where it
+# lands, not on how it was written.
+#
+# This exists because the first version would read and upload any file on the machine. The threat
+# is not the person at the keyboard; it is that statement descriptions are merchant-typed text
+# that flows into the model's context, and the model chooses the path.
+_STATEMENT_SUFFIXES = frozenset({".csv", ".ofx", ".qfx"})
+_MAX_STATEMENT_BYTES = 10 * 1024 * 1024  # matches the API's own limit
+
+
+def _allowed_roots() -> list[Path]:
+    home = Path.home()
+    roots = [home / "Downloads", home / "Desktop"]
+    repo = env.find_env_file(Path(__file__).resolve().parent)
+    if repo is not None:
+        roots += [repo.parent / "statements", repo.parent / "imports"]
+    for extra in os.environ.get("FINANCES_IMPORT_ROOTS", "").split(":"):
+        if extra.strip():
+            roots.append(Path(extra).expanduser())
+    return [r.resolve() for r in roots if r.exists()]
+
+
+def _within_allowed(path: Path) -> bool:
+    resolved = path.resolve()
+    return any(resolved == root or root in resolved.parents for root in _allowed_roots())
+
+
+def _statement_path(file_path: str) -> Path | dict[str, Any]:
+    """A readable statement file inside the allowed folders, or an error to hand back."""
+    path = Path(file_path).expanduser()
+    if not _within_allowed(path):
+        return {
+            "error": (
+                f"{path} is outside the folders statements may be read from "
+                f"({', '.join(str(r) for r in _allowed_roots())}). Move the file into one of "
+                "them, or set FINANCES_IMPORT_ROOTS."
+            ),
+            "status": 400,
+        }
+    if not path.is_file():
+        return {"error": f"No file at {path}", "status": 400}
+    if path.suffix.lower() not in _STATEMENT_SUFFIXES:
+        return {"error": f"{path.name} is not a statement file (csv, ofx or qfx).", "status": 400}
+    if path.stat().st_size > _MAX_STATEMENT_BYTES:
+        return {"error": f"{path.name} is larger than 10 MB, which no statement is.", "status": 400}
+    return path
+
+
 @mcp.tool(annotations=WRITES)
 def import_statement(file_path: str, account_id: int | None = None) -> Any:
     """Import a statement file (CSV, OFX or QFX) from this machine.
@@ -440,9 +495,9 @@ def import_statement(file_path: str, account_id: int | None = None) -> Any:
     here, the result lists them under ``unlinkedAccounts`` and nothing is guessed — create them and
     import again.
     """
-    path = Path(file_path).expanduser()
-    if not path.is_file():
-        return {"error": f"No file at {path}", "status": 400}
+    path = _statement_path(file_path)
+    if isinstance(path, dict):
+        return path
     return _guard(
         lambda: client().upload("/api/v1/imports", path.name, path.read_bytes(), account_id)
     )
@@ -468,9 +523,9 @@ def import_positions(file_path: str) -> Any:
     a later date lands as a new snapshot beside the old one, which is what gives a position any
     history at all.
     """
-    path = Path(file_path).expanduser()
-    if not path.is_file():
-        return {"error": f"No file at {path}", "status": 400}
+    path = _statement_path(file_path)
+    if isinstance(path, dict):
+        return path
     return _guard(
         lambda: client().upload("/api/v1/imports/positions", path.name, path.read_bytes(), None)
     )
@@ -483,23 +538,37 @@ def find_statement_files(directory: str = "~/Downloads") -> Any:
     Args:
         directory: where to look. Defaults to the Downloads folder.
 
-    Reads nothing — this only reports names, sizes and modification times, so it is a safe way to
-    find out what is available before choosing what to import.
+    Reports names, sizes and modification times of statement files only, and only within the
+    folders statements may be read from (Downloads, Desktop, the repo's statements/ and imports/,
+    and FINANCES_IMPORT_ROOTS). It does not open the files. Filenames can still say something —
+    an employer or an institution — so it is limited to those folders rather than to the whole disk.
     """
     folder = Path(directory).expanduser()
+    if not _within_allowed(folder):
+        return {
+            "error": f"{folder} is outside the folders statements may be read from.",
+            "status": 400,
+        }
     if not folder.is_dir():
         return {"error": f"No directory at {folder}", "status": 400}
 
-    found = [
-        {
-            "path": str(entry),
-            "name": entry.name,
-            "bytes": entry.stat().st_size,
-            "modified": int(entry.stat().st_mtime),
-        }
-        for entry in folder.iterdir()
-        if entry.is_file() and entry.suffix.lower() in {".csv", ".ofx", ".qfx"}
-    ]
+    found = []
+    for entry in folder.iterdir():
+        try:
+            if not entry.is_file() or entry.suffix.lower() not in _STATEMENT_SUFFIXES:
+                continue
+            stat = entry.stat()
+        except OSError:
+            # An entry we cannot stat is not a reason to fail the whole listing.
+            continue
+        found.append(
+            {
+                "path": str(entry),
+                "name": entry.name,
+                "bytes": stat.st_size,
+                "modified": int(stat.st_mtime),
+            }
+        )
     return sorted(found, key=lambda item: item["modified"], reverse=True)
 
 

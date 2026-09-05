@@ -2,7 +2,9 @@ package llc.feelingfroggy.finances.api;
 
 import java.time.Instant;
 import java.util.List;
+import llc.feelingfroggy.finances.ai.AiServiceClient;
 import llc.feelingfroggy.finances.domain.Account;
+import llc.feelingfroggy.finances.domain.DomainRuleViolation;
 import llc.feelingfroggy.finances.domain.ImportBatch;
 import llc.feelingfroggy.finances.repo.AccountRepository;
 import llc.feelingfroggy.finances.service.ImportService;
@@ -81,10 +83,16 @@ public class ImportController {
             var outcome = imports.importStatement(userId, account, content,
                 file.getOriginalFilename());
             return ImportResult.of(outcome.batch(), outcome.unlinked());
-        } catch (RuntimeException e) {
-            // The batch row is already marked failed with the reason; surface it as a 422 rather
-            // than a 500, because an unparseable file is a normal outcome and not a server fault.
+        } catch (DomainRuleViolation | AiServiceClient.AiServiceException e) {
+            // The batch row is already marked failed with the reason. Both of these carry a
+            // sentence written for a person, so it is returned: an unparseable file is a normal
+            // outcome, not a server fault.
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+        } catch (RuntimeException e) {
+            // Anything else is a fault whose message may describe the schema or quote the file.
+            // The batch has the sanitized reason; the client gets the same sentence.
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                "The import failed before any rows were saved.");
         }
     }
 
@@ -120,8 +128,11 @@ public class ImportController {
         try {
             var outcome = imports.importPositions(userId, content, file.getOriginalFilename());
             return ImportResult.of(outcome.batch(), outcome.unlinked());
-        } catch (RuntimeException e) {
+        } catch (DomainRuleViolation | AiServiceClient.AiServiceException e) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+        } catch (RuntimeException e) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                "The import failed before any rows were saved.");
         }
     }
 

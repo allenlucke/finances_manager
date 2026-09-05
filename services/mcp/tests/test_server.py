@@ -130,15 +130,17 @@ def test_a_server_fault_is_raised_rather_than_reported_as_a_result(api):
         server.list_accounts()
 
 
-def test_importing_a_file_that_is_not_there_says_so(api):
-    result = server.import_statement("/nowhere/at/all.csv")
+def test_importing_a_file_that_is_not_there_says_so(api, tmp_path, monkeypatch):
+    monkeypatch.setenv("FINANCES_IMPORT_ROOTS", str(tmp_path))
+    result = server.import_statement(str(tmp_path / "missing.csv"))
 
     assert result["status"] == 400
     assert "No file at" in result["error"]
     assert api.calls == []
 
 
-def test_importing_reads_the_file_and_posts_it(api, tmp_path):
+def test_importing_reads_the_file_and_posts_it(api, tmp_path, monkeypatch):
+    monkeypatch.setenv("FINANCES_IMPORT_ROOTS", str(tmp_path))
     statement = tmp_path / "cacu.csv"
     statement.write_text("Date,Amount\n2026-08-14,-84.31\n")
     api.reply("POST", "/api/v1/imports", 201, {"id": 1, "appliedCount": 1})
@@ -149,7 +151,8 @@ def test_importing_reads_the_file_and_posts_it(api, tmp_path):
     assert b"cacu.csv" in api.last.read()
 
 
-def test_finding_statements_lists_only_importable_files(api, tmp_path):
+def test_finding_statements_lists_only_importable_files(api, tmp_path, monkeypatch):
+    monkeypatch.setenv("FINANCES_IMPORT_ROOTS", str(tmp_path))
     (tmp_path / "cacu.csv").write_text("x")
     (tmp_path / "statement.qfx").write_text("x")
     (tmp_path / "holiday.jpg").write_text("x")
@@ -163,8 +166,9 @@ def test_finding_statements_lists_only_importable_files(api, tmp_path):
     assert api.calls == []
 
 
-def test_finding_statements_in_a_missing_directory_says_so(api):
-    result = server.find_statement_files("/nowhere/at/all")
+def test_finding_statements_in_a_missing_directory_says_so(api, tmp_path, monkeypatch):
+    monkeypatch.setenv("FINANCES_IMPORT_ROOTS", str(tmp_path))
+    result = server.find_statement_files(str(tmp_path / "nowhere"))
 
     assert result["status"] == 400
 
@@ -176,3 +180,77 @@ def test_date_filters_use_the_names_the_api_expects(api):
     query = str(api.last.url)
     assert "from=2026-08-01" in query
     assert "to=2026-08-31" in query
+
+
+class TestFileToolsStayInsideTheAllowedFolders:
+    """The first version would read and upload any file on the machine: /etc/hosts, a key, anything.
+
+    The person is not the threat. Statement descriptions are merchant-typed text that reaches the
+    model's context, and the model chooses the path.
+    """
+
+    def test_a_file_outside_every_root_is_refused_before_it_is_read(
+        self, api, tmp_path, monkeypatch
+    ):
+        monkeypatch.setenv("FINANCES_IMPORT_ROOTS", str(tmp_path / "allowed"))
+        (tmp_path / "allowed").mkdir()
+        outside = tmp_path / "elsewhere.csv"
+        outside.write_text("Date,Amount\n")
+
+        result = server.import_statement(str(outside))
+
+        assert result["status"] == 400
+        assert "outside the folders" in result["error"]
+        assert api.calls == []
+
+    def test_a_traversal_is_judged_on_where_it_lands(self, api, tmp_path, monkeypatch):
+        allowed = tmp_path / "allowed"
+        allowed.mkdir()
+        monkeypatch.setenv("FINANCES_IMPORT_ROOTS", str(allowed))
+        (tmp_path / "secret.csv").write_text("x")
+
+        result = server.import_statement(str(allowed / ".." / "secret.csv"))
+
+        assert result["status"] == 400
+        assert api.calls == []
+
+    def test_a_symlink_pointing_out_is_refused(self, api, tmp_path, monkeypatch):
+        allowed = tmp_path / "allowed"
+        allowed.mkdir()
+        monkeypatch.setenv("FINANCES_IMPORT_ROOTS", str(allowed))
+        target = tmp_path / "outside.csv"
+        target.write_text("x")
+        (allowed / "looks-fine.csv").symlink_to(target)
+
+        result = server.import_statement(str(allowed / "looks-fine.csv"))
+
+        assert result["status"] == 400
+        assert api.calls == []
+
+    def test_only_statement_suffixes_are_uploaded(self, api, tmp_path, monkeypatch):
+        monkeypatch.setenv("FINANCES_IMPORT_ROOTS", str(tmp_path))
+        (tmp_path / "id_rsa").write_text("x")
+
+        result = server.import_statement(str(tmp_path / "id_rsa"))
+
+        assert result["status"] == 400
+        assert "not a statement file" in result["error"]
+        assert api.calls == []
+
+    def test_listing_outside_the_roots_is_refused(self, api, tmp_path, monkeypatch):
+        monkeypatch.setenv("FINANCES_IMPORT_ROOTS", str(tmp_path / "allowed"))
+        (tmp_path / "allowed").mkdir()
+
+        result = server.find_statement_files("/etc")
+
+        assert result["status"] == 400
+        assert api.calls == []
+
+    def test_positions_import_is_guarded_the_same_way(self, api, tmp_path, monkeypatch):
+        monkeypatch.setenv("FINANCES_IMPORT_ROOTS", str(tmp_path / "allowed"))
+        (tmp_path / "allowed").mkdir()
+
+        result = server.import_positions("/etc/hosts")
+
+        assert result["status"] == 400
+        assert api.calls == []

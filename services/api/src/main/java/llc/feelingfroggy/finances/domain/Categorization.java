@@ -36,6 +36,15 @@ public class Categorization {
     @JoinColumn(name = "transaction_id", nullable = false)
     private Transaction transaction;
 
+    /**
+     * The owner, denormalized from the transaction so the composite tenant FKs (V7) can hold. Every
+     * other scoped table had this from V2; this one was built without it — the case V2's own
+     * header calls "expensive to retrofit once data exists" — and M3 has not written a row yet, so
+     * it was cheap after all.
+     */
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "suggested_category_id")
     private Category suggestedCategory;
@@ -174,5 +183,13 @@ public class Categorization {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }

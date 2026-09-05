@@ -9,6 +9,7 @@ import llc.feelingfroggy.finances.ai.ParseResult;
 import llc.feelingfroggy.finances.ai.PositionsResult;
 import llc.feelingfroggy.finances.domain.Account;
 import llc.feelingfroggy.finances.domain.Direction;
+import llc.feelingfroggy.finances.domain.DomainRuleViolation;
 import llc.feelingfroggy.finances.domain.Holding;
 import llc.feelingfroggy.finances.domain.ImportBatch;
 import llc.feelingfroggy.finances.domain.ImportFormat;
@@ -158,7 +159,7 @@ public class ImportService {
             // Nothing in the file says where these belong and the caller did not say either.
             // Failing is the only honest option; picking an account would be a guess about money.
             recorder.fail(batchId, "This file does not name an account, so one must be chosen.");
-            throw new IllegalStateException("This file does not name an account, so one must be chosen.");
+            throw new DomainRuleViolation("This file does not name an account, so one must be chosen.");
         }
 
         int applied = 0;
@@ -302,7 +303,7 @@ public class ImportService {
             // Without a date the snapshot cannot be keyed, and every later import would overwrite
             // this one instead of accumulating beside it. Refusing beats silently losing history.
             recorder.fail(batchId, "This file carries no 'as of' date, so the snapshot cannot be dated.");
-            throw new IllegalStateException(
+            throw new DomainRuleViolation(
                 "This file carries no 'as of' date, so the snapshot cannot be dated.");
         }
 
@@ -381,7 +382,7 @@ public class ImportService {
      * docs/SECURITY.md keeps schema detail and row content out of anything a client sees.
      */
     private static String reasonFor(RuntimeException e) {
-        if (e instanceof IllegalStateException && e.getMessage() != null) {
+        if (e instanceof DomainRuleViolation && e.getMessage() != null) {
             return e.getMessage();
         }
         if (e instanceof org.springframework.dao.DataIntegrityViolationException) {
@@ -449,6 +450,10 @@ public class ImportService {
         var statement = new Statement(userId, account,
             summary.periodStart() == null ? summary.periodEnd() : summary.periodStart(),
             summary.periodEnd(), summary.closingBalance());
+        // Without this, reconciliation can only sum the account's whole history against the
+        // closing balance — which reports a large, spurious difference for any account not
+        // imported from the day it opened. See v_statement_reconciliation.
+        statement.setOpeningBalance(summary.openingBalance());
         statement.setImportBatch(batch);
         statements.save(statement);
     }

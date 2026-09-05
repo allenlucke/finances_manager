@@ -65,3 +65,19 @@ def test_an_error_passes_through_unwrapped(api):
 
     assert result["status"] == 400
     assert "transactions" not in result
+
+
+def test_a_plain_object_is_returned_as_itself_not_as_one_transaction(api):
+    """len(dict) is a key count. Wrapping it produced {"transactions": {...}, "total": 1} — exactly
+    the trap the helper exists to prevent."""
+    api["value"] = {"ok": True, "note": "not a listing"}
+
+    result = server.list_transactions()
+
+    assert result == {"ok": True, "note": "not a listing"}
+
+
+def test_has_more_prefers_the_envelope_over_arithmetic(api):
+    api["value"] = {"content": [{"id": 1}], "totalElements": 1, "last": False}
+
+    assert server.list_transactions(page=0, size=50)["has_more"] is True

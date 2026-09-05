@@ -1,6 +1,7 @@
 package llc.feelingfroggy.finances.api;
 
 import java.time.Instant;
+import llc.feelingfroggy.finances.domain.DomainRuleViolation;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -64,12 +65,36 @@ public class ApiExceptionHandler {
         return problem;
     }
 
-    @ExceptionHandler(IllegalStateException.class)
-    ProblemDetail onIllegalState(IllegalStateException exception) {
-        // Domain invariants (e.g. categorizing a transfer) throw this with a readable message.
+    /** A rule of the domain said no, in words meant for the person. Returned verbatim. */
+    @ExceptionHandler(DomainRuleViolation.class)
+    ProblemDetail onRuleViolation(DomainRuleViolation exception) {
         var problem = ProblemDetail.forStatus(HttpStatus.UNPROCESSABLE_ENTITY);
         problem.setTitle("Not allowed");
         problem.setDetail(exception.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    /**
+     * An {@code IllegalStateException} is a fault, not a refusal.
+     *
+     * <p>This used to echo its message as a 422, on the assumption that only domain rules threw
+     * it. The JDK, Hibernate and Spring throw it for internal faults, and every one of those
+     * reached the client as a 422 carrying an internal message — while the handler above was
+     * carefully hiding constraint names. The cause is logged; the client gets a sentence with
+     * nothing in it.
+     *
+     * <p>Deliberately this one type and not {@code RuntimeException}: a blanket handler would take
+     * Spring MVC's own exceptions away from it — an unreadable request body is a 400 and must stay
+     * one. Everything not listed here falls through to Boot's default error handling, which does
+     * not include exception messages in responses.
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    ProblemDetail onFault(IllegalStateException exception) {
+        log.error("Unhandled fault", exception);
+        var problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        problem.setTitle("Something went wrong");
+        problem.setDetail("The request could not be completed. Nothing was saved.");
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }

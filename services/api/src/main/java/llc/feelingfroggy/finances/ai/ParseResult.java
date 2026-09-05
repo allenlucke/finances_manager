@@ -22,6 +22,13 @@ public record ParseResult(
     public record StatementSummary(
         @JsonProperty("period_start") LocalDate periodStart,
         @JsonProperty("period_end") LocalDate periodEnd,
+        /** The balance the period started from, when the file lets the parser derive it. */
+        @JsonProperty("opening_balance") BigDecimal openingBalance,
         @JsonProperty("closing_balance") BigDecimal closingBalance) {
+
+        /** The pre-opening-balance shape, for tests and older captured fixtures. */
+        public StatementSummary(LocalDate periodStart, LocalDate periodEnd, BigDecimal closingBalance) {
+            this(periodStart, periodEnd, null, closingBalance);
+        }
     }
 }

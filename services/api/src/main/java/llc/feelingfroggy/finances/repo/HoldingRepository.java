@@ -38,18 +38,26 @@ public interface HoldingRepository extends JpaRepository<Holding, Long> {
         join fetch h.security
         join fetch h.account
         where h.userId = :userId
-          and h.asOf = (select max(h2.asOf) from Holding h2 where h2.account.id = h.account.id)
+          and h.asOf = (select max(h2.asOf) from Holding h2
+                        where h2.account.id = h.account.id and h2.userId = :userId)
         order by h.account.id, h.marketValue desc
         """)
     List<Holding> findLatestForUser(@Param("userId") Long userId);
 
+    /**
+     * Scoped by owner in the query, like every other finder in this codebase. The first version
+     * filtered on the account alone and left the controller to discard other tenants' rows after
+     * fetching them — the exact thing {@code LedgerEntityRepository} explains it must not do.
+     */
     @Query("""
         select h from Holding h
         join fetch h.security
         join fetch h.account
-        where h.account.id = :accountId
-          and h.asOf = (select max(h2.asOf) from Holding h2 where h2.account.id = :accountId)
+        where h.account.id = :accountId and h.userId = :userId
+          and h.asOf = (select max(h2.asOf) from Holding h2
+                        where h2.account.id = :accountId and h2.userId = :userId)
         order by h.marketValue desc
         """)
-    List<Holding> findLatestForAccount(@Param("accountId") Long accountId);
+    List<Holding> findLatestForAccount(@Param("accountId") Long accountId,
+                                       @Param("userId") Long userId);
 }

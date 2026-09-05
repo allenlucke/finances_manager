@@ -184,4 +184,20 @@ class ImportIdentityTest extends PostgresIntegrationTest {
             .doesNotContainIgnoringCase("constraint")
             .doesNotContainIgnoringCase("null value");
     }
+
+    @Test
+    @DisplayName("a statement's opening balance is kept, so reconciliation has a baseline")
+    void openingBalanceReachesTheCheckpoint() {
+        var summary = new ParseResult.StatementSummary(LocalDate.of(2026, 8, 1),
+            LocalDate.of(2026, 8, 31), new BigDecimal("500.00"), new BigDecimal("415.69"));
+        when(aiService.parseCsv(any(), any(), any())).thenReturn(new ParseResult("cacu",
+            List.of(row("2026-08-14", "84.31", "debit", "KROGER", null, false, false)),
+            List.of(), summary));
+
+        imports.importStatement(userId, card, new byte[] {1}, "cacu.csv");
+
+        var stmt = jdbc.queryForMap("SELECT opening_balance, closing_balance FROM statement");
+        assertThat((BigDecimal) stmt.get("opening_balance")).isEqualByComparingTo("500.00");
+        assertThat((BigDecimal) stmt.get("closing_balance")).isEqualByComparingTo("415.69");
+    }
 }

@@ -44,4 +44,24 @@ public record LocalTokenProperties(String value, boolean loopbackOnly) {
     public boolean enabled() {
         return !value.isEmpty();
     }
+
+    /**
+     * Logged once at startup when the token is on and the in-process loopback check is off.
+     *
+     * <p>That combination is legitimate in Docker, where the check cannot work, and it is exactly
+     * the combination that makes the published port the entire boundary. The API cannot see how
+     * the port is published, so it cannot refuse; what it can do is make sure nobody reads the
+     * log later and says nothing warned them.
+     */
+    @jakarta.annotation.PostConstruct
+    void announce() {
+        if (enabled() && !loopbackOnly) {
+            org.slf4j.LoggerFactory.getLogger(LocalTokenProperties.class).warn("""
+                LOCAL_API_TOKEN is set and LOCAL_API_TOKEN_LOOPBACK_ONLY is false. The token \
+                authenticates as the owner and satisfies the passkey factor, and nothing in this \
+                process limits where it is accepted from: whatever address the API port is \
+                published on is exactly how far the token reaches. Keep BIND_ADDR on loopback or \
+                the Tailscale interface, never 0.0.0.0. See docs/SECURITY.md.""");
+        }
+    }
 }

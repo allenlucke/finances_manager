@@ -115,3 +115,30 @@ a wrong secret.
 
 Before real data goes in, there is a tested restore path. An untested backup is not a backup, and
 a personal ledger with three years of categorization corrections in it is genuinely irreplaceable.
+
+**What exists (2026-09-05):** `make backup` writes a `pg_dump` archive to `backups/` (gitignored).
+`make restore FILE=…` loads it into the throwaway e2e compose project — never the dev stack — and
+then compares row counts, table by table, against the live database. That comparison is the test:
+an archive that restores cleanly but is missing a table is precisely what "tested restore" is meant
+to catch, and it is invisible unless something counts. First run: 14 tables, all matched.
+
+**What does not exist yet:** encryption of the archive and an off-site copy. Those are the
+deployment half of D-16 and belong with the homelab setup. Until then `backups/` holds an
+unencrypted copy of the ledger and should be treated as such.
+
+## The AI service
+
+Runs as an unprivileged user on a pinned base image with dependencies installed from the lockfile
+(`--frozen`), and compose gives it a read-only filesystem, no capabilities and
+`no-new-privileges`. It still has no authentication of its own and no upload-size cap of its own;
+containment rests on it being unpublished and on the API's 10 MB limit in front of it. That is
+adequate while it is reachable only over the compose network, and is written down here so it is a
+known state rather than an assumption.
+
+## Reachability, in one variable
+
+`BIND_ADDR` in `.env` is where Docker publishes the web and API ports. Loopback means this machine.
+On the homelab it should be the Tailscale address and nothing else. Because the in-process loopback
+check on `LOCAL_API_TOKEN` cannot work inside a container, **that variable is also exactly how far
+the token reaches** — the API logs a warning at startup saying so whenever the token is on and the
+check is off.

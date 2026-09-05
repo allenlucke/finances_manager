@@ -1,0 +1,25 @@
+# Build context hygiene. Everything here is either an artifact the Dockerfile rebuilds, a
+# development-only tree, or a place real financial data might sit while being worked on.
+# .gitignore keeps those out of git; this keeps them out of image layers and the builder cache.
+.git
+.env
+.env.*
+statements/
+imports/
+data/
+*.csv
+*.ofx
+*.qfx
+*.qif
+*.pdf
+*.xls
+*.xlsx
+.DS_Store
+.idea
+.vscode
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+tests/

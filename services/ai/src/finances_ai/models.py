@@ -73,6 +73,12 @@ class StatementSummary(BaseModel):
 
     period_start: date | None = None
     period_end: date | None = None
+    # The balance the period STARTED from. Derived from a running-balance column (oldest row's
+    # balance minus that row's own movement) or read from the file. Load-bearing for
+    # reconciliation: without it the ledger can only be checked against the closing balance by
+    # summing every transaction since the account opened, which is wrong for any account whose
+    # history was not imported from day one — i.e. every real account, on its first import.
+    opening_balance: Decimal | None = None
     closing_balance: Decimal | None = Field(
         default=None,
         description="Signed per the project convention: negative means owed.",
