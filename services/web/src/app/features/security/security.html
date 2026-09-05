@@ -1,9 +1,12 @@
 <div class="page">
+  <h1 class="page-title">Sign-in security</h1>
   <mat-card>
     <mat-card-header>
-      <mat-card-title>Sign-in security</mat-card-title>
+      <mat-card-title><h2 class="card-title">Passkeys</h2></mat-card-title>
       <mat-card-subtitle>
-        @if (twoFactor()) {
+        @if (loadError()) {
+          <span class="state-error-inline">{{ loadError() }}</span>
+        } @else if (twoFactor()) {
           Passphrase and a passkey are both required
         } @else {
           Passphrase only
@@ -19,14 +22,16 @@
         </p>
       }
 
-      @if (!twoFactor()) {
+      @if (!twoFactor() && !loadError()) {
         <p class="muted">
           Adding a passkey turns on two-factor sign-in for this account immediately. A passkey is
           phishing-resistant — unlike a code from an app, it cannot be handed to a fake site.
         </p>
       }
 
-      @if (items().length === 0) {
+      @if (loadError()) {
+        <p class="state-error-inline" role="alert">{{ loadError() }} Reload to try again.</p>
+      } @else if (items().length === 0) {
         <p class="muted">No passkeys registered.</p>
       } @else {
         <div class="table-scroll">
@@ -95,7 +100,7 @@
 
   <mat-card class="add">
     <mat-card-header>
-      <mat-card-title>Add a passkey</mat-card-title>
+      <mat-card-title><h2 class="card-title">Add a passkey</h2></mat-card-title>
     </mat-card-header>
     <mat-card-content>
       <form [formGroup]="form" (ngSubmit)="add()">

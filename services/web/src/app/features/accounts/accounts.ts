@@ -5,14 +5,17 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiClient } from '../../core/api';
+import { LoadState } from '../../core/load-state';
 import { amountClass, money } from '../../core/money';
-import { Account, LedgerEntity } from '../../core/models';
+import { Account, Holding, LedgerEntity, NetWorthRow } from '../../core/models';
 
-/** Accounts and their balances, plus the form to add one. */
+/** Accounts and their balances, what each brokerage holds, and the form to add an account. */
 @Component({
   selector: 'app-accounts',
   imports: [
@@ -24,6 +27,8 @@ import { Account, LedgerEntity } from '../../core/models';
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
+    MatProgressBarModule,
+    MatTooltipModule,
   ],
   templateUrl: './accounts.html',
   styleUrl: './accounts.scss',
@@ -33,8 +38,10 @@ export class AccountsComponent {
   private readonly forms = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
 
-  protected readonly accounts = signal<Account[]>([]);
-  protected readonly entities = signal<LedgerEntity[]>([]);
+  protected readonly accounts = new LoadState<Account[]>('Could not load accounts.');
+  protected readonly entities = new LoadState<LedgerEntity[]>('Could not load the sets of books.');
+  protected readonly netWorth = new LoadState<NetWorthRow[]>('Could not load net worth.');
+  protected readonly holdings = new LoadState<Holding[]>('Could not load holdings.');
   protected readonly saving = signal(false);
   protected readonly money = money;
   protected readonly amountClass = amountClass;
@@ -55,6 +62,7 @@ export class AccountsComponent {
   ];
 
   protected readonly columns = ['name', 'type', 'entity', 'mask', 'balance'];
+  protected readonly holdingColumns = ['symbol', 'quantity', 'price', 'value', 'gain'];
 
   protected readonly form = this.forms.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(160)]],
@@ -65,13 +73,33 @@ export class AccountsComponent {
     mask: ['', [Validators.pattern(/^\d{0,4}$/)]],
   });
 
-  protected readonly total = computed(() =>
-    this.accounts().reduce((sum, account) => sum + Number(account.balance), 0),
+  /**
+   * From the API, not summed here. The first version did `reduce((sum, a) => sum + Number(a.balance))`
+   * in the browser — float arithmetic on money, forbidden by the model file's own comment, and a
+   * second net worth that could disagree with the dashboard's. The server has one figure, computed
+   * in NUMERIC(19,4); this shows it.
+   */
+  protected readonly combined = computed(
+    () => this.netWorth.value()?.find((row) => row.ledgerEntityId === null)?.netWorth ?? null,
   );
 
+  /** Holdings grouped by the account that holds them, in account order. */
+  protected readonly holdingsByAccount = computed(() => {
+    const byId = new Map<number, Holding[]>();
+    for (const holding of this.holdings.value() ?? []) {
+      byId.set(holding.accountId, [...(byId.get(holding.accountId) ?? []), holding]);
+    }
+    return (this.accounts.value() ?? [])
+      .filter((account) => byId.has(account.id))
+      .map((account) => ({
+        account,
+        asOf: byId.get(account.id)![0].asOf,
+        rows: byId.get(account.id)!,
+      }));
+  });
+
   constructor() {
-    this.api.entities().subscribe((entities) => {
-      this.entities.set(entities);
+    this.entities.run(this.api.entities(), (entities) => {
       const personal = entities.find((e) => e.kind === 'personal') ?? entities[0];
       if (personal) {
         this.form.patchValue({ ledgerEntityId: personal.id });
@@ -81,7 +109,7 @@ export class AccountsComponent {
   }
 
   protected entityName(id: number): string {
-    return this.entities().find((entity) => entity.id === id)?.name ?? '—';
+    return this.entities.value()?.find((entity) => entity.id === id)?.name ?? '—';
   }
 
   protected submit(): void {
@@ -101,12 +129,14 @@ export class AccountsComponent {
       .subscribe({
         next: () => {
           this.saving.set(false);
-          this.form.patchValue({ name: '', mask: '' });
-          this.form.markAsPristine();
+          // reset, not patchValue: patching leaves the controls touched, so "required" flashes
+          // red on a field the person just submitted successfully.
+          this.form.controls.name.reset('');
+          this.form.controls.mask.reset('');
           this.reload();
           this.snackBar.open('Account added', undefined, { duration: 2500 });
         },
-        error: (error) => {
+        error: (error: { status?: number }) => {
           this.saving.set(false);
           // 409 is the entity-scoped unique name constraint, which is a real answer rather than
           // a bug: two accounts in the same entity may not share a name.
@@ -122,6 +152,8 @@ export class AccountsComponent {
   }
 
   private reload(): void {
-    this.api.accounts().subscribe((accounts) => this.accounts.set(accounts));
+    this.accounts.run(this.api.accounts());
+    this.netWorth.run(this.api.netWorth());
+    this.holdings.run(this.api.holdings());
   }
 }

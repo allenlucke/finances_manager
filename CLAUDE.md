@@ -117,6 +117,11 @@ own, and is not part of the compose stack — Claude Code launches it.
   The parser reports them as two flags (`is_probable_transfer`, `is_probable_refund`) and the API
   only ever marks the first as a transfer. Folding them together made every refund uncategorizable
   forever and left the category overcharged.
+- **A failed request is never an empty state.** Four screens used to render "No accounts yet.
+  Add one" when the accounts request failed, and the dashboard turned a missing net worth into
+  `$0.00`. For someone with years of statements that is the worst possible message. Every request
+  sits behind `LoadState` (value / error / loading) and templates branch on all three; a bare
+  array plus a boolean cannot tell "nothing here" from "could not ask".
 - **Browser tests run on their own stack, never the dev one.** `make e2e` builds a separate compose
   project (`finances-e2e`, ports 4201/8081) with its own volume, and Playwright's defaults point
   there. The suite truncates, and a truncate against a database in use destroys real statements with

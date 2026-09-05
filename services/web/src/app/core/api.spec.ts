@@ -30,6 +30,10 @@ describe('ApiClient', () => {
         balance: -696.31,
         transactionCount: 2,
         lastActivity: '2026-08-16',
+        mask: '1234',
+        balanceSource: 'transactions',
+        balanceAsOf: null,
+        costBasis: null,
       },
     ];
 

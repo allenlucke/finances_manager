@@ -41,6 +41,12 @@ export class SecurityComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   protected readonly items = signal<RegisteredPasskey[]>([]);
+  /**
+   * Set when the list could not be fetched. Without it, a failed request rendered "No passkeys
+   * registered" and "Passphrase only" — the security screen asserting, in its own voice, that
+   * two-factor was off when it was on.
+   */
+  protected readonly loadError = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly supported = Passkeys.supported();
 
@@ -111,8 +117,9 @@ export class SecurityComponent {
   private async reload(): Promise<void> {
     try {
       this.items.set(await this.passkeys.list());
+      this.loadError.set(null);
     } catch {
-      this.items.set([]);
+      this.loadError.set('Could not check which passkeys are registered.');
     }
   }
 }

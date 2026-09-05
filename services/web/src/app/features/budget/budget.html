@@ -1,16 +1,20 @@
 <div class="page">
+  <h1 class="page-title">Budget</h1>
+
   <div class="grid">
     <mat-card>
       <mat-card-header>
-        <mat-card-title>Targets in effect</mat-card-title>
+        <mat-card-title><h2 class="card-title">Targets in effect</h2></mat-card-title>
         <mat-card-subtitle>
           Optional — set one only where you want to spend differently than you have been
         </mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        @if (activeTargets().length === 0) {
+        @if (targets.error()) {
+          <p class="state-error-inline" role="alert">{{ targets.error() }}</p>
+        } @else if (targets.value() && activeTargets().length === 0) {
           <p class="muted">No targets set. Spending is still tracked without them.</p>
-        } @else {
+        } @else if (targets.value()) {
           <div class="table-scroll">
             <table mat-table [dataSource]="activeTargets()">
               <tr mat-header-row *matHeaderRowDef="targetColumns"></tr>
@@ -28,7 +32,10 @@
               </ng-container>
               <ng-container matColumnDef="amount">
                 <th mat-header-cell *matHeaderCellDef class="amount">Amount</th>
-                <td mat-cell *matCellDef="let row" class="amount">{{ money(row.amount) }}</td>
+                <td mat-cell *matCellDef="let row" class="amount">
+                  {{ money(row.amount) }}
+                  <span class="muted"> {{ cadenceLabel(row.cadence) }}</span>
+                </td>
               </ng-container>
               <ng-container matColumnDef="from">
                 <th mat-header-cell *matHeaderCellDef>Since</th>
@@ -61,7 +68,10 @@
                 </ng-container>
                 <ng-container matColumnDef="amount">
                   <th mat-header-cell *matHeaderCellDef class="amount">Amount</th>
-                  <td mat-cell *matCellDef="let row" class="amount">{{ money(row.amount) }}</td>
+                  <td mat-cell *matCellDef="let row" class="amount">
+                    {{ money(row.amount) }}
+                    <span class="muted"> {{ cadenceLabel(row.cadence) }}</span>
+                  </td>
                 </ng-container>
                 <ng-container matColumnDef="from">
                   <th mat-header-cell *matHeaderCellDef>From</th>
@@ -82,13 +92,15 @@
 
     <div class="forms">
       <mat-card>
-        <mat-card-header><mat-card-title>Set a target</mat-card-title></mat-card-header>
+        <mat-card-header>
+          <mat-card-title><h2 class="card-title">Set a target</h2></mat-card-title>
+        </mat-card-header>
         <mat-card-content>
           <form [formGroup]="targetForm" (ngSubmit)="setTarget()">
             <mat-form-field appearance="outline">
               <mat-label>Category</mat-label>
               <mat-select formControlName="categoryId">
-                @for (category of categories(); track category.id) {
+                @for (category of categories.value() ?? []; track category.id) {
                   <mat-option [value]="category.id">{{ category.name }}</mat-option>
                 }
               </mat-select>
@@ -96,15 +108,31 @@
             <mat-form-field appearance="outline">
               <mat-label>Books</mat-label>
               <mat-select formControlName="ledgerEntityId">
-                @for (entity of entities(); track entity.id) {
+                @for (entity of entities.value() ?? []; track entity.id) {
                   <mat-option [value]="entity.id">{{ entity.name }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>
             <mat-form-field appearance="outline">
-              <mat-label>Monthly amount</mat-label>
+              <mat-label>Amount</mat-label>
               <input matInput formControlName="amount" inputmode="decimal" placeholder="0.00" />
               <span matTextPrefix>$&nbsp;</span>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Per</mat-label>
+              <mat-select formControlName="cadence">
+                @for (cadence of cadences; track cadence.value) {
+                  <mat-option [value]="cadence.value">{{ cadence.label }}</mat-option>
+                }
+              </mat-select>
+              <mat-hint>Compared to spending as a monthly figure</mat-hint>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Starting</mat-label>
+              <input matInput [matDatepicker]="fromPicker" formControlName="effectiveFrom" />
+              <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
+              <mat-datepicker #fromPicker></mat-datepicker>
+              <mat-hint>Governs the month it starts in</mat-hint>
             </mat-form-field>
             <button
               mat-flat-button
@@ -119,7 +147,9 @@
       </mat-card>
 
       <mat-card>
-        <mat-card-header><mat-card-title>Add a category</mat-card-title></mat-card-header>
+        <mat-card-header>
+          <mat-card-title><h2 class="card-title">Add a category</h2></mat-card-title>
+        </mat-card-header>
         <mat-card-content>
           <form [formGroup]="categoryForm" (ngSubmit)="addCategory()">
             <mat-form-field appearance="outline">
@@ -145,13 +175,15 @@
 
   <mat-card class="history-card">
     <mat-card-header>
-      <mat-card-title>Categories</mat-card-title>
+      <mat-card-title><h2 class="card-title">Categories</h2></mat-card-title>
       <mat-card-subtitle> Most need no target — spending is tracked either way </mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
-      @if (sortedCategories().length === 0) {
+      @if (categories.error()) {
+        <p class="state-error-inline" role="alert">{{ categories.error() }}</p>
+      } @else if (categories.isEmpty()) {
         <p class="muted">No categories yet. Add one to start classifying spending.</p>
-      } @else {
+      } @else if (categories.value()) {
         <div class="table-scroll">
           <table mat-table [dataSource]="sortedCategories()">
             <tr mat-header-row *matHeaderRowDef="categoryColumns"></tr>
@@ -173,15 +205,17 @@
 
   <mat-card class="history-card">
     <mat-card-header>
-      <mat-card-title>Spending by month</mat-card-title>
+      <mat-card-title><h2 class="card-title">Spending by month</h2></mat-card-title>
       <mat-card-subtitle
         >Card payments and transfers are excluded — they are not spending</mat-card-subtitle
       >
     </mat-card-header>
     <mat-card-content>
-      @if (recentSpend().length === 0) {
+      @if (spend.error()) {
+        <p class="state-error-inline" role="alert">{{ spend.error() }}</p>
+      } @else if (spend.value() && recentSpend().length === 0) {
         <p class="muted">Nothing categorized yet.</p>
-      } @else {
+      } @else if (spend.value()) {
         <div class="table-scroll">
           <table mat-table [dataSource]="recentSpend()">
             <tr mat-header-row *matHeaderRowDef="historyColumns"></tr>
@@ -200,7 +234,7 @@
               <td mat-cell *matCellDef="let row" class="amount">{{ money(row.netAmount) }}</td>
             </ng-container>
             <ng-container matColumnDef="target">
-              <th mat-header-cell *matHeaderCellDef class="amount">Target</th>
+              <th mat-header-cell *matHeaderCellDef class="amount">Target / month</th>
               <td mat-cell *matCellDef="let row" class="amount muted">
                 {{ row.targetAmount === null ? '—' : money(row.targetAmount) }}
               </td>
@@ -216,4 +250,44 @@
       }
     </mat-card-content>
   </mat-card>
+
+  @if (recentIncome().length) {
+    <mat-card class="history-card">
+      <mat-card-header>
+        <mat-card-title><h2 class="card-title">Income by month</h2></mat-card-title>
+        <mat-card-subtitle
+          >Received against what was expected, where a target is set</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        <div class="table-scroll">
+          <table mat-table [dataSource]="recentIncome()">
+            <tr mat-header-row *matHeaderRowDef="incomeColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: incomeColumns"></tr>
+
+            <ng-container matColumnDef="month">
+              <th mat-header-cell *matHeaderCellDef>Month</th>
+              <td mat-cell *matCellDef="let row" class="nowrap">{{ monthLabel(row.month) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="category">
+              <th mat-header-cell *matHeaderCellDef>Category</th>
+              <td mat-cell *matCellDef="let row">{{ row.categoryName }}</td>
+            </ng-container>
+            <ng-container matColumnDef="received">
+              <th mat-header-cell *matHeaderCellDef class="amount">Received</th>
+              <!-- The view flips sign so that "spent" is positive; income therefore arrives
+                   negative. Shown as the positive figure it is. -->
+              <td mat-cell *matCellDef="let row" class="amount">{{ money(-row.netAmount) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="expected">
+              <th mat-header-cell *matHeaderCellDef class="amount">Expected / month</th>
+              <td mat-cell *matCellDef="let row" class="amount muted">
+                {{ row.targetAmount === null ? '—' : money(row.targetAmount) }}
+              </td>
+            </ng-container>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
 </div>

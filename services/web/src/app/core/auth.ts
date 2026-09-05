@@ -87,13 +87,29 @@ export class Auth {
     this.router.navigate(['/login']);
   }
 
+  /**
+   * Signs out locally whatever the server says.
+   *
+   * <p>The logout request can fail — an expired CSRF token after a long session, an API restart,
+   * a dropped connection — and the button used to do nothing at all in that case: no navigation,
+   * no message, still "signed in" on screen. Clearing local state unconditionally means the person
+   * is out of the app either way; the server session, if it survived, expires on its own.
+   */
   logout() {
-    this.api.logout().subscribe({
-      next: () => {
-        this._user.set(null);
-        this._state.set('anonymous');
-        this.router.navigate(['/login']);
-      },
-    });
+    const done = () => {
+      this._user.set(null);
+      this._state.set('anonymous');
+      this.router.navigate(['/login']);
+    };
+    this.api.logout().subscribe({ next: done, error: done });
+  }
+
+  /** Where to go after a successful sign-in: the page that bounced us here, or the dashboard. */
+  landingUrl(): string {
+    const requested = this.router.parseUrl(this.router.url).queryParams['returnUrl'];
+    // Only a path within this app. A full URL here would be an open redirect.
+    return typeof requested === 'string' && requested.startsWith('/') && !requested.startsWith('//')
+      ? requested
+      : '/dashboard';
   }
 }

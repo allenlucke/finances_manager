@@ -43,19 +43,33 @@ export function monthLabel(iso: string): string {
   });
 }
 
-/** ISO yyyy-mm-dd for a Date, in local time — these are calendar dates, not instants. */
-export function isoDate(date: Date): string {
+/**
+ * ISO yyyy-mm-dd for a Date, in local time — these are calendar dates, not instants.
+ *
+ * <p>Returns null for anything that is not a real date. A datepicker writes `null` into its
+ * control when the text is cleared and an `Invalid Date` when it is mistyped; the previous
+ * version threw on the first (inside a `valueChanges` subscription, which tore the subscription
+ * down for good and left a spinner running forever) and produced `NaN-NaN-NaN` on the second.
+ */
+export function isoDate(date: Date | null | undefined): string | null {
+  if (!(date instanceof Date) || !Number.isFinite(date.getTime())) {
+    return null;
+  }
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
   const day = `${date.getDate()}`.padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
-export function firstOfThisMonth(): string {
-  const now = new Date();
-  return isoDate(new Date(now.getFullYear(), now.getMonth(), 1));
+/**
+ * The two clock reads take an optional `now`, so a component can hold the moment it loaded in a
+ * signal and re-evaluate on refresh — a `computed` over a bare `new Date()` evaluates once and a
+ * dashboard left open across a month boundary kept showing the old month.
+ */
+export function firstOfThisMonth(now: Date = new Date()): string {
+  return isoDate(new Date(now.getFullYear(), now.getMonth(), 1))!;
 }
 
-export function today(): string {
-  return isoDate(new Date());
+export function today(now: Date = new Date()): string {
+  return isoDate(now)!;
 }

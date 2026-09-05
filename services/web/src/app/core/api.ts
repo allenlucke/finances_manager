@@ -6,6 +6,7 @@ import {
   Category,
   CategoryKind,
   CreateTransaction,
+  Holding,
   ImportResult,
   LedgerEntity,
   Me,
@@ -96,6 +97,8 @@ export class ApiClient {
     categoryId: number;
     ledgerEntityId: number;
     amount: string;
+    /** weekly, monthly, quarterly or yearly. The server normalizes it to a monthly figure. */
+    cadence?: string;
     effectiveFrom?: string;
     note?: string | null;
   }): Observable<Target> {
@@ -132,6 +135,24 @@ export class ApiClient {
     return this.http.delete<void>(`${this.base}/transactions/${id}`);
   }
 
+  /** What has been deleted, newest deletion first — there is always something to restore from. */
+  deletedTransactions(page = 0, size = 100): Observable<Transaction[]> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<Transaction[]>(`${this.base}/transactions/deleted`, { params });
+  }
+
+  /** Undo a delete. Brings back every leg the same delete removed. */
+  restoreTransaction(id: number): Observable<Transaction[]> {
+    return this.http.post<Transaction[]>(`${this.base}/transactions/${id}/restore`, {});
+  }
+
+  // --- holdings ---
+
+  /** Every account's latest positions snapshot, largest position first. */
+  holdings(): Observable<Holding[]> {
+    return this.http.get<Holding[]>(`${this.base}/holdings`);
+  }
+
   // --- imports ---
 
   /**
@@ -146,6 +167,13 @@ export class ApiClient {
     form.append('accountId', String(accountId));
     form.append('file', file);
     return this.http.post<ImportResult>(`${this.base}/imports`, form);
+  }
+
+  /** Uploads a brokerage positions export — a holdings snapshot, not a transaction history. */
+  importPositions(file: File): Observable<ImportResult> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<ImportResult>(`${this.base}/imports/positions`, form);
   }
 
   imports(): Observable<ImportResult[]> {

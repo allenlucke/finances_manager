@@ -13,17 +13,12 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiClient } from '../../core/api';
-import {
-  Account,
-  ImportResult,
-  LedgerEntity,
-  Transaction,
-  UnlinkedAccount,
-} from '../../core/models';
+import { LoadState } from '../../core/load-state';
+import { Account, ImportResult, LedgerEntity, Page, Transaction } from '../../core/models';
 import { amountClass, money } from '../../core/money';
 
 /**
- * Statement import, and the queue of rows it could not categorize.
+ * Statement import, positions import, and the queue of rows the importer could not categorize.
  *
  * <p>The result is reported as applied-versus-duplicate rather than a bare success, because the
  * interesting answer when you re-import an overlapping statement is "nothing changed" — and a
@@ -53,14 +48,29 @@ export class ImportComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   protected readonly accounts = signal<Account[]>([]);
-  protected readonly batches = signal<ImportResult[]>([]);
-  protected readonly review = signal<Transaction[]>([]);
-  protected readonly categories = signal<{ id: number; name: string }[]>([]);
   protected readonly entities = signal<LedgerEntity[]>([]);
+  protected readonly categories = signal<{ id: number; name: string }[]>([]);
+  protected readonly batches = new LoadState<ImportResult[]>('Could not load import history.');
+  protected readonly reviewPage = new LoadState<Page<Transaction>>(
+    'Could not load the review queue.',
+  );
+  protected readonly review = computed(() => this.reviewPage.value()?.content ?? []);
+  protected readonly reviewTotal = computed(() => this.reviewPage.value()?.totalElements ?? 0);
+
   protected readonly linking = signal(false);
   protected readonly file = signal<File | null>(null);
+  protected readonly positionsFile = signal<File | null>(null);
   protected readonly busy = signal(false);
   protected readonly lastResult = signal<ImportResult | null>(null);
+
+  /**
+   * The file inputs, kept so they can be cleared after an upload. A file input fires `change`
+   * only when its value changes, so after importing `cacu.csv` choosing `cacu.csv` again did
+   * nothing at all: the signal stayed null and the button stayed disabled. Re-importing the same
+   * file is a supported, common operation.
+   */
+  private statementInput: HTMLInputElement | null = null;
+  private positionsInput: HTMLInputElement | null = null;
 
   protected readonly money = money;
   protected readonly amountClass = amountClass;
@@ -73,6 +83,12 @@ export class ImportComponent {
   });
 
   protected readonly canUpload = computed(() => !!this.file() && !this.busy());
+  protected readonly canUploadPositions = computed(() => !!this.positionsFile() && !this.busy());
+
+  /** The set of books new accounts land in: personal, which is what an import of yours means. */
+  protected readonly defaultEntity = computed<LedgerEntity | undefined>(
+    () => this.entities().find((entity) => entity.kind === 'personal') ?? this.entities()[0],
+  );
 
   constructor() {
     this.api.accounts().subscribe((accounts) => {
@@ -97,7 +113,15 @@ export class ImportComponent {
 
   protected chooseFile(event: Event): void {
     const input = event.target as HTMLInputElement;
+    this.statementInput = input;
     this.file.set(input.files?.[0] ?? null);
+    this.lastResult.set(null);
+  }
+
+  protected choosePositions(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.positionsInput = input;
+    this.positionsFile.set(input.files?.[0] ?? null);
     this.lastResult.set(null);
   }
 
@@ -113,8 +137,9 @@ export class ImportComponent {
         this.busy.set(false);
         this.lastResult.set(result);
         // The file is kept when accounts still need creating, so the retry can reuse it.
-        if (!result.unlinkedAccounts?.length) {
+        if (!result.unlinkedAccounts.length) {
           this.file.set(null);
+          if (this.statementInput) this.statementInput.value = '';
         }
         this.reload();
         this.snackBar.open(
@@ -125,15 +150,40 @@ export class ImportComponent {
           { duration: 6000 },
         );
       },
-      error: (error) => {
+      error: (error: { status?: number; error?: { detail?: string } }) => {
         this.busy.set(false);
+        this.snackBar.open(failureMessage(error), undefined, { duration: 7000 });
+        this.reload();
+      },
+    });
+  }
+
+  /** A positions export is a snapshot of holdings, not a statement; it never touches the ledger. */
+  protected uploadPositions(): void {
+    const chosen = this.positionsFile();
+    if (!chosen || this.busy()) {
+      return;
+    }
+    this.busy.set(true);
+
+    this.api.importPositions(chosen).subscribe({
+      next: (result) => {
+        this.busy.set(false);
+        this.lastResult.set(result);
+        if (!result.unlinkedAccounts.length) {
+          this.positionsFile.set(null);
+          if (this.positionsInput) this.positionsInput.value = '';
+        }
+        this.reload();
         this.snackBar.open(
-          error?.status === 422
-            ? 'That file could not be parsed. Check it is the CSV your bank exported.'
-            : 'The import failed.',
+          `Holdings recorded: ${result.appliedCount} new position(s), ${result.duplicateCount} updated.`,
           undefined,
           { duration: 6000 },
         );
+      },
+      error: (error: { status?: number; error?: { detail?: string } }) => {
+        this.busy.set(false);
+        this.snackBar.open(failureMessage(error), undefined, { duration: 7000 });
         this.reload();
       },
     });
@@ -148,11 +198,11 @@ export class ImportComponent {
    */
   protected async createAndRetry(): Promise<void> {
     const result = this.lastResult();
-    const chosen = this.file();
-    const entity = this.entities()[0];
+    const entity = this.defaultEntity();
     if (!result?.unlinkedAccounts.length || !entity || this.linking()) {
       return;
     }
+    const positions = this.positionsFile() !== null && this.file() === null;
 
     this.linking.set(true);
     try {
@@ -160,8 +210,7 @@ export class ImportComponent {
         await firstValueFrom(
           this.api.createAccount({
             name: unlinked.name?.trim() || `Account ending ${unlinked.mask ?? '????'}`,
-            // Type is a guess the user can correct; getting the rows in matters more than the label.
-            accountType: 'checking',
+            accountType: guessType(result.filename, positions),
             ledgerEntityId: entity.id,
             mask: unlinked.mask,
             // The link, so this import — and every later one — matches exactly.
@@ -171,7 +220,9 @@ export class ImportComponent {
       }
       this.api.accounts().subscribe((accounts) => this.accounts.set(accounts));
 
-      if (chosen) {
+      if (positions) {
+        this.uploadPositions();
+      } else if (this.file()) {
         // Safe to repeat: rows already present come back as duplicates.
         this.upload();
       } else {
@@ -189,14 +240,37 @@ export class ImportComponent {
   protected categorize(row: Transaction, categoryId: number | null): void {
     this.api.categorize(row.id, categoryId).subscribe({
       next: () => this.reload(),
-      error: () => this.snackBar.open('Could not set the category.', undefined, { duration: 4000 }),
+      error: () => {
+        this.snackBar.open('Could not set the category.', undefined, { duration: 4000 });
+        this.reload();
+      },
     });
   }
 
   private reload(): void {
-    this.api.imports().subscribe((batches) => this.batches.set(batches));
+    this.batches.run(this.api.imports());
     // The queue is only ever uncategorized, non-transfer rows: an uncategorized transfer is
     // correct, not pending.
-    this.api.needsReview(0, 100).subscribe((page) => this.review.set(page.content));
+    this.reviewPage.run(this.api.needsReview(0, 100));
   }
+}
+
+/** The best type for an account a file named. Brokerage exports name brokerage accounts. */
+function guessType(filename: string | null, positions: boolean): string {
+  const name = (filename ?? '').toLowerCase();
+  if (positions || name.includes('accounts_history') || name.includes('portfolio')) {
+    return 'brokerage';
+  }
+  return 'checking';
+}
+
+/** What to tell the person. The API's own sentence when it wrote one; a plain one otherwise. */
+function failureMessage(error: { status?: number; error?: { detail?: string } }): string {
+  if (error?.status === 422) {
+    return (
+      error.error?.detail ||
+      'That file could not be read. Check it is the export your institution produced.'
+    );
+  }
+  return 'The import failed. Nothing was saved.';
 }

@@ -1,12 +1,40 @@
 <div class="page">
+  <div class="page-head">
+    <h1 class="page-title">Dashboard</h1>
+    <button
+      mat-icon-button
+      type="button"
+      (click)="refresh()"
+      aria-label="Refresh"
+      matTooltip="Refresh"
+      [disabled]="loading()"
+    >
+      <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">refresh</mat-icon>
+    </button>
+  </div>
+
   @if (loading()) {
     <mat-progress-bar mode="indeterminate" aria-label="Loading dashboard"></mat-progress-bar>
+  }
+
+  @if (anyError().length) {
+    <div class="state-error" role="alert">
+      <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">error</mat-icon>
+      <div>
+        @for (message of anyError(); track message) {
+          <div>{{ message }}</div>
+        }
+        <div class="muted">Figures below may be incomplete. Refresh to try again.</div>
+      </div>
+    </div>
   }
 
   <section class="net-worth">
     <mat-card>
       <mat-card-content>
         <div class="muted">Net worth</div>
+        <!-- money(null) is a dash. This used to fall back to 0, which rendered a confident $0.00
+             when the request failed — the same class of bug as "Invalid Date". -->
         <div class="headline" [class]="amountClass(combined())">{{ money(combined()) }}</div>
         <div class="entity-split">
           @for (entity of perEntity(); track entity.name) {
@@ -32,8 +60,27 @@
         </p>
         @for (row of unreconciled(); track row.statementId) {
           <div class="alert-row">
-            <span>Period ending {{ row.periodEnd }}</span>
+            <span>
+              <strong>{{ accountName(row.accountId) }}</strong>
+              <span class="muted"> · period ending {{ row.periodEnd }}</span>
+              @if (row.baseline === 'full_history') {
+                <span
+                  class="muted"
+                  matTooltip="This statement carried no opening balance, so the ledger was summed from the beginning. A difference here may only mean the account's earlier history was never imported."
+                >
+                  · summed from the beginning
+                </span>
+              }
+            </span>
             <span [class]="amountClass(row.difference)">{{ money(row.difference) }}</span>
+            <a
+              mat-button
+              [routerLink]="['/transactions']"
+              [queryParams]="{ from: row.periodStart, to: row.periodEnd }"
+              [attr.aria-label]="'Review ' + accountName(row.accountId) + ' for this period'"
+            >
+              Review
+            </a>
           </div>
         }
       </mat-card-content>
@@ -43,13 +90,15 @@
   <div class="grid">
     <mat-card>
       <mat-card-header>
-        <mat-card-title>Accounts</mat-card-title>
+        <mat-card-title><h2 class="card-title">Accounts</h2></mat-card-title>
         <mat-card-subtitle>Negative means owed</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        @if (activeAccounts().length === 0) {
+        @if (accounts.error()) {
+          <p class="state-error-inline">{{ accounts.error() }}</p>
+        } @else if (accounts.isEmpty()) {
           <p class="muted">No accounts yet. <a routerLink="/accounts">Add one</a> to start.</p>
-        } @else {
+        } @else if (accounts.value()) {
           <div class="table-scroll">
             <table mat-table [dataSource]="activeAccounts()">
               <tr mat-header-row *matHeaderRowDef="accountColumns"></tr>
@@ -57,7 +106,12 @@
 
               <ng-container matColumnDef="name">
                 <th mat-header-cell *matHeaderCellDef>Account</th>
-                <td mat-cell *matCellDef="let account">{{ account.name }}</td>
+                <td mat-cell *matCellDef="let account">
+                  {{ account.name }}
+                  @if (account.balanceSource === 'holdings') {
+                    <span class="muted as-of"> as of {{ account.balanceAsOf }}</span>
+                  }
+                </td>
               </ng-container>
 
               <ng-container matColumnDef="type">
@@ -81,13 +135,13 @@
 
     <mat-card>
       <mat-card-header>
-        <mat-card-title>Spending</mat-card-title>
-        <!-- The card always shows the current month, so the label is known without any rows.
-             Reading it off the first row meant an empty month had no label at all. -->
+        <mat-card-title><h2 class="card-title">Spending</h2></mat-card-title>
         <mat-card-subtitle>{{ currentMonthLabel() }}</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        @if (thisMonth().length === 0) {
+        @if (spend.error()) {
+          <p class="state-error-inline">{{ spend.error() }}</p>
+        } @else if (thisMonth().length === 0 && !spend.loading()) {
           <p class="muted">
             Nothing categorized this month yet.
             <a routerLink="/transactions">Add a transaction</a>.
@@ -97,15 +151,9 @@
             <div class="spend-row">
               <div class="spend-head">
                 <span>{{ row.categoryName }}</span>
-                <span
-                  [class]="
-                    row.targetAmount
-                      ? overBudget(row)
-                        ? 'amount amount--negative'
-                        : 'amount'
-                      : 'amount'
-                  "
-                >
+                <!-- A spend figure is positive; "over budget" is a state, not a sign. It gets its
+                     own class rather than borrowing the one that means "negative amount". -->
+                <span class="amount" [class.amount--over]="overBudget(row)">
                   {{ money(row.netAmount) }}
                   @if (row.targetAmount) {
                     <span class="muted"> / {{ money(row.targetAmount) }}</span>
@@ -118,8 +166,13 @@
                   [class.over-budget]="overBudget(row)"
                   [attr.aria-label]="row.categoryName + ' budget used'"
                 ></mat-progress-bar>
-                @if (overBudget(row)) {
-                  <div class="over muted">{{ money(-row.remaining!) }} over</div>
+                @if (overBudget(row) && row.remaining !== null) {
+                  <div class="over">
+                    <mat-icon aria-hidden="true" fontSet="material-symbols-outlined"
+                      >warning</mat-icon
+                    >
+                    {{ money(-row.remaining) }} over
+                  </div>
                 }
               } @else {
                 <div class="muted no-target">No target set</div>

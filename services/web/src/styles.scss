@@ -92,3 +92,101 @@ body {
 .over-budget .mdc-linear-progress__bar-inner {
   border-color: var(--mat-sys-error);
 }
+
+// --- Structure --------------------------------------------------------------------------------
+// Every page has an <h1> and every card a <h2>. mat-card-title renders a div, so without these
+// the app had no heading elements at all and screen-reader heading navigation was impossible.
+.page-title {
+  font:
+    500 1.35rem / 1.2 Roboto,
+    sans-serif;
+  margin: 0 0 1rem;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  .page-title {
+    margin: 0;
+  }
+}
+
+// A heading inside a card title inherits the card's typography rather than imposing its own.
+.card-title {
+  font: inherit;
+  margin: 0;
+}
+
+// --- States -----------------------------------------------------------------------------------
+// A failed request is not an empty ledger. These are what a screen shows when it could not load,
+// as opposed to the muted "nothing here yet" copy for a genuine empty state.
+.state-error {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  background: var(--mat-sys-error-container, #fde7e7);
+  color: var(--mat-sys-on-error-container, #7f1d1d);
+}
+
+.state-error-inline {
+  color: var(--mat-sys-error, #b3261e);
+}
+
+// --- Money semantics ----------------------------------------------------------------------------
+// Over budget is a state, not a sign. Spend figures are positive, so borrowing .amount--negative
+// for "over" put a positive number in red — the one screen where colour carried a meaning the
+// sign did not. This class carries the state, and the "$X over" line beside it carries the words.
+.amount--over {
+  color: var(--mat-sys-error, #b3261e);
+  font-weight: 500;
+}
+
+.over {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--mat-sys-error, #b3261e);
+  font-size: 0.85rem;
+
+  mat-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+// Which account a transfer moved to, as text beside the row rather than a mouse-only tooltip.
+.transfer-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--mat-sys-on-surface-variant, #666);
+
+  mat-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.as-of {
+  font-size: 0.78rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

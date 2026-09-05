@@ -1,4 +1,4 @@
-import { amountClass, isoDate, money, monthLabel } from './money';
+import { amountClass, firstOfThisMonth, isoDate, money, monthLabel, today } from './money';
 
 describe('money formatting', () => {
   it('always shows the sign, so colour is never the only cue', () => {
@@ -39,5 +39,21 @@ describe('money formatting', () => {
   it('formats a Date as a local calendar date', () => {
     expect(isoDate(new Date(2026, 7, 14))).toBe('2026-08-14');
     expect(isoDate(new Date(2026, 0, 1))).toBe('2026-01-01');
+  });
+
+  it('isoDate refuses anything that is not a real date', () => {
+    // A datepicker writes null when its text is cleared and an Invalid Date when mistyped. The
+    // old version threw on the first — inside a valueChanges subscription, which tore it down for
+    // good — and produced "NaN-NaN-NaN" for the second.
+    expect(isoDate(null)).toBeNull();
+    expect(isoDate(undefined)).toBeNull();
+    expect(isoDate(new Date('not a date'))).toBeNull();
+    expect(isoDate(new Date(2026, 7, 14))).toBe('2026-08-14');
+  });
+
+  it('the clock reads accept a moment, so a refresh can move the month', () => {
+    const september = new Date(2026, 8, 3);
+    expect(firstOfThisMonth(september)).toBe('2026-09-01');
+    expect(today(september)).toBe('2026-09-03');
   });
 });

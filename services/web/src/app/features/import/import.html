@@ -1,44 +1,95 @@
 <div class="page">
-  <mat-card>
-    <mat-card-header>
-      <mat-card-title>Import a statement</mat-card-title>
-      <mat-card-subtitle>CSV, OFX or QFX. Importing the same file twice is safe.</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      @if (busy()) {
-        <mat-progress-bar mode="indeterminate" aria-label="Importing"></mat-progress-bar>
-      }
+  <h1 class="page-title">Import</h1>
 
-      <form [formGroup]="form" (ngSubmit)="upload()" class="upload">
-        <mat-form-field appearance="outline">
-          <mat-label>Account</mat-label>
-          <mat-select formControlName="accountId">
-            @for (account of accounts(); track account.id) {
-              <mat-option [value]="account.id">{{ account.name }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+  <div class="grid">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title><h2 class="card-title">Statement</h2></mat-card-title>
+        <mat-card-subtitle
+          >CSV, OFX or QFX. Importing the same file twice is safe.</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        @if (busy()) {
+          <mat-progress-bar mode="indeterminate" aria-label="Importing"></mat-progress-bar>
+        }
 
+        <form [formGroup]="form" (ngSubmit)="upload()" class="upload">
+          <mat-form-field appearance="outline">
+            <mat-label>Account</mat-label>
+            <mat-select formControlName="accountId">
+              @for (account of accounts(); track account.id) {
+                <mat-option [value]="account.id">{{ account.name }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint>Ignored for exports that name an account on every row</mat-hint>
+          </mat-form-field>
+
+          <div class="file-picker">
+            <button mat-stroked-button type="button" (click)="fileInput.click()">
+              <mat-icon aria-hidden="true" fontSet="material-symbols-outlined"
+                >upload_file</mat-icon
+              >
+              Choose file
+            </button>
+            <input
+              #fileInput
+              type="file"
+              accept=".csv,.ofx,.qfx,text/csv"
+              hidden
+              (change)="chooseFile($event)"
+              aria-label="Statement file"
+            />
+            <span class="muted">{{ file()?.name ?? 'No file chosen' }}</span>
+          </div>
+
+          <button mat-flat-button type="submit" [disabled]="!canUpload()">Import</button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title><h2 class="card-title">Brokerage positions</h2></mat-card-title>
+        <mat-card-subtitle>
+          A holdings snapshot, not a statement — it records what you own, not money moving
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <p class="muted">
+          After the first snapshot a brokerage account is valued at what its holdings are worth,
+          rather than at the cash paid in. Import a fresh one to update the figure.
+        </p>
         <div class="file-picker">
-          <button mat-stroked-button type="button" (click)="fileInput.click()">
+          <button mat-stroked-button type="button" (click)="positionsInput.click()">
             <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">upload_file</mat-icon>
-            Choose file
+            Choose positions file
           </button>
           <input
-            #fileInput
+            #positionsInput
             type="file"
-            accept=".csv,.ofx,.qfx,text/csv"
+            accept=".csv,text/csv"
             hidden
-            (change)="chooseFile($event)"
-            aria-label="Statement file"
+            (change)="choosePositions($event)"
+            aria-label="Positions file"
           />
-          <span class="muted">{{ file()?.name ?? 'No file chosen' }}</span>
+          <span class="muted">{{ positionsFile()?.name ?? 'No file chosen' }}</span>
         </div>
+        <button
+          mat-flat-button
+          type="button"
+          (click)="uploadPositions()"
+          [disabled]="!canUploadPositions()"
+        >
+          Import positions
+        </button>
+      </mat-card-content>
+    </mat-card>
+  </div>
 
-        <button mat-flat-button type="submit" [disabled]="!canUpload()">Import</button>
-      </form>
-
-      @if (lastResult(); as result) {
+  @if (lastResult(); as result) {
+    <mat-card class="section">
+      <mat-card-content>
         <div class="result" [class.result--none]="result.appliedCount === 0">
           <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">
             {{ result.appliedCount === 0 ? 'done_all' : 'check_circle' }}
@@ -48,7 +99,7 @@
             <strong>{{ result.duplicateCount }}</strong> already present.
           </span>
         </div>
-        @if (result.unlinkedAccounts?.length) {
+        @if (result.unlinkedAccounts.length) {
           <div class="result note" role="status">
             <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">link_off</mat-icon>
             <div>
@@ -61,7 +112,7 @@
                   <li>
                     <strong>{{ unlinked.name || 'Account' }}</strong>
                     <span class="muted">ending {{ unlinked.mask }}</span>
-                    <span class="muted">· {{ unlinked.transactionCount }} transaction(s)</span>
+                    <span class="muted">· {{ unlinked.transactionCount }} row(s)</span>
                   </li>
                 }
               </ul>
@@ -69,14 +120,14 @@
                 mat-flat-button
                 type="button"
                 (click)="createAndRetry()"
-                [disabled]="linking() || busy()"
+                [disabled]="linking() || busy() || !defaultEntity()"
               >
                 <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">add</mat-icon>
                 Create these accounts and import
               </button>
               <div class="muted after">
-                They'll be created as Checking under your first set of books — rename or change the
-                type afterwards on the Accounts page.
+                They'll be created under {{ defaultEntity()?.name ?? 'your first set of books' }},
+                typed from the file. Renaming or retyping an account isn't supported yet.
               </div>
             </div>
           </div>
@@ -86,21 +137,26 @@
             <span>{{ result.error }}</span>
           </div>
         }
-      }
-    </mat-card-content>
-  </mat-card>
+      </mat-card-content>
+    </mat-card>
+  }
 
   <mat-card class="section">
     <mat-card-header>
-      <mat-card-title>Needs a category</mat-card-title>
+      <mat-card-title><h2 class="card-title">Needs a category</h2></mat-card-title>
       <mat-card-subtitle>
+        @if (reviewTotal() > review().length) {
+          Showing {{ review().length }} of {{ reviewTotal() }} —
+        }
         Card payments and transfers are not listed — they are not spending
       </mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
-      @if (review().length === 0) {
+      @if (reviewPage.error()) {
+        <p class="state-error-inline" role="alert">{{ reviewPage.error() }}</p>
+      } @else if (reviewPage.value() && review().length === 0) {
         <p class="muted">Nothing waiting. <a routerLink="/dashboard">Back to the dashboard</a>.</p>
-      } @else {
+      } @else if (reviewPage.value()) {
         <div class="table-scroll">
           <table mat-table [dataSource]="review()">
             <tr mat-header-row *matHeaderRowDef="reviewColumns"></tr>
@@ -142,13 +198,17 @@
   </mat-card>
 
   <mat-card class="section">
-    <mat-card-header><mat-card-title>Import history</mat-card-title></mat-card-header>
+    <mat-card-header>
+      <mat-card-title><h2 class="card-title">Import history</h2></mat-card-title>
+    </mat-card-header>
     <mat-card-content>
-      @if (batches().length === 0) {
+      @if (batches.error()) {
+        <p class="state-error-inline" role="alert">{{ batches.error() }}</p>
+      } @else if (batches.isEmpty()) {
         <p class="muted">No imports yet.</p>
-      } @else {
+      } @else if (batches.value()) {
         <div class="table-scroll">
-          <table mat-table [dataSource]="batches()">
+          <table mat-table [dataSource]="batches.value()!">
             <tr mat-header-row *matHeaderRowDef="batchColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: batchColumns"></tr>
 
@@ -169,14 +229,18 @@
               <th mat-header-cell *matHeaderCellDef>Status</th>
               <td mat-cell *matCellDef="let row">
                 @if (row.status === 'failed') {
-                  <span class="failed" [matTooltip]="row.error ?? ''">failed</span>
+                  <span class="failed">failed</span>
                 } @else if (row.error) {
                   <!-- An import can succeed and still have skipped rows — most often because no
-                       account matched. Showing only "applied" hides the one thing the user needs
-                       to act on. -->
-                  <span class="attention" [matTooltip]="row.error">applied, with notes</span>
+                       account matched. Showing only "applied" hides the one thing to act on. -->
+                  <span class="attention">applied, with notes</span>
                 } @else {
                   <span class="muted">{{ row.status }}</span>
+                }
+                @if (row.error) {
+                  <!-- As text, not a tooltip on a span: a tooltip needs a mouse and a focusable
+                       host, and this is the only explanation of what went wrong. -->
+                  <div class="muted detail">{{ row.error }}</div>
                 }
               </td>
             </ng-container>

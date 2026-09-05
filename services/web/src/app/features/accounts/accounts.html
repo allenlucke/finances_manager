@@ -1,18 +1,29 @@
 <div class="page">
+  <h1 class="page-title">Accounts</h1>
+
   <div class="grid">
     <mat-card>
       <mat-card-header>
-        <mat-card-title>Accounts</mat-card-title>
+        <mat-card-title><h2 class="card-title">Balances</h2></mat-card-title>
         <mat-card-subtitle>
-          Combined: <span [class]="amountClass(total())">{{ money(total()) }}</span>
+          Net worth:
+          <span [class]="amountClass(combined())">{{ money(combined()) }}</span>
+          @if (netWorth.error()) {
+            <span class="state-error-inline"> — {{ netWorth.error() }}</span>
+          }
         </mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        @if (accounts().length === 0) {
+        @if (accounts.loading()) {
+          <mat-progress-bar mode="indeterminate" aria-label="Loading accounts"></mat-progress-bar>
+        }
+        @if (accounts.error()) {
+          <p class="state-error-inline" role="alert">{{ accounts.error() }}</p>
+        } @else if (accounts.isEmpty()) {
           <p class="muted">No accounts yet.</p>
-        } @else {
+        } @else if (accounts.value()) {
           <div class="table-scroll">
-            <table mat-table [dataSource]="accounts()">
+            <table mat-table [dataSource]="accounts.value()!">
               <tr mat-header-row *matHeaderRowDef="columns"></tr>
               <tr
                 mat-row
@@ -50,6 +61,11 @@
                 <th mat-header-cell *matHeaderCellDef class="amount">Balance</th>
                 <td mat-cell *matCellDef="let account" [class]="amountClass(account.balance)">
                   {{ money(account.balance) }}
+                  @if (account.balanceSource === 'holdings') {
+                    <!-- A market value is only as current as the last positions file. Shown,
+                         not hidden: a stale figure with a date beats a fresh-looking wrong one. -->
+                    <div class="muted as-of">as of {{ account.balanceAsOf }}</div>
+                  }
                 </td>
               </ng-container>
             </table>
@@ -60,7 +76,7 @@
 
     <mat-card>
       <mat-card-header>
-        <mat-card-title>Add an account</mat-card-title>
+        <mat-card-title><h2 class="card-title">Add an account</h2></mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <form [formGroup]="form" (ngSubmit)="submit()">
@@ -81,7 +97,7 @@
           <mat-form-field appearance="outline">
             <mat-label>Books</mat-label>
             <mat-select formControlName="ledgerEntityId">
-              @for (entity of entities(); track entity.id) {
+              @for (entity of entities.value() ?? []; track entity.id) {
                 <mat-option [value]="entity.id">{{ entity.name }}</mat-option>
               }
             </mat-select>
@@ -101,4 +117,76 @@
       </mat-card-content>
     </mat-card>
   </div>
+
+  @if (holdings.error()) {
+    <p class="state-error-inline" role="alert">{{ holdings.error() }}</p>
+  }
+  @for (group of holdingsByAccount(); track group.account.id) {
+    <mat-card class="holdings">
+      <mat-card-header>
+        <mat-card-title>
+          <h2 class="card-title">{{ group.account.name }}</h2>
+        </mat-card-title>
+        <mat-card-subtitle>
+          Holdings as of {{ group.asOf }} · market value
+          <span [class]="amountClass(group.account.balance)">{{
+            money(group.account.balance)
+          }}</span>
+          @if (group.account.costBasis !== null) {
+            <span class="muted"> · cost {{ money(group.account.costBasis) }}</span>
+          } @else {
+            <span
+              class="muted"
+              matTooltip="Not every position reported a cost basis, so no total is shown rather than a partial one."
+            >
+              · cost not fully known</span
+            >
+          }
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="table-scroll">
+          <table mat-table [dataSource]="group.rows">
+            <tr mat-header-row *matHeaderRowDef="holdingColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: holdingColumns"></tr>
+
+            <ng-container matColumnDef="symbol">
+              <th mat-header-cell *matHeaderCellDef>Holding</th>
+              <td mat-cell *matCellDef="let row">
+                <strong>{{ row.symbol }}</strong>
+                @if (row.name) {
+                  <span class="muted"> {{ row.name }}</span>
+                }
+                @if (row.cash) {
+                  <span class="muted"> · cash</span>
+                }
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="quantity">
+              <th mat-header-cell *matHeaderCellDef class="amount">Quantity</th>
+              <td mat-cell *matCellDef="let row" class="amount muted">
+                {{ row.quantity === null ? '—' : row.quantity }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="price">
+              <th mat-header-cell *matHeaderCellDef class="amount">Price</th>
+              <td mat-cell *matCellDef="let row" class="amount muted">
+                {{ row.lastPrice === null ? '—' : money(row.lastPrice) }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="value">
+              <th mat-header-cell *matHeaderCellDef class="amount">Value</th>
+              <td mat-cell *matCellDef="let row" class="amount">{{ money(row.marketValue) }}</td>
+            </ng-container>
+            <ng-container matColumnDef="gain">
+              <th mat-header-cell *matHeaderCellDef class="amount">Gain</th>
+              <td mat-cell *matCellDef="let row" [class]="amountClass(row.totalGainLoss)">
+                {{ row.totalGainLoss === null ? '—' : money(row.totalGainLoss) }}
+              </td>
+            </ng-container>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
 </div>

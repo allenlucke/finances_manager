@@ -89,7 +89,7 @@ export class LoginComponent {
         // the pre-login state and redirect straight back here.
         this.auth.refresh().subscribe(() => {
           this.busy.set(false);
-          this.router.navigate(['/dashboard']);
+          this.router.navigateByUrl(this.auth.landingUrl());
         });
       },
       error: (failure) => {
@@ -122,7 +122,7 @@ export class LoginComponent {
     try {
       await this.passkeys.authenticate();
       await firstValueFrom(this.auth.refresh());
-      this.router.navigate(['/dashboard']);
+      this.router.navigateByUrl(this.auth.landingUrl());
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'That passkey was not accepted.');
     } finally {
@@ -146,7 +146,7 @@ export class LoginComponent {
             void offerToSaveCredentials(email, password, displayName);
             this.auth.refresh().subscribe(() => {
               this.busy.set(false);
-              this.router.navigate(['/dashboard']);
+              this.router.navigateByUrl(this.auth.landingUrl());
             });
           },
           error: () => {

@@ -46,7 +46,7 @@ public class AccountController {
         return jdbc.query("""
             SELECT account_id, account_name, account_type, ledger_entity_id, currency,
                    is_active, balance, transaction_count, last_activity,
-                   balance_source, balance_as_of, cost_basis
+                   balance_source, balance_as_of, cost_basis, mask
             FROM v_account_balance
             WHERE user_id = ?
             ORDER BY is_active DESC, account_name
@@ -63,7 +63,8 @@ public class AccountController {
                 rs.getObject("last_activity", LocalDate.class),
                 rs.getString("balance_source"),
                 rs.getObject("balance_as_of", LocalDate.class),
-                rs.getBigDecimal("cost_basis")),
+                rs.getBigDecimal("cost_basis"),
+                rs.getString("mask")),
             currentUser.id());
     }
 
@@ -86,7 +87,7 @@ public class AccountController {
 
         return new AccountView(saved.getId(), saved.getName(), saved.getAccountType().code(),
             entity.getId(), saved.getCurrency(), saved.isActive(), BigDecimal.ZERO, 0, null,
-            "transactions", null, null);
+            "transactions", null, null, saved.getMask());
     }
 
     @GetMapping("/{id}")
@@ -110,7 +111,11 @@ public class AccountController {
     public record AccountView(Long id, String name, String accountType, Long ledgerEntityId,
                               String currency, boolean active, BigDecimal balance,
                               int transactionCount, LocalDate lastActivity,
-                              String balanceSource, LocalDate balanceAsOf, BigDecimal costBasis) {
+                              String balanceSource, LocalDate balanceAsOf, BigDecimal costBasis,
+                              /** Last four, for recognising the account. Stored on creation and,
+                               * until now, never returned — the UI had a "Number" column that
+                               * rendered a dash on every row, forever. */
+                              String mask) {
     }
 
     public record CreateAccount(

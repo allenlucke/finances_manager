@@ -112,7 +112,8 @@ SELECT a.user_id,
        t.last_activity,
        CASE WHEN mv.market_value IS NOT NULL THEN 'holdings' ELSE 'transactions' END AS balance_source,
        mv.as_of                                                           AS balance_as_of,
-       mv.cost_basis
+       mv.cost_basis,
+       a.mask
 FROM account a
 LEFT JOIN (
     SELECT r.account_id,

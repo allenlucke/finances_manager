@@ -173,7 +173,7 @@ test.describe('Journey', () => {
 
   test('the import screen offers the review queue', async ({ page }) => {
     await signIn(page);
-    await goTo(page, 'Import', 'Import a statement');
+    await goTo(page, 'Import', 'Needs a category');
 
     await expect(page.getByText('Needs a category')).toBeVisible();
   });

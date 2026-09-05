@@ -13,11 +13,14 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ActivatedRoute } from '@angular/router';
+import { debounceTime } from 'rxjs';
 import { ApiClient } from '../../core/api';
-import { amountClass, firstOfThisMonth, isoDate, money, today } from '../../core/money';
-import { Account, Category, Direction, Transaction } from '../../core/models';
+import { LoadState } from '../../core/load-state';
+import { amountClass, isoDate, money } from '../../core/money';
+import { Account, Category, Direction, Page, Transaction } from '../../core/models';
 
-/** The ledger: browse a date range, add entries, recategorize, delete. */
+/** The ledger: browse a date range, add entries, recategorize, delete, and undo a delete. */
 @Component({
   selector: 'app-transactions',
   imports: [
@@ -41,26 +44,38 @@ export class TransactionsComponent {
   private readonly api = inject(ApiClient);
   private readonly forms = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly route = inject(ActivatedRoute);
 
-  protected readonly rows = signal<Transaction[]>([]);
+  /** The most rows one request asks for. Shown, so a truncated ledger says it is truncated. */
+  protected readonly pageSize = 200;
+
+  protected readonly ledger = new LoadState<Page<Transaction>>('Could not load transactions.');
+  protected readonly deleted = new LoadState<Transaction[]>('Could not load deleted transactions.');
   protected readonly accounts = signal<Account[]>([]);
   protected readonly categories = signal<Category[]>([]);
-  protected readonly loading = signal(true);
   protected readonly saving = signal(false);
+  protected readonly showDeleted = signal(false);
+  /** Set when the date range cannot be used; the ledger is left as it was rather than blanked. */
+  protected readonly rangeError = signal<string | null>(null);
 
   protected readonly money = money;
   protected readonly amountClass = amountClass;
 
+  protected readonly rows = computed(() => this.ledger.value()?.content ?? []);
+  protected readonly total = computed(() => this.ledger.value()?.totalElements ?? 0);
+  protected readonly truncated = computed(() => this.total() > this.rows().length);
+
   protected readonly columns = ['date', 'description', 'account', 'category', 'amount', 'actions'];
+  protected readonly deletedColumns = ['date', 'description', 'account', 'amount', 'restore'];
 
   protected readonly range = this.forms.nonNullable.group({
-    from: [new Date(new Date().getFullYear(), new Date().getMonth(), 1)],
-    to: [new Date()],
+    from: [new Date(new Date().getFullYear(), new Date().getMonth(), 1) as Date | null],
+    to: [new Date() as Date | null],
   });
 
   protected readonly form = this.forms.nonNullable.group({
     accountId: [0, Validators.required],
-    transactionDate: [new Date(), Validators.required],
+    transactionDate: [new Date() as Date | null, Validators.required],
     // Kept as a string all the way to the server so the value is never rounded by a JS number.
     // Money is NUMERIC(19,4) / BigDecimal on the other side.
     amount: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,4})?$/)]],
@@ -119,7 +134,19 @@ export class TransactionsComponent {
       }
     });
 
-    this.range.valueChanges.subscribe(() => this.reload());
+    // A period to review, handed over from the reconciliation alert on the dashboard.
+    const params = this.route.snapshot.queryParamMap;
+    const from = parseIso(params.get('from'));
+    const to = parseIso(params.get('to'));
+    if (from && to) {
+      this.range.setValue({ from, to }, { emitEvent: false });
+    }
+
+    // Debounced: a datepicker fires once per keystroke while typing a date, and each of those
+    // used to be a request. Nothing inside reload() throws, which matters — an exception inside
+    // this callback tears the subscription down for good, and that is exactly how clearing the
+    // From field used to leave the spinner running until a page refresh.
+    this.range.valueChanges.pipe(debounceTime(250)).subscribe(() => this.reload());
     this.reload();
   }
 
@@ -135,14 +162,28 @@ export class TransactionsComponent {
 
   protected reload(): void {
     const { from, to } = this.range.getRawValue();
-    this.loading.set(true);
-    this.api.transactions(isoDate(from), isoDate(to), 0, 200).subscribe({
-      next: (page) => {
-        this.rows.set(page.content);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false),
-    });
+    const start = isoDate(from);
+    const end = isoDate(to);
+    if (start === null || end === null) {
+      this.rangeError.set('Choose a real date at both ends of the range.');
+      return;
+    }
+    if (start > end) {
+      this.rangeError.set('The range ends before it starts.');
+      return;
+    }
+    this.rangeError.set(null);
+    this.ledger.run(this.api.transactions(start, end, 0, this.pageSize));
+    if (this.showDeleted()) {
+      this.deleted.run(this.api.deletedTransactions());
+    }
+  }
+
+  protected toggleDeleted(): void {
+    this.showDeleted.update((shown) => !shown);
+    if (this.showDeleted()) {
+      this.deleted.run(this.api.deletedTransactions());
+    }
   }
 
   protected submit(): void {
@@ -150,6 +191,11 @@ export class TransactionsComponent {
       return;
     }
     const value = this.form.getRawValue();
+    const date = isoDate(value.transactionDate);
+    if (date === null) {
+      this.snackBar.open('Choose a real date.', undefined, { duration: 3500 });
+      return;
+    }
     if (value.transfer && !value.transferAccountId) {
       this.snackBar.open('Choose the account the money moved to.', undefined, { duration: 3500 });
       return;
@@ -159,7 +205,7 @@ export class TransactionsComponent {
     this.api
       .createTransaction({
         accountId: value.accountId,
-        transactionDate: isoDate(value.transactionDate),
+        transactionDate: date,
         amount: value.amount,
         direction: value.direction,
         description: value.description,
@@ -172,8 +218,7 @@ export class TransactionsComponent {
           this.saving.set(false);
           // Reset the emptied controls rather than patching them. patchValue leaves each control
           // touched, so "required" errors flash red on fields the user just submitted successfully
-          // — it reads as though the save failed. Written out rather than looped because the
-          // controls have different value types.
+          // — it reads as though the save failed.
           this.form.controls.amount.reset('');
           this.form.controls.description.reset('');
           this.form.controls.categoryId.reset(null);
@@ -184,9 +229,15 @@ export class TransactionsComponent {
             { duration: 2500 },
           );
         },
-        error: () => {
+        error: (error: { status?: number }) => {
           this.saving.set(false);
-          this.snackBar.open('Could not save the transaction.', undefined, { duration: 4000 });
+          this.snackBar.open(
+            error?.status === 409
+              ? 'An identical transaction is already recorded for that day. If this is a second one, add something to the description that tells them apart.'
+              : 'Could not save the transaction.',
+            undefined,
+            { duration: 6000 },
+          );
         },
       });
   }
@@ -194,7 +245,7 @@ export class TransactionsComponent {
   protected recategorize(row: Transaction, categoryId: number | null): void {
     this.api.categorize(row.id, categoryId).subscribe({
       next: () => this.reload(),
-      error: (error) => {
+      error: (error: { status?: number }) => {
         // 422 is the double-count rule: a transfer may never carry a category.
         this.snackBar.open(
           error?.status === 422
@@ -203,21 +254,55 @@ export class TransactionsComponent {
           undefined,
           { duration: 5000 },
         );
+        // Reload on failure too. The select is bound one-way, so without this it kept showing
+        // the category the server had just refused — the message said no, the row said yes.
+        this.reload();
       },
     });
   }
 
+  /**
+   * Deletes, and offers to undo in the same breath.
+   *
+   * <p>Deletion is soft on the server and every leg of a transfer goes together, so this is
+   * reversible — which is what makes an undo action honest rather than a promise. The snackbar
+   * carries it; a blocking "are you sure?" would interrupt every delete to guard against the rare
+   * one that was a mistake, when the mistake can simply be undone.
+   */
   protected remove(row: Transaction): void {
     this.api.deleteTransaction(row.id).subscribe({
       next: () => {
         this.reload();
-        this.snackBar.open(
+        const notice = this.snackBar.open(
           row.transferGroupId ? 'Transfer removed from both accounts' : 'Transaction removed',
-          undefined,
-          { duration: 2500 },
+          'Undo',
+          { duration: 8000 },
         );
+        notice.onAction().subscribe(() => this.restore(row));
       },
       error: () => this.snackBar.open('Could not remove it.', undefined, { duration: 4000 }),
     });
   }
+
+  protected restore(row: Transaction): void {
+    this.api.restoreTransaction(row.id).subscribe({
+      next: (legs) => {
+        this.reload();
+        this.snackBar.open(
+          legs.length > 1 ? 'Transfer restored on both accounts' : 'Transaction restored',
+          undefined,
+          { duration: 2500 },
+        );
+      },
+      error: () => this.snackBar.open('Could not restore it.', undefined, { duration: 4000 }),
+    });
+  }
+}
+
+/** A yyyy-mm-dd query parameter as a local Date, or null for anything else. */
+function parseIso(value: string | null): Date | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return Number.isFinite(date.getTime()) ? date : null;
 }

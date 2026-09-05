@@ -11,13 +11,19 @@ import { Auth } from './auth';
  * `/auth/me` has answered, and deciding immediately would bounce a signed-in user to the login
  * screen every time they reloaded the page.
  */
-export const signedInGuard: CanActivateFn = () => {
+export const signedInGuard: CanActivateFn = (_route, state) => {
   const auth = inject(Auth);
   const router = inject(Router);
 
   return toObservable(auth.state).pipe(
-    filter((state) => state !== 'unknown'),
+    filter((authState) => authState !== 'unknown'),
     take(1),
-    map((state) => (state === 'signed-in' ? true : router.createUrlTree(['/login']))),
+    map((authState) =>
+      authState === 'signed-in'
+        ? true
+        : // Carry the destination through, so signing in lands where the person was headed
+          // rather than always on the dashboard.
+          router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } }),
+    ),
   );
 };

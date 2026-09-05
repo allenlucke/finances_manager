@@ -35,6 +35,33 @@ export interface Account {
   balance: number;
   transactionCount: number;
   lastActivity: string | null;
+  /** Last four digits, for recognising the account. Never the full number. */
+  mask: string | null;
+  /**
+   * Where the balance came from. `holdings` means a brokerage snapshot's market value — correct
+   * only as of `balanceAsOf`, which is why both are shown rather than hidden. `transactions` means
+   * the ledger sum.
+   */
+  balanceSource: 'transactions' | 'holdings';
+  balanceAsOf: string | null;
+  /** Null unless every position has a known basis; a partial basis is not a basis. */
+  costBasis: number | null;
+}
+
+/** One position in an account's latest snapshot. Market value is a magnitude, never signed. */
+export interface Holding {
+  id: number;
+  accountId: number;
+  symbol: string;
+  name: string | null;
+  cash: boolean;
+  securityType: string;
+  asOf: string;
+  quantity: number | null;
+  lastPrice: number | null;
+  marketValue: number;
+  costBasis: number | null;
+  totalGainLoss: number | null;
 }
 
 export interface Category {
@@ -81,6 +108,7 @@ export interface Page<T> {
   totalPages: number;
   number: number;
   size: number;
+  last?: boolean;
 }
 
 export interface NetWorthRow {
@@ -112,6 +140,12 @@ export interface ReconciliationRow {
   /** Non-zero means the ledger and the statement disagree, in dollars. */
   difference: number;
   reconciled: boolean;
+  /**
+   * `opening_balance`: computed from the statement's own starting figure, so a difference is a
+   * real discrepancy. `full_history`: computed by summing everything ever, so a difference may
+   * only mean the account's early history was never imported.
+   */
+  baseline: 'opening_balance' | 'full_history';
 }
 
 export interface CreateTransaction {

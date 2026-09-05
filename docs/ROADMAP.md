@@ -107,8 +107,8 @@ Remaining in M1b:
 * **The WebAuthn ceremonies are still Spring Security's own endpoints**, linked to rather than
   driven from the SPA. Registering and presenting a passkey needs the browser
   `navigator.credentials` calls wired into an Angular service.
-* **No passkey management screen yet** — `GET`/`DELETE /api/v1/passkeys` exist and are tested, but
-  nothing in the UI lists enrolled authenticators.
+* ~~No passkey management screen yet~~ — built (`/security`), and as of 2026-09-05 it says when it
+  could not check rather than asserting "passphrase only".
 * **The review queue is unused.** `GET /api/v1/transactions/review` is implemented and indexed, but
   it stays empty until M2/M3 produce uncategorized rows, so no screen reads it yet.
 * **Statements are API-only.** `v_statement_reconciliation` drives the dashboard warning, but there
