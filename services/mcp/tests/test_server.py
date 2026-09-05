@@ -274,3 +274,27 @@ def test_a_positions_import_says_updated_not_duplicate(api, tmp_path, monkeypatc
     assert result["updatedCount"] == 5
     assert "duplicateCount" not in result
     assert "updated" in result["counts"]
+
+
+def test_creating_an_account_can_carry_the_link_an_import_reported(api):
+    """The other half of ``unlinkedAccounts``: without this, Claude could see which accounts a
+    file named but could not create them in a way the retry would match."""
+    api.reply("POST", "/api/v1/accounts", 201, {"id": 9})
+
+    server.create_account(
+        "Individual - TOD", "brokerage", 1, mask="8901", external_id="a1b2c3d4e5f60718"
+    )
+
+    sent = json.loads(api.last.read())
+    assert sent["externalId"] == "a1b2c3d4e5f60718"
+    assert sent["mask"] == "8901"
+
+
+def test_creating_an_account_without_a_link_sends_none(api):
+    api.reply("POST", "/api/v1/accounts", 201, {"id": 9})
+
+    server.create_account("Checking", "checking", 1)
+
+    # The client drops nulls from the body, so the link is simply absent — never a blank string,
+    # which the API would store as a real (empty) link.
+    assert json.loads(api.last.read()).get("externalId") is None

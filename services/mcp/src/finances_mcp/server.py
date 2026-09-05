@@ -266,6 +266,7 @@ def create_account(
     ledger_entity_id: int,
     mask: str | None = None,
     currency: str | None = None,
+    external_id: str | None = None,
 ) -> Any:
     """Create an account.
 
@@ -276,6 +277,10 @@ def create_account(
         ledger_entity_id: which set of books it belongs to — see ``list_entities``.
         mask: last four digits, for recognising it. Never the full account number.
         currency: ISO code, defaults to USD.
+        external_id: the ``key`` an import reported under ``unlinkedAccounts``. It is an opaque
+            link derived from the file, never an account number, and it is what lets that import —
+            and every later one — match its rows to this account exactly. Pass it together with
+            the reported ``mask`` and ``name`` when creating an account a file asked for.
     """
     return _guard(
         lambda: client().post(
@@ -286,6 +291,7 @@ def create_account(
                 "ledgerEntityId": ledger_entity_id,
                 "mask": mask,
                 "currency": currency,
+                "externalId": external_id,
             },
         )
     )
@@ -492,8 +498,10 @@ def import_statement(file_path: str, account_id: int | None = None) -> Any:
 
     Safe to repeat: rows already present are counted as duplicates and skipped, so importing the
     same file twice is a no-op rather than a doubling. If the file names accounts that do not exist
-    here, the result lists them under ``unlinkedAccounts`` and nothing is guessed — create them and
-    import again.
+    here, the result lists them under ``unlinkedAccounts`` (``key``, ``mask``, ``name``,
+    ``transactionCount``) and nothing is guessed. Create each one with ``create_account`` passing
+    that ``key`` as ``external_id`` along with the ``mask`` and ``name`` (a Fidelity history names
+    brokerage accounts), then import the same file again.
     """
     path = _statement_path(file_path)
     if isinstance(path, dict):
