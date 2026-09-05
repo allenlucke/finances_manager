@@ -30,6 +30,14 @@ public record ParsedTransaction(
     @JsonProperty("dedupe_key") String dedupeKey,
     @JsonProperty("is_probable_transfer") boolean isProbableTransfer,
     /**
+     * The file's own row type says refund or adjustment. Distinct from a transfer on purpose:
+     * a transfer is <em>not spending</em> and stays uncategorizable, while a refund is
+     * <em>negative spending</em> and must be bookable against the category it refunds. Folding the
+     * two into one flag forced every refund into {@code is_transfer}, where the CHECK constraint
+     * made it uncategorizable forever and the category stayed overcharged.
+     */
+    @JsonProperty("is_probable_refund") boolean isProbableRefund,
+    /**
      * Set only for exports covering several accounts. Null for a single-account statement, where
      * the caller nominates the account instead.
      */
@@ -38,6 +46,18 @@ public record ParsedTransaction(
     /** The institution's own name for the account, e.g. "Cashback Free Checking". */
     @JsonProperty("account_name") String accountName,
     Map<String, String> raw) {
+
+    /**
+     * A row with no refund signal — the shape every parser produced before the transfer/refund
+     * split, and what a test builds when refunds are not what it is about.
+     */
+    public ParsedTransaction(LocalDate transactionDate, LocalDate postedDate, String description,
+                             String merchant, BigDecimal amount, String direction, String externalId,
+                             String dedupeKey, boolean isProbableTransfer, String accountMask,
+                             String accountKey, String accountName, Map<String, String> raw) {
+        this(transactionDate, postedDate, description, merchant, amount, direction, externalId,
+            dedupeKey, isProbableTransfer, false, accountMask, accountKey, accountName, raw);
+    }
 
     /** True when this row names its own account rather than relying on a nominated one. */
     public boolean carriesAccount() {

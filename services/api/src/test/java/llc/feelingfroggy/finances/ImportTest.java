@@ -68,14 +68,7 @@ class ImportTest extends PostgresIntegrationTest {
 
     @BeforeEach
     void seed() throws IOException {
-        jdbc.update("DELETE FROM categorization");
-        jdbc.update("DELETE FROM transaction");
-        jdbc.update("DELETE FROM statement");
-        jdbc.update("DELETE FROM import_batch");
-        jdbc.update("DELETE FROM account");
-        jdbc.update("DELETE FROM category");
-        jdbc.update("DELETE FROM ledger_entity");
-        jdbc.update("DELETE FROM app_user");
+        cleanDatabase(jdbc);
 
         var user = users.save(new AppUser("allen@feelingfroggy.llc", "Allen", "x"));
         userId = user.getId();
@@ -142,7 +135,7 @@ class ImportTest extends PostgresIntegrationTest {
     @Test
     @DisplayName("importing a statement lands every row once")
     void importsEveryRow() {
-        var batch = imports.importStatement(userId, card, statementBytes(), "chase.csv");
+        var batch = imports.importStatement(userId, card, statementBytes(), "chase.csv").batch();
 
         assertThat(batch.getRowCount()).isEqualTo(6);
         assertThat(batch.getAppliedCount()).isEqualTo(6);
@@ -157,7 +150,7 @@ class ImportTest extends PostgresIntegrationTest {
     @DisplayName("importing the same statement twice adds nothing — the M2 'done when'")
     void reimportIsANoOp() {
         imports.importStatement(userId, card, statementBytes(), "chase.csv");
-        var second = imports.importStatement(userId, card, statementBytes(), "chase.csv");
+        var second = imports.importStatement(userId, card, statementBytes(), "chase.csv").batch();
 
         assertThat(second.getAppliedCount()).isZero();
         assertThat(second.getDuplicateCount()).isEqualTo(6);
@@ -186,7 +179,7 @@ class ImportTest extends PostgresIntegrationTest {
     @Test
     @DisplayName("imported rows carry their provenance")
     void rowsRecordWhereTheyCameFrom() {
-        var batch = imports.importStatement(userId, card, statementBytes(), "chase.csv");
+        var batch = imports.importStatement(userId, card, statementBytes(), "chase.csv").batch();
 
         Integer traced = jdbc.queryForObject(
             "SELECT count(*) FROM transaction WHERE source = 'file_import' AND import_batch_id = ?",
@@ -201,7 +194,7 @@ class ImportTest extends PostgresIntegrationTest {
         imports.importStatement(userId, card, statementBytes(), "chase.csv");
         jdbc.update("UPDATE transaction SET deleted_at = now() WHERE description = 'NETFLIX.COM'");
 
-        var second = imports.importStatement(userId, card, statementBytes(), "chase.csv");
+        var second = imports.importStatement(userId, card, statementBytes(), "chase.csv").batch();
 
         // Deleting something was a decision; an import must not undo it.
         assertThat(second.getAppliedCount()).isZero();

@@ -110,3 +110,20 @@ def test_a_purchase_is_recognised_as_an_investment_not_an_expense():
     # Buying a fund moves cash into a holding within the same account. Not spending.
     assert bought.is_probable_transfer is True
     assert categorize([bought])[0].is_transfer is True
+
+
+def test_the_full_account_number_never_rides_along_in_raw():
+    """Same assertion the positions parser has had since its first real file.
+
+    The history format maps an "Account Number" column, and `raw` copied every column — so the
+    number sat in the payload right beside the mask that was hiding it.
+    """
+    result = parse_csv(read_sample(), account_ref="multi")
+
+    assert result.transactions, "fixture parsed nothing"
+    for t in result.transactions:
+        assert t.account_mask and len(t.account_mask) == 4
+        joined = " ".join(f"{k}={v}" for k, v in t.raw.items())
+        assert "Account Number" not in t.raw
+        assert "Z11111111" not in joined
+        assert "Z22222222" not in joined

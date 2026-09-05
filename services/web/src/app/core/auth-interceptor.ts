@@ -20,11 +20,17 @@ import { Auth } from './auth';
  */
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const auth = inject(Auth);
+  // The WebAuthn paths are auth calls too. A rejected passkey assertion is a 401 from
+  // /login/webauthn; treating that as "no session" flipped the state to anonymous and sent the
+  // person back to the passphrase form they had already satisfied — the exact dead end
+  // `passkey-required` exists as a distinct state to prevent.
   const isAuthCall =
     request.url.includes('/auth/login') ||
     request.url.includes('/auth/me') ||
     request.url.includes('/auth/csrf') ||
-    request.url.includes('/setup');
+    request.url.includes('/setup') ||
+    request.url.includes('/webauthn/') ||
+    request.url.includes('/login/webauthn');
 
   return next(request).pipe(
     catchError((error: unknown) => {

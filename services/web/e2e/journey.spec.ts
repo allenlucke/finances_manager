@@ -79,6 +79,30 @@ test.describe('Signed out', () => {
   });
 });
 
+test.describe('Deployed stack', () => {
+  test('the passkey endpoints reach the API through nginx', async ({ request }) => {
+    // These live outside /api and used to fall through to try_files: 405 with an HTML body,
+    // and passkeys silently dead in the only stack that runs on the homelab. Anonymous callers
+    // are refused (CSRF, 403) — the assertion is that the refusal came from the API as JSON,
+    // not from nginx as a page.
+    for (const path of ['/webauthn/authenticate/options', '/webauthn/register/options', '/login/webauthn']) {
+      const response = await request.post(path, { data: {} });
+      expect(response.status(), path).not.toBe(405);
+      expect(response.headers()['content-type'] ?? '', path).toContain('json');
+    }
+  });
+
+  test('an upload larger than a megabyte is not refused by nginx', async ({ request }) => {
+    // nginx defaulted to 1 MB while the API allows 10 MB. Anonymous, so the API answers 403 —
+    // the point is that it answered at all rather than nginx sending 413.
+    const twoMegabytes = 'x'.repeat(2 * 1024 * 1024);
+    const response = await request.post('/api/v1/imports', {
+      multipart: { file: { name: 'big.csv', mimeType: 'text/csv', buffer: Buffer.from(twoMegabytes) } },
+    });
+    expect(response.status()).not.toBe(413);
+  });
+});
+
 test.describe('Journey', () => {
   test('a person can set up, sign in, and reach the dashboard', async ({ page }) => {
     await signIn(page);

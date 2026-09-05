@@ -36,18 +36,7 @@ class GapsClosedTest extends PostgresIntegrationTest {
 
     @BeforeEach
     void reset() {
-        jdbc.update("DELETE FROM categorization");
-        jdbc.update("DELETE FROM transaction");
-        jdbc.update("DELETE FROM target");
-        jdbc.update("DELETE FROM statement");
-        jdbc.update("DELETE FROM account");
-        jdbc.update("DELETE FROM category");
-        jdbc.update("DELETE FROM ledger_entity");
-        jdbc.update("DELETE FROM app_user");
-        jdbc.update("DELETE FROM user_credentials");
-        jdbc.update("DELETE FROM user_entities");
-        jdbc.update("DELETE FROM login_attempt");
-        jdbc.update("DELETE FROM spring_session");
+        cleanDatabase(jdbc);
         api = new ApiClient(port);
     }
 
@@ -197,6 +186,31 @@ class GapsClosedTest extends PostgresIntegrationTest {
         Integer failures = jdbc.queryForObject(
             "SELECT count(*) FROM login_attempt WHERE NOT successful", Integer.class);
         assertThat(failures).isGreaterThanOrEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("a junk X-Forwarded-For header cannot switch lockout off")
+    void lockoutSurvivesAHostileForwardedHeader() {
+        setupAndLogin();
+        var attacker = new ApiClient(port).header("X-Forwarded-For", "nope");
+        attacker.primeCsrf();
+
+        // Reproduced 2026-08-29: the header value was cast to inet inside the audit insert, the
+        // insert threw, the failure row was never written, and lockout — which counts rows —
+        // never triggered. Five wrong passwords then the right one signed straight in.
+        for (int i = 0; i < 5; i++) {
+            assertThat(attacker.login("allen@feelingfroggy.llc", "wrong-passphrase-here").status())
+                .isEqualTo(401);
+        }
+        assertThat(attacker.login("allen@feelingfroggy.llc", "a-long-enough-passphrase").status())
+            .isEqualTo(429);
+
+        // And every failure was recorded — the audit row is the whole mechanism. Six, not five:
+        // the attempt refused *because* the account was locked is itself a failed attempt, and
+        // counting it is what keeps the window sliding while someone keeps trying.
+        Integer failures = jdbc.queryForObject(
+            "SELECT count(*) FROM login_attempt WHERE NOT successful", Integer.class);
+        assertThat(failures).isEqualTo(6);
     }
 
     @Test

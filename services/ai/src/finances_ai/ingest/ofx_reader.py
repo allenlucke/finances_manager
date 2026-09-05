@@ -115,7 +115,17 @@ def _map_transaction(entry, account_ref: str) -> ParsedTransaction:
         direction=TransactionDirection.DEBIT if amount < 0 else TransactionDirection.CREDIT,
         # The institution's own permanent id. The API prefers this over the hash when present.
         external_id=str(entry.fitid) if getattr(entry, "fitid", None) else None,
-        dedupe_key=dedupe_key(account_ref, occurred, amount, description),
+        # FITID is the identity when present. This call omitted it, which re-opened the exact
+        # bug csv_reader.dedupe_key documents at length — identical same-day transfers collapsing
+        # into one. (The API now computes its own key and reads external_id directly, so this is
+        # belt and braces; it keeps the parser's key honest for anyone else reading it.)
+        dedupe_key=dedupe_key(
+            account_ref,
+            occurred,
+            amount,
+            description,
+            str(entry.fitid) if getattr(entry, "fitid", None) else None,
+        ),
         is_probable_transfer=trntype in _TRANSFER_TYPES,
         raw={
             "trntype": trntype,

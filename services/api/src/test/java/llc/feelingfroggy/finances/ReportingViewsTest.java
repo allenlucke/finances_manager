@@ -35,14 +35,7 @@ class ReportingViewsTest extends PostgresIntegrationTest {
     @BeforeEach
     void seed() {
         // Order matters: transaction references everything else.
-        jdbc.update("DELETE FROM categorization");
-        jdbc.update("DELETE FROM transaction");
-        jdbc.update("DELETE FROM target");
-        jdbc.update("DELETE FROM statement");
-        jdbc.update("DELETE FROM account");
-        jdbc.update("DELETE FROM category");
-        jdbc.update("DELETE FROM ledger_entity");
-        jdbc.update("DELETE FROM app_user");
+        cleanDatabase(jdbc);
 
         userId = insert("INSERT INTO app_user (email, display_name, password_hash) "
             + "VALUES ('allen@feelingfroggy.llc', 'Allen', 'x') RETURNING id");

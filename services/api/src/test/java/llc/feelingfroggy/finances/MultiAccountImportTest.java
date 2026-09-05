@@ -63,13 +63,7 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
 
     @BeforeEach
     void seed() {
-        jdbc.update("DELETE FROM categorization");
-        jdbc.update("DELETE FROM transaction");
-        jdbc.update("DELETE FROM statement");
-        jdbc.update("DELETE FROM import_batch");
-        jdbc.update("DELETE FROM account");
-        jdbc.update("DELETE FROM ledger_entity");
-        jdbc.update("DELETE FROM app_user");
+        cleanDatabase(jdbc);
 
         userId = users.save(new AppUser("allen@feelingfroggy.llc", "Allen", "x")).getId();
         personal = entities.save(new LedgerEntity(userId, "Personal", EntityKind.PERSONAL));
@@ -107,7 +101,7 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
             row("2222", "keyMinorOne", "Transfer Received", "50"));
 
         // Deliberately passing no account: the file identifies its own.
-        var batch = imports.importStatement(userId, null, anyFile(), "Accounts_History.csv");
+        var batch = imports.importStatement(userId, null, anyFile(), "Accounts_History.csv").batch();
 
         assertThat(batch.getAppliedCount()).isEqualTo(2);
         assertThat(countFor(joint)).isEqualTo(1);
@@ -136,7 +130,7 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
             row("1111", "keyJoint", "Transfer Received", "1000"),
             row("9999", "keyUnknown", "Transfer Received", "500"));
 
-        var batch = imports.importStatement(userId, null, anyFile(), "Accounts_History.csv");
+        var batch = imports.importStatement(userId, null, anyFile(), "Accounts_History.csv").batch();
 
         assertThat(batch.getAppliedCount()).isEqualTo(1);
         assertThat(countFor(joint)).isEqualTo(1);
@@ -167,7 +161,7 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
         account("Minor Two UTMA", "2222");
         parserReturns(row("2222", "keyChild", "Transfer Received", "50"));
 
-        var batch = imports.importStatement(userId, null, anyFile(), "Accounts_History.csv");
+        var batch = imports.importStatement(userId, null, anyFile(), "Accounts_History.csv").batch();
 
         assertThat(batch.getAppliedCount()).isZero();
         assertThat(batch.getError()).contains("2222");
@@ -182,7 +176,7 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
             row("2222", "keyMinorOne", "Transfer Received", "50"),
             row("3333", "keyMinorTwo", "Transfer Received", "50"));
 
-        var batch = imports.importStatement(userId, null, anyFile(), "Accounts_History.csv");
+        var batch = imports.importStatement(userId, null, anyFile(), "Accounts_History.csv").batch();
 
         // Two children receiving the same amount on the same day is ordinary.
         assertThat(batch.getAppliedCount()).isEqualTo(2);
@@ -199,7 +193,7 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
             row("2222", "keyMinorOne", "Transfer Received", "50"));
 
         imports.importStatement(userId, null, anyFile(), "Accounts_History.csv");
-        var second = imports.importStatement(userId, null, anyFile(), "Accounts_History.csv");
+        var second = imports.importStatement(userId, null, anyFile(), "Accounts_History.csv").batch();
 
         assertThat(second.getAppliedCount()).isZero();
         assertThat(second.getDuplicateCount()).isEqualTo(2);

@@ -115,6 +115,15 @@ public class ImportService {
         }
 
         Account matched = byMask.getFirst();
+        if (matched.getExternalId() != null && !matched.getExternalId().equals(accountKey)) {
+            // The one account with these digits is already linked to a *different* institution
+            // account. This is a new account that happens to share a last four — a savings beside
+            // a checking is the ordinary case — and filing its rows here would post one account's
+            // money to another with nothing to say so. Unlinked, so it is reported and created
+            // rather than guessed. The guard on size() above only covers ambiguity among existing
+            // rows; this covers the link already being spoken for.
+            return Optional.empty();
+        }
         if (matched.getExternalId() == null) {
             matched.setExternalId(accountKey);
             accounts.save(matched);
@@ -123,8 +132,8 @@ public class ImportService {
     }
 
     @Transactional
-    public ImportBatch importStatement(Long userId, Account account, byte[] content,
-                                       String filename) {
+    public ImportOutcome importStatement(Long userId, Account account, byte[] content,
+                                         String filename) {
         ImportFormat format = formatFor(filename);
 
         // Committed in its own transaction so the record survives whatever happens next.
@@ -160,6 +169,12 @@ public class ImportService {
         // rather than asking a person to type account digits they would have to look up.
         var unlinked = new java.util.LinkedHashMap<String, UnlinkedAccount>();
 
+        // Everything from here to the flush is one attempt. If any of it fails the batch is marked
+        // failed with a reason — in its own transaction, so the record survives the rollback —
+        // and nothing from the file is kept. Before this, only the parser call was guarded: a row
+        // that violated a constraint rolled the whole import back and left the batch PENDING with
+        // no error, which is the one state the recorder promises never to leave behind.
+        try {
         for (var row : parsed.transactions()) {
             // A row that names its own account wins over whatever the caller nominated: a brokerage
             // history spans accounts, and applying all of it to one would be silently wrong.
@@ -180,15 +195,20 @@ public class ImportService {
                 continue;
             }
 
+            // The API computes the identity; the parser's dedupe_key is not read. See
+            // TransactionService.dedupeKey for why there is exactly one implementation.
+            String dedupeKey = TransactionService.dedupeKey(target.getId(), row.transactionDate(),
+                row.amount(), row.description(), row.externalId());
+
             // Includes soft-deleted rows on purpose — see the note above.
-            if (transactions.findByAccountIdAndDedupeKey(target.getId(), row.dedupeKey()).isPresent()) {
+            if (transactions.findByAccountIdAndDedupeKey(target.getId(), dedupeKey).isPresent()) {
                 duplicates++;
                 continue;
             }
 
             var transaction = new Transaction(userId, target, row.transactionDate(), row.amount(),
                 Direction.DEBIT.code().equals(row.direction()) ? Direction.DEBIT : Direction.CREDIT,
-                row.description(), row.dedupeKey());
+                row.description(), dedupeKey);
             transaction.setPostedDate(row.postedDate());
             transaction.setMerchant(row.merchant());
             transaction.setExternalId(row.externalId());
@@ -196,11 +216,16 @@ public class ImportService {
             transaction.setImportBatch(batch);
 
             if (row.isProbableTransfer()) {
-                // The file itself said this is a payment, refund or adjustment rather than a
-                // purchase. Marking it as a transfer keeps it out of spending totals — the budget
-                // was charged when the purchase happened, and counting the payment too would
-                // double-charge it. The other side is not known from one statement, so
-                // transferAccountId stays null until M5 matches the pair.
+                // The file itself said this is a payment rather than a purchase. Marking it as a
+                // transfer keeps it out of spending totals — the budget was charged when the
+                // purchase happened, and counting the payment too would double-charge it. The
+                // other side is not known from one statement, so transferAccountId stays null
+                // until M5 matches the pair.
+                //
+                // A refund (row.isProbableRefund) is deliberately NOT handled here. It arrives as
+                // an ordinary credit and lands in the review queue, where it can be categorized
+                // against what it refunds. Treating it as a transfer made it uncategorizable by
+                // CHECK constraint, and the category it refunded stayed overcharged for good.
                 transaction.markAsTransfer(null);
             }
 
@@ -215,16 +240,26 @@ public class ImportService {
             recordStatement(userId, account, batch, parsed.statement());
         }
 
+        // Force the inserts now. A unique-index or NOT NULL violation otherwise surfaces at
+        // commit, after this method has returned — past the catch below, and after the batch had
+        // already been committed as APPLIED in a transaction of its own.
+        transactions.flush();
+        } catch (RuntimeException e) {
+            recorder.fail(batchId, reasonFor(e));
+            throw e;
+        }
+
         if (!unlinked.isEmpty()) {
             String names = unlinked.values().stream()
                 .map(UnlinkedAccount::describe)
                 .collect(java.util.stream.Collectors.joining(", "));
-            recorder.note(batchId, unlinked.size() + " account(s) in this file are not set up yet: "
+            batch.setError(unlinked.size() + " account(s) in this file are not set up yet: "
                 + names + ". Nothing was guessed — create them and import again.");
         }
-        lastUnlinked.set(List.copyOf(unlinked.values()));
-
-        var completed = recorder.complete(batchId, parsed.transactions().size(), applied, duplicates);
+        // Completed in THIS transaction, so the APPLIED status and its counts commit with the
+        // rows they describe — or roll back with them. The recorder's REQUIRES_NEW completion
+        // committed first, so a commit failure left a batch claiming rows that did not exist.
+        var completed = markApplied(batch, parsed.transactions().size(), applied, duplicates);
 
         // Counts only. docs/SECURITY.md keeps descriptions, amounts and account identifiers out of
         // the log.
@@ -232,7 +267,7 @@ public class ImportService {
             batch.getId(), parsed.transactions().size(), applied, duplicates,
             parsed.warnings() == null ? 0 : parsed.warnings().size());
 
-        return completed;
+        return new ImportOutcome(completed, List.copyOf(unlinked.values()));
     }
 
     /**
@@ -251,7 +286,7 @@ public class ImportService {
      * exist here are collected and reported rather than filed against a guess.
      */
     @Transactional
-    public ImportBatch importPositions(Long userId, byte[] content, String filename) {
+    public ImportOutcome importPositions(Long userId, byte[] content, String filename) {
         Long batchId = recorder.begin(userId, null, ImportFormat.CSV, filename);
         var batch = batches.findById(batchId).orElseThrow();
 
@@ -275,6 +310,7 @@ public class ImportService {
         int updated = 0;
         var unlinked = new java.util.LinkedHashMap<String, UnlinkedAccount>();
 
+        try {
         for (var row : parsed.positions()) {
             var resolved = resolveAccount(userId, row.accountKey(), row.accountMask());
             if (resolved.isEmpty()) {
@@ -305,23 +341,55 @@ public class ImportService {
                 applied++;
             }
         }
+        holdings.flush();
+        } catch (RuntimeException e) {
+            recorder.fail(batchId, reasonFor(e));
+            throw e;
+        }
 
         if (!unlinked.isEmpty()) {
             String names = unlinked.values().stream()
                 .map(UnlinkedAccount::describe)
                 .collect(java.util.stream.Collectors.joining(", "));
-            recorder.note(batchId, unlinked.size() + " account(s) in this file are not set up yet: "
+            batch.setError(unlinked.size() + " account(s) in this file are not set up yet: "
                 + names + ". Nothing was guessed — create them and import again.");
         }
-        lastUnlinked.set(List.copyOf(unlinked.values()));
-
-        var completed = recorder.complete(batchId, parsed.positions().size(), applied, updated);
+        var completed = markApplied(batch, parsed.positions().size(), applied, updated);
 
         // Counts only — docs/SECURITY.md keeps holdings, values and account identifiers out of the log.
         log.info("positions batch={} rows={} new={} updated={} asOf={}",
             batch.getId(), parsed.positions().size(), applied, updated, parsed.asOf());
 
-        return completed;
+        return new ImportOutcome(completed, List.copyOf(unlinked.values()));
+    }
+
+    /** Marks the batch applied in the caller's transaction, so status commits with the rows. */
+    private ImportBatch markApplied(ImportBatch batch, int rowCount, int applied, int duplicates) {
+        batch.setRowCount(rowCount);
+        batch.setAppliedCount(applied);
+        batch.setDuplicateCount(duplicates);
+        batch.setStatus(llc.feelingfroggy.finances.domain.ImportStatus.APPLIED);
+        batch.setCompletedAt(java.time.Instant.now());
+        return batches.save(batch);
+    }
+
+    /**
+     * What to record on a failed batch. The user reads this in import history.
+     *
+     * <p>Our own rule violations carry a sentence written for a person. Anything else — a
+     * constraint name, a SQL fragment, a driver message — is logged and replaced, because
+     * docs/SECURITY.md keeps schema detail and row content out of anything a client sees.
+     */
+    private static String reasonFor(RuntimeException e) {
+        if (e instanceof IllegalStateException && e.getMessage() != null) {
+            return e.getMessage();
+        }
+        if (e instanceof org.springframework.dao.DataIntegrityViolationException) {
+            log.warn("Import refused by a database constraint", e);
+            return "A row in this file violated a data rule. Nothing from it was saved.";
+        }
+        log.warn("Import failed", e);
+        return "The import failed before any rows were saved.";
     }
 
     /**
@@ -386,16 +454,17 @@ public class ImportService {
     }
 
     /**
-     * Accounts named by the most recent import that this system does not have.
+     * What an import did, and what it could not do.
      *
-     * <p>Held per-request rather than returned through the batch, because a batch row records what
-     * happened while this describes what to do next.
+     * <p>Returned rather than parked on a {@code ThreadLocal} for the controller to collect
+     * afterwards, which is how it used to work. That value was set and never removed, so on a
+     * pooled request thread it outlived the request that wrote it — stale on the next read, and a
+     * tenant leak the moment there is a second user. A return value has none of those properties.
+     *
+     * @param batch the completed batch row
+     * @param unlinked accounts the file names that do not exist here; empty when everything landed
      */
-    private final ThreadLocal<List<UnlinkedAccount>> lastUnlinked =
-        ThreadLocal.withInitial(List::of);
-
-    public List<UnlinkedAccount> unlinkedFromLastImport() {
-        return lastUnlinked.get();
+    public record ImportOutcome(ImportBatch batch, List<UnlinkedAccount> unlinked) {
     }
 
     /**

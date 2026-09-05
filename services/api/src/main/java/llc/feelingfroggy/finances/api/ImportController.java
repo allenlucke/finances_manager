@@ -78,9 +78,9 @@ public class ImportController {
         }
 
         try {
-            var batch = imports.importStatement(userId, account, content,
+            var outcome = imports.importStatement(userId, account, content,
                 file.getOriginalFilename());
-            return ImportResult.of(batch, imports.unlinkedFromLastImport());
+            return ImportResult.of(outcome.batch(), outcome.unlinked());
         } catch (RuntimeException e) {
             // The batch row is already marked failed with the reason; surface it as a 422 rather
             // than a 500, because an unparseable file is a normal outcome and not a server fault.
@@ -118,8 +118,8 @@ public class ImportController {
         }
 
         try {
-            var batch = imports.importPositions(userId, content, file.getOriginalFilename());
-            return ImportResult.of(batch, imports.unlinkedFromLastImport());
+            var outcome = imports.importPositions(userId, content, file.getOriginalFilename());
+            return ImportResult.of(outcome.batch(), outcome.unlinked());
         } catch (RuntimeException e) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
         }

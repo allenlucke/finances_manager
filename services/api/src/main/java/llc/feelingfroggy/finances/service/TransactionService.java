@@ -150,25 +150,46 @@ public class TransactionService {
         return restored;
     }
 
+    /** A manually entered row has no institution id. */
+    public static String dedupeKey(Long accountId, LocalDate date, BigDecimal amount,
+                                   String description) {
+        return dedupeKey(accountId, date, amount, description, null);
+    }
+
     private static Direction opposite(Direction direction) {
         return direction == Direction.DEBIT ? Direction.CREDIT : Direction.DEBIT;
     }
 
     /**
-     * Mirrors {@code finances_ai.ingest.csv_reader.dedupe_key}: account, ISO date, amount to four
-     * decimals, and the normalized description, SHA-256'd and truncated to 32 hex characters.
+     * A transaction's identity, for idempotent import and for manual/import collision.
      *
-     * <p>The two implementations must agree, or a manually entered row and the same row later
-     * imported from a statement will not collide and the ledger gains a duplicate. Because the
-     * account id is part of the payload, the two legs of a transfer get different keys for free.
+     * <p><strong>This is the only implementation.</strong> The parser still emits a
+     * {@code dedupe_key} of its own, but the API no longer reads it. Two implementations in two
+     * languages had drifted three ways — the Python side hashed the <em>signed</em> amount while
+     * this side hashed the magnitude, so no debit entered by hand could ever collide with the same
+     * debit imported later; Python stripped trailing reference numbers and Java did not; and for
+     * multi-account files Python keyed on a hash of the account number while Java keyed on the
+     * account id. The Javadoc here said they "must agree". They never had. One owner, no drift.
+     *
+     * <p>When the institution supplies its own transaction id, that is the identity: nothing else
+     * can distinguish two genuinely separate transactions that match on every visible field, and a
+     * real month contained three identical same-day transfers told apart only by that id. Otherwise
+     * the account, ISO date, magnitude to four decimals, and the description with only whitespace
+     * and case normalized — reference numbers are kept, because {@code CHECK #1234} and
+     * {@code CHECK #5678} on the same day for the same amount are two checks.
+     *
+     * <p>The account id is part of the payload, so the two legs of a transfer, and identical
+     * activity in two accounts, get different keys for free.
      */
     public static String dedupeKey(Long accountId, LocalDate date, BigDecimal amount,
-                                   String description) {
-        String payload = String.join("|",
-            String.valueOf(accountId),
-            date.toString(),
-            amount.setScale(4, RoundingMode.HALF_UP).toPlainString(),
-            description.trim().toUpperCase().replaceAll("\\s+", " "));
+                                   String description, String externalId) {
+        String payload = externalId != null && !externalId.isBlank()
+            ? String.join("|", String.valueOf(accountId), "id", externalId.trim())
+            : String.join("|",
+                String.valueOf(accountId),
+                date.toString(),
+                amount.abs().setScale(4, RoundingMode.HALF_UP).toPlainString(),
+                description.trim().toUpperCase().replaceAll("\\s+", " "));
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")
                 .digest(payload.getBytes(StandardCharsets.UTF_8));

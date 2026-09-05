@@ -36,15 +36,7 @@ class ApiFlowTest extends PostgresIntegrationTest {
 
     @BeforeEach
     void reset() {
-        jdbc.update("DELETE FROM categorization");
-        jdbc.update("DELETE FROM transaction");
-        jdbc.update("DELETE FROM target");
-        jdbc.update("DELETE FROM statement");
-        jdbc.update("DELETE FROM account");
-        jdbc.update("DELETE FROM category");
-        jdbc.update("DELETE FROM ledger_entity");
-        jdbc.update("DELETE FROM app_user");
-        jdbc.update("DELETE FROM spring_session");
+        cleanDatabase(jdbc);
         api = new ApiClient(port);
     }
 
@@ -140,6 +132,24 @@ class ApiFlowTest extends PostgresIntegrationTest {
         assertThat(response.json().get("name").asText()).isEqualTo("Chase Sapphire");
         assertThat(new BigDecimal(response.json().get("balance").asText()))
             .isEqualByComparingTo("0");
+    }
+
+    @Test
+    @DisplayName("authenticating rotates the session id")
+    void loginRotatesTheSessionId() {
+        setupAndLogin();
+        String first = api.sessionCookie().orElseThrow();
+
+        // Authenticate again on the existing session. A controller-based login does not get
+        // formLogin's ChangeSessionIdAuthenticationStrategy for free; without an explicit
+        // rotation the id fixed before authentication stays valid after it.
+        assertThat(api.login("allen@feelingfroggy.llc", "a-long-enough-passphrase").status())
+            .isEqualTo(204);
+        String second = api.sessionCookie().orElseThrow();
+
+        assertThat(second).isNotEqualTo(first);
+        // And the rotated session is the live one — not a dangling cookie.
+        assertThat(api.get("/api/v1/auth/me").status()).isEqualTo(200);
     }
 
     @Test

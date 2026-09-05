@@ -121,3 +121,35 @@ def test_a_purchase_is_not_flagged_just_because_it_is_a_credit():
 
     assert suggestion.is_transfer is False
     assert suggestion.category == "Groceries"
+
+
+import pytest
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        # Reproduced 2026-08-29 — each of these was a transfer, i.e. removed from the budget.
+        "ONLINE PAYMENT TO CITY UTILITIES",
+        "ONLINE PAYMENT DENTIST",
+        "E-PAYMENT STATE FARM INSURANCE",
+        "ZELLE PAYMENT TO PLUMBER JOE",
+        "ZELLE TO LANDLORD",
+    ],
+)
+def test_generic_payment_wording_is_never_a_transfer_on_its_own(description):
+    """The list that must never be flagged. AUTOPAY taught this once; these are the same lesson."""
+    assert categorize_one(make_transaction(description)).is_transfer is False
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "ONLINE PAYMENT CHASE CARD",
+        "E-PAYMENT CAPITAL ONE VISA",
+        "ONLINE PAYMENT THANK YOU",
+    ],
+)
+def test_a_card_payment_described_by_channel_is_still_a_transfer(description):
+    """Tightening must not lose the real card payments the old rules were written for."""
+    assert categorize_one(make_transaction(description)).is_transfer is True

@@ -148,6 +148,14 @@ public final class ApiClient {
             .findFirst();
     }
 
+    /** The current session id, for asserting it changes when it should. */
+    public java.util.Optional<String> sessionCookie() {
+        return cookies.getCookieStore().getCookies().stream()
+            .filter(cookie -> "SESSION".equals(cookie.getName()))
+            .map(HttpCookie::getValue)
+            .findFirst();
+    }
+
     public boolean hasSessionCookie() {
         return cookies.getCookieStore().getCookies().stream()
             .anyMatch(cookie -> "SESSION".equals(cookie.getName()));

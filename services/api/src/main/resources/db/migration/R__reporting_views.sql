@@ -47,6 +47,40 @@ WHERE t.deleted_at IS NULL;
 
 
 -- ---------------------------------------------------------------------------------------------
+-- Holdings (M4). Owned here rather than in V5 so the definition can evolve without a migration.
+-- ---------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE VIEW v_latest_holding_snapshot AS
+SELECT DISTINCT ON (account_id)
+       user_id,
+       account_id,
+       as_of
+FROM holding
+ORDER BY account_id, as_of DESC;
+
+-- What an account's latest snapshot is worth.
+--
+-- cost_basis is NULL unless it is known for EVERY position. SQL's SUM skips NULLs, and the export
+-- writes "--" for cash and money-market rows, meaning not-applicable — so a naive SUM over ten
+-- positions with two unknowns reported the other eight as *the* basis, and market value minus that
+-- understated figure overstated the gain with nothing to mark it. A partial basis is not a basis.
+-- cost_basis_complete says which case you are in.
+CREATE OR REPLACE VIEW v_account_market_value AS
+SELECT h.user_id,
+       h.account_id,
+       s.as_of                                                     AS as_of,
+       SUM(h.market_value)::NUMERIC(19,4)                          AS market_value,
+       CASE WHEN bool_or(h.cost_basis IS NULL) THEN NULL
+            ELSE SUM(h.cost_basis) END::NUMERIC(19,4)              AS cost_basis,
+       COUNT(*)                                                    AS holding_count,
+       NOT bool_or(h.cost_basis IS NULL)                           AS cost_basis_complete
+FROM holding h
+JOIN v_latest_holding_snapshot s
+  ON s.account_id = h.account_id AND s.as_of = h.as_of
+GROUP BY h.user_id, h.account_id, s.as_of;
+
+
+-- ---------------------------------------------------------------------------------------------
 -- Balances
 -- ---------------------------------------------------------------------------------------------
 

@@ -101,6 +101,22 @@ own, and is not part of the compose stack — Claude Code launches it.
   puts an `AnonymousAuthenticationToken` in the context for every unauthenticated request, so that
   check is false almost everywhere and any filter guarded on it silently does nothing. Use an
   `AuthenticationTrustResolver`.
+- **Nothing on the authentication path reads a header the caller controls.** `X-Forwarded-For`
+  was read into the login audit and cast to `inet` on insert; a non-address value made the insert
+  throw inside the authentication event, the failure row was never written, and lockout — which
+  counts rows — never fired. Five wrong passwords with `X-Forwarded-For: nope`, then the right one:
+  signed in. Reproduced 2026-08-29. The audit row *is* the control, so its write must not depend on
+  anything a caller can put in a request. `GapsClosedTest.lockoutSurvivesAHostileForwardedHeader`.
+- **One dedupe implementation, in the API.** The parser still emits a `dedupe_key`; the API does
+  not read it. Two implementations in two languages drifted three ways without any test noticing
+  (signed vs. magnitude amount, reference-number stripping, account id vs. account hash), and the
+  first of those meant no debit entered by hand could ever collide with the same debit imported
+  later. `TransactionService.dedupeKey` is the identity; `ImportIdentityTest` pins it.
+- **A refund is not a transfer.** A transfer is *not spending* and stays uncategorizable by CHECK
+  constraint. A refund is *negative spending* and must be bookable against the category it refunds.
+  The parser reports them as two flags (`is_probable_transfer`, `is_probable_refund`) and the API
+  only ever marks the first as a transfer. Folding them together made every refund uncategorizable
+  forever and left the category overcharged.
 - **Browser tests run on their own stack, never the dev one.** `make e2e` builds a separate compose
   project (`finances-e2e`, ports 4201/8081) with its own volume, and Playwright's defaults point
   there. The suite truncates, and a truncate against a database in use destroys real statements with

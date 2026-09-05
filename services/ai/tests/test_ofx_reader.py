@@ -106,3 +106,32 @@ def test_accepts_a_string_as_well_as_bytes():
     result = parse_ofx(SAMPLE.read_text(), account_ref="1")
 
     assert len(result.transactions) == 5
+
+
+def test_identical_entries_differing_only_by_fitid_get_different_keys():
+    """The $2,100 bug, on the OFX path. Three identical same-day transfers were one key."""
+    from finances_ai.ingest import parse_ofx
+
+    def entry(fitid: str) -> str:
+        return (
+            "<STMTTRN><TRNTYPE>DEBIT</TRNTYPE><DTPOSTED>20260814000000</DTPOSTED>"
+            f"<TRNAMT>-1000.00</TRNAMT><FITID>{fitid}</FITID><NAME>TRANSFER TO SAVINGS</NAME></STMTTRN>"
+        )
+
+    ofx = (
+        "OFXHEADER:100\nDATA:OFXSGML\nVERSION:102\nSECURITY:NONE\nENCODING:USASCII\n"
+        "CHARSET:1252\nCOMPRESSION:NONE\nOLDFILEUID:NONE\nNEWFILEUID:NONE\n\n"
+        "<OFX><SIGNONMSGSRSV1><SONRS><STATUS><CODE>0</CODE><SEVERITY>INFO</SEVERITY></STATUS>"
+        "<DTSERVER>20260831000000</DTSERVER><LANGUAGE>ENG</LANGUAGE></SONRS></SIGNONMSGSRSV1>"
+        "<BANKMSGSRSV1><STMTTRNRS><TRNUID>1</TRNUID><STATUS><CODE>0</CODE><SEVERITY>INFO</SEVERITY></STATUS>"
+        "<STMTRS><CURDEF>USD</CURDEF><BANKACCTFROM><BANKID>1</BANKID><ACCTID>XXXX1234</ACCTID>"
+        "<ACCTTYPE>CHECKING</ACCTTYPE></BANKACCTFROM><BANKTRANLIST><DTSTART>20260801</DTSTART>"
+        f"<DTEND>20260831</DTEND>{entry('A1')}{entry('A2')}{entry('A3')}</BANKTRANLIST>"
+        "<LEDGERBAL><BALAMT>100.00</BALAMT><DTASOF>20260831</DTASOF></LEDGERBAL>"
+        "</STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>"
+    )
+    result = parse_ofx(ofx.encode(), account_ref="1")
+
+    keys = {t.dedupe_key for t in result.transactions}
+    assert len(result.transactions) == 3
+    assert len(keys) == 3, "identical transfers collapsed into one key"

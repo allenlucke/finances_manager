@@ -65,4 +65,7 @@ finances:
 
 logging:
   level:
-    llc.feelingfroggy.finances: DEBUG
+    # INFO by default, not DEBUG. AiServiceClient logs a rejected upload's body at DEBUG on the
+    # stated grounds that docs/SECURITY.md keeps statement content out of INFO — a mitigation that
+    # a package-level DEBUG default cancelled out entirely. Set LOG_LEVEL=DEBUG deliberately.
+    llc.feelingfroggy.finances: ${LOG_LEVEL:INFO}

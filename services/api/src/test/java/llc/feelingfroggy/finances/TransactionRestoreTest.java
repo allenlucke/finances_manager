@@ -37,16 +37,7 @@ class TransactionRestoreTest extends PostgresIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        jdbc.update("DELETE FROM categorization");
-        jdbc.update("DELETE FROM transaction");
-        jdbc.update("DELETE FROM target");
-        jdbc.update("DELETE FROM statement");
-        jdbc.update("DELETE FROM account");
-        jdbc.update("DELETE FROM category");
-        jdbc.update("DELETE FROM ledger_entity");
-        jdbc.update("DELETE FROM app_user");
-        jdbc.update("DELETE FROM login_attempt");
-        jdbc.update("DELETE FROM spring_session");
+        cleanDatabase(jdbc);
 
         api = new ApiClient(port);
         api.primeCsrf();

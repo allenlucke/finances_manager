@@ -94,6 +94,18 @@ a wrong secret.
 
 ## Auth
 
+- **The login audit reads nothing the caller controls.** It records the connection's own address
+  and never `X-Forwarded-For`. That header was once preferred, and a non-address value made the
+  audit insert throw before the failure row was written — which switched lockout off, because
+  lockout counts those rows. Behind a reverse proxy the recorded address is the proxy's; that is a
+  known limitation and the honest one. A trusted-proxy setup can restore the original address from
+  the proxy's side later, without ever trusting the client's.
+- **Login rotates the session id.** A controller-based login does not get `formLogin`'s
+  `ChangeSessionIdAuthenticationStrategy`; `AuthController` calls `changeSessionId()` itself, so a
+  session id fixed before authentication is not valid after it.
+- **The API logs at INFO unless `LOG_LEVEL` says otherwise.** It shipped at DEBUG, which is the
+  level `AiServiceClient` uses for a rejected upload's body on the grounds that this document keeps
+  statement content out of INFO. The default and the mitigation cancelled out.
 - Legacy used `jjwt 0.9.1` with a symmetric secret. That library version has known vulnerabilities
   and none of that code is carried forward.
 - Passwords: modern hashing (argon2id or bcrypt via Spring Security defaults). No exceptions.

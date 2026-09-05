@@ -41,35 +41,11 @@ public class ImportBatchRecorder {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public ImportBatch complete(Long batchId, int rowCount, int applied, int duplicates) {
-        var batch = batches.findById(batchId).orElseThrow();
-        batch.setRowCount(rowCount);
-        batch.setAppliedCount(applied);
-        batch.setDuplicateCount(duplicates);
-        batch.setStatus(ImportStatus.APPLIED);
-        batch.setCompletedAt(Instant.now());
-        return batches.save(batch);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void fail(Long batchId, String reason) {
         batches.findById(batchId).ifPresent(batch -> {
             batch.setStatus(ImportStatus.FAILED);
             batch.setError(reason);
             batch.setCompletedAt(Instant.now());
-            batches.save(batch);
-        });
-    }
-
-    /**
-     * Records something the user needs to know about an otherwise successful import — rows skipped
-     * because no account matched, for instance. Kept on the batch rather than only in a log so it
-     * survives to the import history screen.
-     */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void note(Long batchId, String message) {
-        batches.findById(batchId).ifPresent(batch -> {
-            batch.setError(message);
             batches.save(batch);
         });
     }

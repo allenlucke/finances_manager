@@ -46,10 +46,19 @@ class ParsedTransaction(BaseModel):
     is_probable_transfer: bool = Field(
         default=False,
         description=(
-            "The source file's own row type says this is a payment, refund or adjustment rather "
-            "than a purchase — e.g. Chase's Type column. A HINT, not a decision: the parser "
-            "reports what the file says and the API decides what it means. Far more reliable "
-            "than pattern-matching the description, which is all the categorizer can otherwise do."
+            "The source file's own row type says this is a payment to the account — money moving "
+            "between the user's own accounts — rather than a purchase. A HINT, not a decision: the "
+            "parser reports what the file says and the API decides what it means."
+        ),
+    )
+    is_probable_refund: bool = Field(
+        default=False,
+        description=(
+            "The source file's own row type says refund or adjustment. Deliberately NOT folded into "
+            "is_probable_transfer: a transfer is not spending and must stay uncategorizable, while "
+            "a refund is negative spending and must be bookable against the category it refunds. "
+            "One flag carrying both meanings forced every refund into the transfer path, where the "
+            "database's CHECK constraint made it uncategorizable forever."
         ),
     )
     raw: dict[str, str] = Field(default_factory=dict, description="Original source row, verbatim")

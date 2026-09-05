@@ -34,6 +34,13 @@ _WHITESPACE = re.compile(r"\s+")
 # Trailing store/reference numbers that make otherwise identical merchants look distinct.
 _TRAILING_REF = re.compile(r"[\s#*]+[0-9]{3,}$")
 
+# Never echoed back in `raw`. docs/SECURITY.md: account numbers are stored masked. The positions
+# parser has had this filter since its first real file; this one did not, and the Fidelity history
+# format maps an "Account Number" column — so every row carried the full number in `raw` right
+# beside the mask that was hiding it. Java does not persist `raw`, which limited the exposure to
+# the internal hop and a DEBUG log line; it was still the exact thing the policy forbids.
+_REDACTED_COLUMNS = frozenset({"Account Number", "Account number", "Account No", "Account No."})
+
 # How far to look for a header before giving up. Metadata preambles are a few lines, never dozens.
 _MAX_PREAMBLE_ROWS = 12
 
@@ -65,7 +72,10 @@ class CsvFormat:
     # Exports covering several accounts carry the account on each row.
     account_number_column: str | None = None
     type_column: str | None = None
-    non_expense_types: frozenset[str] = frozenset()
+    # Row types that mean money moved between the user's own accounts — a card payment.
+    transfer_types: frozenset[str] = frozenset()
+    # Row types that mean a purchase was reversed. Not a transfer: it must stay categorizable.
+    refund_types: frozenset[str] = frozenset()
     # For exports whose type field is free text rather than a short enum — a brokerage writes
     # "YOU BOUGHT ... (Cash)", not "Buy" — matched case-insensitively against the type column.
     non_expense_patterns: tuple[str, ...] = ()
@@ -83,7 +93,8 @@ _FORMATS: tuple[CsvFormat, ...] = (
         amount_column="Amount",
         date_formats=("%m/%d/%Y", "%Y-%m-%d"),
         type_column="Type",
-        non_expense_types=frozenset({"Payment", "Return", "Adjustment"}),
+        transfer_types=frozenset({"Payment"}),
+        refund_types=frozenset({"Return", "Adjustment"}),
     ),
     CsvFormat(
         # Community America Credit Union. Two things make this shape distinct: the amount is split
@@ -464,8 +475,13 @@ def _map_row(
         account_mask=account_mask,
         account_key=account_key,
         account_name=account_name,
-        is_probable_transfer=looks_like_non_expense(row_type, fmt),
-        raw={k: v for k, v in row.items() if k and v is not None},
+        is_probable_transfer=looks_like_transfer(row_type, fmt),
+        is_probable_refund=looks_like_refund(row_type, fmt),
+        raw={
+            k: v
+            for k, v in row.items()
+            if k and v is not None and k not in _REDACTED_COLUMNS and k != fmt.account_number_column
+        },
     )
 
 
@@ -492,8 +508,8 @@ def _row_amount(row: dict[str, str], fmt: CsvFormat) -> Decimal:
     raise ValueError("Row has neither a debit nor a credit amount")
 
 
-def looks_like_non_expense(row_type: str | None, fmt: CsvFormat) -> bool:
-    """Whether a source row type marks a payment/refund rather than a purchase.
+def looks_like_transfer(row_type: str | None, fmt: CsvFormat) -> bool:
+    """Whether a source row type marks a payment or transfer rather than a purchase.
 
     Kept separate from the mapping logic on purpose: this reports what the file *says*, and the API
     decides what it *means*. Surfaced on every row as ``is_probable_transfer``.
@@ -501,6 +517,22 @@ def looks_like_non_expense(row_type: str | None, fmt: CsvFormat) -> bool:
     if not row_type or not fmt.type_column:
         return False
     value = row_type.strip()
-    if value in fmt.non_expense_types:
+    if value in fmt.transfer_types:
         return True
     return any(re.search(pattern, value, re.IGNORECASE) for pattern in fmt.non_expense_patterns)
+
+
+def looks_like_refund(row_type: str | None, fmt: CsvFormat) -> bool:
+    """Whether a source row type marks a reversed purchase.
+
+    A refund used to be reported as a transfer, and downstream that meant: not spending, never
+    categorizable. But a refund IS spending — negative spending — and an $84 grocery refund that
+    cannot be booked against Groceries leaves that category overcharged by $84 for good.
+    """
+    if not row_type or not fmt.type_column:
+        return False
+    return row_type.strip() in fmt.refund_types
+
+
+# Kept for callers that predate the split; means "transfer" and nothing else now.
+looks_like_non_expense = looks_like_transfer

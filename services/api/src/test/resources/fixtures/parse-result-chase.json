@@ -11,6 +11,7 @@
       "external_id": null,
       "dedupe_key": "31c3cbdbbfa78a3bbd4a6b6ba9d060d8",
       "is_probable_transfer": false,
+      "is_probable_refund": false,
       "raw": {
         "Transaction Date": "08/14/2026",
         "Post Date": "08/15/2026",
@@ -31,6 +32,7 @@
       "external_id": null,
       "dedupe_key": "62809d45479d8bbde8616862d0c0bd2b",
       "is_probable_transfer": false,
+      "is_probable_refund": false,
       "raw": {
         "Transaction Date": "08/12/2026",
         "Post Date": "08/13/2026",
@@ -51,6 +53,7 @@
       "external_id": null,
       "dedupe_key": "de01c89f0901907f734d6bfae172cf42",
       "is_probable_transfer": true,
+      "is_probable_refund": false,
       "raw": {
         "Transaction Date": "08/10/2026",
         "Post Date": "08/11/2026",
@@ -71,6 +74,7 @@
       "external_id": null,
       "dedupe_key": "5213825594f64282c19c407228541386",
       "is_probable_transfer": false,
+      "is_probable_refund": false,
       "raw": {
         "Transaction Date": "08/09/2026",
         "Post Date": "08/10/2026",
@@ -91,6 +95,7 @@
       "external_id": null,
       "dedupe_key": "d0e884ed73e54c0eae2f39cd181b8c9a",
       "is_probable_transfer": false,
+      "is_probable_refund": false,
       "raw": {
         "Transaction Date": "08/08/2026",
         "Post Date": "08/09/2026",
@@ -111,6 +116,7 @@
       "external_id": null,
       "dedupe_key": "e6043f3adc1d71d6ff1f49d9dc171c15",
       "is_probable_transfer": true,
+      "is_probable_refund": false,
       "raw": {
         "Transaction Date": "08/07/2026",
         "Post Date": "08/08/2026",

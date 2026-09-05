@@ -51,6 +51,9 @@ services:
       DATABASE_USER: ${DATABASE_USER:-finances}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-finances}
       AI_SERVICE_URL: http://ai:8000
+      # Honoured by the API since 2026-08-29; before that only `ai` read it and the API shipped at
+      # DEBUG, which put rejected statement bodies in the log.
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       # Local automation token (D-17). Empty by default, which disables the feature outright.
       LOCAL_API_TOKEN: ${LOCAL_API_TOKEN:-}
       # Off in Docker, and this is not a weakening — it is the check admitting it cannot work here.

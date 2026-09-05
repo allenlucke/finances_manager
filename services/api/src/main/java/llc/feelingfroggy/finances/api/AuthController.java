@@ -61,6 +61,15 @@ public class AuthController {
                 UsernamePasswordAuthenticationToken.unauthenticated(
                     credentials.username(), credentials.password()));
 
+            // Rotate the session id on authentication. formLogin installs
+            // ChangeSessionIdAuthenticationStrategy for this; a controller-based login gets
+            // nothing unless it asks. Without it a session id fixed before login stays valid after
+            // it, which is the textbook fixation attack — and the id is the only thing standing
+            // between a stolen cookie and thirty days of access (session.timeout).
+            if (request.getSession(false) != null) {
+                request.changeSessionId();
+            }
+
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authentication);
             SecurityContextHolder.setContext(context);

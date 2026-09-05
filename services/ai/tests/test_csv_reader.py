@@ -105,7 +105,11 @@ def test_chase_type_column_marks_payments_as_probable_transfers():
     purchase, payment, refund = result.transactions
     assert purchase.is_probable_transfer is False
     assert payment.is_probable_transfer is True
-    assert refund.is_probable_transfer is True
+    # A refund is NOT a transfer. It used to be reported as one, and downstream that meant
+    # uncategorizable forever — the category it refunded stayed overcharged.
+    assert refund.is_probable_transfer is False
+    assert refund.is_probable_refund is True
+    assert payment.is_probable_refund is False
 
 
 def test_generic_format_has_no_type_column_so_never_guesses_a_transfer():

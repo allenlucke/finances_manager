@@ -33,11 +33,17 @@ _TRANSFER_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
         # keeps "AUTOPAY 1234 THANK YOU" while refusing to fire on autopay alone, which is how a
         # utility bill got misread as a transfer.
         r"\b(PAYMENT|AUTOPAY|PMT)\b.{0,40}\bTHANK\s*YOU\b",
-        r"\bONLINE\s+PAYMENT\b",
+        # ONLINE PAYMENT and E-PAYMENT describe *how*, exactly like AUTOPAY did. Bare, they
+        # matched "ONLINE PAYMENT TO CITY UTILITIES" and "E-PAYMENT DENTIST" — and because a
+        # transfer is uncategorizable by CHECK constraint, those expenses were not misfiled, they
+        # were removed from the budget. They now need a card-ish token alongside, the same way
+        # the THANK YOU rule needs a payment word.
+        r"\b(ONLINE|E-?)\s*PAYMENT\b.{0,40}\b(CARD|CRD|VISA|MASTERCARD|AMEX|DISCOVER|CHASE|CITI|CAPITAL\s*ONE|BARCLAY)\b",
         r"\bCARDMEMBER\s+SERV\b",
-        r"\bE-?PAYMENT\b",
         r"\bTRANSFER\s+(TO|FROM)\b",
-        r"\bZELLE\b",
+        # ZELLE is gone. A Zelle to a plumber, a landlord or a friend is spending, and nothing in
+        # the description can tell that apart from a Zelle to your own savings. The review queue
+        # can; a 0.95-confidence suppression cannot.
         r"\bINTERNAL\s+TRANSFER\b",
         # Money moving to the user's own brokerage. Found in a real checking export as
         # "ACH PAYMENT FID BKG SVC LLC" — eight times in one month, every one of them counted as

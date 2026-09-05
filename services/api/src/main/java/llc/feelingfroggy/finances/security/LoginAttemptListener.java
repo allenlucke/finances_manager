@@ -43,16 +43,23 @@ public class LoginAttemptListener {
     }
 
     /**
-     * Best effort. Behind a reverse proxy this is the proxy unless it forwards the original, and
-     * the column is nullable precisely because it cannot always be known.
+     * The connection's own address, and deliberately nothing the caller can write.
+     *
+     * <p>This used to prefer {@code X-Forwarded-For}. That header is supplied by whoever is
+     * connecting, and it is inserted into an {@code inet} column — so a value like {@code nope}
+     * made the insert throw, inside the synchronous event listener, before the failure row was
+     * written. Lockout counts rows. Five wrong passwords sent with a junk header, then the right
+     * one: signed in. Reproduced 2026-08-29. The header also let anyone forge the source address in
+     * the security audit, and it contradicted {@code LocalTokenAuthenticationFilter}, which refuses
+     * to read it for exactly this reason.
+     *
+     * <p>Behind a reverse proxy this records the proxy. That is a known, honest limitation and the
+     * column is nullable for it; a trusted-proxy configuration can restore the original address
+     * later, from the proxy's side, without ever trusting the client's.
      */
     private static String sourceIp() {
         if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attrs) {
             HttpServletRequest request = attrs.getRequest();
-            String forwarded = request.getHeader("X-Forwarded-For");
-            if (forwarded != null && !forwarded.isBlank()) {
-                return forwarded.split(",")[0].trim();
-            }
             return request.getRemoteAddr();
         }
         return null;
