@@ -28,15 +28,24 @@ public class ReportController {
         this.currentUser = currentUser;
     }
 
-    /** Net worth per entity, plus the combined figure (the row with a null entity). */
+    /**
+     * Net worth per entity, plus the combined figure (the row with a null entity).
+     *
+     * <p>Each row says how much of it rests on a holdings snapshot and how old the oldest one is.
+     * A brokerage balance is the last positions import, and a deposit made since is not in the
+     * figure until the next one — so the number without its date is a number that can be quietly
+     * wrong by whatever moved after the snapshot.
+     */
     @GetMapping("/net-worth")
     public List<NetWorthRow> netWorth() {
         return jdbc.query("""
-            SELECT ledger_entity_id, net_worth FROM v_net_worth WHERE user_id = ?
+            SELECT ledger_entity_id, net_worth, snapshot_accounts, oldest_snapshot
+            FROM v_net_worth WHERE user_id = ?
             ORDER BY ledger_entity_id NULLS LAST
             """,
             (rs, row) -> new NetWorthRow(
-                rs.getObject("ledger_entity_id", Long.class), rs.getBigDecimal("net_worth")),
+                rs.getObject("ledger_entity_id", Long.class), rs.getBigDecimal("net_worth"),
+                rs.getInt("snapshot_accounts"), rs.getObject("oldest_snapshot", LocalDate.class)),
             currentUser.id());
     }
 
@@ -94,7 +103,12 @@ public class ReportController {
             currentUser.id());
     }
 
-    public record NetWorthRow(Long ledgerEntityId, BigDecimal netWorth) {
+    /**
+     * @param snapshotAccounts accounts in this figure valued from a holdings snapshot, not the ledger
+     * @param oldestSnapshot the date of the oldest such snapshot; null when there are none
+     */
+    public record NetWorthRow(Long ledgerEntityId, BigDecimal netWorth, int snapshotAccounts,
+                              LocalDate oldestSnapshot) {
     }
 
     public record SpendRow(LocalDate month, Long categoryId, String categoryName, String categoryKind,

@@ -128,10 +128,20 @@ LEFT JOIN v_account_market_value mv ON mv.account_id = a.id;
 
 -- Net worth, per entity and overall. Because liabilities are already negative this is a plain SUM:
 -- no CASE on account_type, which is the payoff of the sign convention.
+--
+-- A brokerage account is worth what its last positions import said, and nothing in the ledger
+-- moves that number: a deposit made after the snapshot is not in net worth until the next one.
+-- The figure is only honest with its date beside it, so the view says how many accounts are
+-- valued from a snapshot and how old the oldest such snapshot is. (Adding post-snapshot cash
+-- movements to the market value is the better fix and waits on M5, transfer pairing: until a
+-- "YOU BOUGHT" row is known to be cash changing form rather than leaving, summing the ledger on
+-- top of a snapshot would subtract every purchase from the balance.)
 CREATE OR REPLACE VIEW v_net_worth AS
 SELECT user_id,
        ledger_entity_id,
-       SUM(balance)::NUMERIC(19,4) AS net_worth
+       SUM(balance)::NUMERIC(19,4)                                    AS net_worth,
+       COUNT(*) FILTER (WHERE balance_source = 'holdings')            AS snapshot_accounts,
+       MIN(balance_as_of) FILTER (WHERE balance_source = 'holdings')  AS oldest_snapshot
 FROM v_account_balance
 GROUP BY GROUPING SETS ((user_id, ledger_entity_id), (user_id));
 

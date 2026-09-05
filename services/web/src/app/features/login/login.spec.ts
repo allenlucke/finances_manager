@@ -86,6 +86,21 @@ describe('LoginComponent', () => {
     expect(component['busy']()).toBe(false);
   });
 
+  it('a stale CSRF token is not blamed on the passphrase, and a fresh one is fetched', () => {
+    component['loginForm'].setValue({
+      username: 'allen@feelingfroggy.llc',
+      password: 'a-long-enough-passphrase',
+    });
+    component['submitLogin']();
+
+    httpMock.expectOne('/api/v1/auth/login').flush(null, { status: 403, statusText: 'Forbidden' });
+    httpMock.expectOne('/api/v1/auth/csrf').flush({ headerName: 'X-XSRF-TOKEN', token: 't' });
+
+    expect(component['error']()).toContain('stale');
+    expect(component['error']()).not.toContain('not accepted');
+    expect(component['busy']()).toBe(false);
+  });
+
   it('blames the credentials when that is what went wrong', () => {
     component['loginForm'].setValue({
       username: 'allen@feelingfroggy.llc',

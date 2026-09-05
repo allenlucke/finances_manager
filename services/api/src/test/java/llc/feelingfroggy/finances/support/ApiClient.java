@@ -108,6 +108,38 @@ public final class ApiClient {
     }
 
     /**
+     * Uploads a file as {@code multipart/form-data}, the way a browser form does — with the CSRF
+     * header and session cookie, so this is the exact request the import screen sends.
+     *
+     * <p>The body is assembled by hand so the test depends on nothing the production code does
+     * not. Note the Content-Type carries a boundary: setting it without one is the mistake
+     * CLAUDE.md warns about on the API's own call to the parser, and produces a body with no parts.
+     */
+    public Response postFile(String path, String field, String filename, byte[] content,
+                             Map<String, String> params) {
+        String boundary = "----finances-test-" + java.util.UUID.randomUUID();
+        var out = new java.io.ByteArrayOutputStream();
+        var utf8 = java.nio.charset.StandardCharsets.UTF_8;
+        try {
+            for (var entry : params.entrySet()) {
+                out.write(("--" + boundary + "\r\nContent-Disposition: form-data; name=\""
+                    + entry.getKey() + "\"\r\n\r\n" + entry.getValue() + "\r\n").getBytes(utf8));
+            }
+            out.write(("--" + boundary + "\r\nContent-Disposition: form-data; name=\"" + field
+                + "\"; filename=\"" + filename + "\"\r\nContent-Type: application/octet-stream\r\n\r\n")
+                .getBytes(utf8));
+            out.write(content);
+            out.write(("\r\n--" + boundary + "--\r\n").getBytes(utf8));
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Could not assemble the multipart body", e);
+        }
+        var builder = request(path)
+            .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+            .POST(HttpRequest.BodyPublishers.ofByteArray(out.toByteArray()));
+        return send(builder);
+    }
+
+    /**
      * Every request advertises {@code Accept: application/json}, exactly as Angular's HttpClient
      * does. This is not cosmetic: Spring Security content-negotiates its authentication entry
      * point, so a client that omits it is treated as a browser and gets a redirect to an HTML login

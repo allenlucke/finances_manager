@@ -9,7 +9,14 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { ApiClient } from '../../core/api';
 import { LoadState } from '../../core/load-state';
-import { amountClass, firstOfThisMonth, money, monthLabel, today } from '../../core/money';
+import {
+  amountClass,
+  firstOfThisMonth,
+  money,
+  monthLabel,
+  shortDate,
+  today,
+} from '../../core/money';
 import { Account, LedgerEntity, NetWorthRow, ReconciliationRow, SpendRow } from '../../core/models';
 
 /**
@@ -67,6 +74,19 @@ export class DashboardComponent {
   protected readonly combined = computed(
     () => this.netWorth.value()?.find((row) => row.ledgerEntityId === null)?.netWorth ?? null,
   );
+
+  /**
+   * Beside the headline whenever any part of it is a holdings snapshot. The number is only honest
+   * with its date: nothing in the ledger moves a brokerage balance between positions imports.
+   */
+  protected readonly snapshotNote = computed(() => {
+    const row = this.netWorth.value()?.find((r) => r.ledgerEntityId === null);
+    if (!row || row.snapshotAccounts === 0 || !row.oldestSnapshot) {
+      return null;
+    }
+    const noun = row.snapshotAccounts === 1 ? 'brokerage account' : 'brokerage accounts';
+    return `Includes ${row.snapshotAccounts} ${noun} valued as of ${shortDate(row.oldestSnapshot)}. Deposits since then count after the next positions import.`;
+  });
 
   protected readonly perEntity = computed(() =>
     (this.netWorth.value() ?? [])

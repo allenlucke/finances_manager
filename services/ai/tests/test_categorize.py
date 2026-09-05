@@ -83,6 +83,7 @@ def test_unknown_merchant_admits_it_rather_than_guessing():
 
     assert suggestion.category is None
     assert suggestion.confidence == 0.0
+    assert suggestion.method == "none"
     assert suggestion.is_transfer is False
 
 

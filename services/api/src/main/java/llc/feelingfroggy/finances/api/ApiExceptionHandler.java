@@ -11,6 +11,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Turns the failures this API actually produces into useful status codes.
@@ -71,6 +72,26 @@ public class ApiExceptionHandler {
         var problem = ProblemDetail.forStatus(HttpStatus.UNPROCESSABLE_ENTITY);
         problem.setTitle("Not allowed");
         problem.setDetail(exception.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    /**
+     * A controller's own refusal, carrying the sentence it wrote.
+     *
+     * <p>Without this, a {@code ResponseStatusException} fell through to Boot's default error
+     * body, which omits the reason ({@code server.error.include-message} defaults to never). So
+     * "Unknown account", "The file is empty" and the parser's "No parser matches this file" all
+     * reached the browser as a bare status, and the import screen showed its generic fallback for
+     * every one of them. The reasons are written for a person and carry nothing sensitive; the
+     * first HTTP-level import test is what noticed they were never delivered.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    ProblemDetail onRefusal(ResponseStatusException exception) {
+        var problem = ProblemDetail.forStatus(exception.getStatusCode());
+        problem.setTitle(exception.getStatusCode().is5xxServerError()
+            ? "Something went wrong" : "Not accepted");
+        problem.setDetail(exception.getReason());
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }

@@ -254,3 +254,23 @@ class TestFileToolsStayInsideTheAllowedFolders:
 
         assert result["status"] == 400
         assert api.calls == []
+
+
+def test_a_positions_import_says_updated_not_duplicate(api, tmp_path, monkeypatch):
+    """The API reuses the statement batch's duplicateCount for holdings refreshed in place.
+
+    Nothing was skipped, so the tool must not hand Claude a number labelled as if it were.
+    """
+    monkeypatch.setenv("FINANCES_IMPORT_ROOTS", str(tmp_path))
+    positions = tmp_path / "Portfolio_Positions.csv"
+    positions.write_text("Account number,Symbol,Current value\nX1,FXAIX,$10.00\n")
+    api.reply(
+        "POST", "/api/v1/imports/positions", 201, {"id": 1, "appliedCount": 2, "duplicateCount": 5}
+    )
+
+    result = server.import_positions(str(positions))
+
+    assert result["appliedCount"] == 2
+    assert result["updatedCount"] == 5
+    assert "duplicateCount" not in result
+    assert "updated" in result["counts"]

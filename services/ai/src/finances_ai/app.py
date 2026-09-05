@@ -141,4 +141,6 @@ async def parse_positions_endpoint(file: UploadFile = File(...)) -> PositionsRes
 @app.post("/categorize", response_model=CategorizeResponse)
 def categorize_endpoint(request: CategorizeRequest) -> CategorizeResponse:
     """Suggest categories. Advisory only — the API decides what to persist."""
-    return CategorizeResponse(suggestions=categorize(request.transactions))
+    return CategorizeResponse(
+        suggestions=categorize(request.transactions, account_type=request.account_type)
+    )

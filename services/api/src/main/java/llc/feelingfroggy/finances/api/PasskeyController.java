@@ -1,6 +1,7 @@
 package llc.feelingfroggy.finances.api;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -50,10 +51,21 @@ public class PasskeyController {
             (rs, row) -> new PasskeyView(
                 rs.getString("credential_id"),
                 rs.getString("label"),
-                rs.getObject("created", Instant.class),
-                rs.getObject("last_used", Instant.class),
+                instant(rs.getObject("created", OffsetDateTime.class)),
+                instant(rs.getObject("last_used", OffsetDateTime.class)),
                 rs.getBoolean("backup_state")),
             username);
+    }
+
+    /**
+     * TIMESTAMPTZ arrives as an OffsetDateTime; the Postgres driver refuses to hand it over as an
+     * Instant ("conversion to class java.time.Instant from timestamptz not supported"). Reading it
+     * as Instant threw on the first row, which turned into a 409 — and since the mapper only runs
+     * when a passkey exists, the listing worked perfectly right up until there was something to
+     * list. Found by the browser test that registers one.
+     */
+    private static Instant instant(OffsetDateTime value) {
+        return value == null ? null : value.toInstant();
     }
 
     @DeleteMapping("/{credentialId}")

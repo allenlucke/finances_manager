@@ -24,7 +24,7 @@ from decimal import Decimal
 
 from ofxtools.Parser import OFXTree
 
-from finances_ai.ingest.csv_reader import dedupe_key, normalize_description
+from finances_ai.ingest.common import dedupe_key, normalize_description
 from finances_ai.models import (
     ParsedTransaction,
     ParseResult,

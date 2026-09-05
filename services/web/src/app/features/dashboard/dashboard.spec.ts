@@ -61,13 +61,42 @@ describe('DashboardComponent', () => {
 
   it('a genuinely empty ledger is empty', () => {
     answer('/api/v1/entities', []);
-    answer('/api/v1/reports/net-worth', [{ ledgerEntityId: null, netWorth: 0 }]);
+    answer('/api/v1/reports/net-worth', [
+      { ledgerEntityId: null, netWorth: 0, snapshotAccounts: 0, oldestSnapshot: null },
+    ]);
     answer('/api/v1/reports/reconciliation', []);
     answer('/api/v1/reports/spend-vs-target', []);
     answer('/api/v1/accounts', []);
 
     expect(component['accounts'].isEmpty()).toBe(true);
     expect(component['combined']()).toBe(0);
+  });
+
+  it('says when part of net worth is a holdings snapshot, and how old it is', () => {
+    // A brokerage balance is its last positions import. A deposit made since is not in the
+    // figure until the next one, so the number without its date can be quietly wrong.
+    answer('/api/v1/entities', []);
+    answer('/api/v1/reports/net-worth', [
+      { ledgerEntityId: null, netWorth: 12000, snapshotAccounts: 1, oldestSnapshot: '2026-08-27' },
+    ]);
+    answer('/api/v1/reports/reconciliation', []);
+    answer('/api/v1/reports/spend-vs-target', []);
+    answer('/api/v1/accounts', []);
+
+    expect(component['snapshotNote']()).toContain('1 brokerage account valued as of');
+    expect(component['snapshotNote']()).toContain('2026');
+  });
+
+  it('says nothing about snapshots when every balance comes from the ledger', () => {
+    answer('/api/v1/entities', []);
+    answer('/api/v1/reports/net-worth', [
+      { ledgerEntityId: null, netWorth: 12000, snapshotAccounts: 0, oldestSnapshot: null },
+    ]);
+    answer('/api/v1/reports/reconciliation', []);
+    answer('/api/v1/reports/spend-vs-target', []);
+    answer('/api/v1/accounts', []);
+
+    expect(component['snapshotNote']()).toBeNull();
   });
 
   it('refresh moves the clock so the month follows the calendar', () => {

@@ -94,6 +94,14 @@ export class LoginComponent {
       },
       error: (failure) => {
         this.busy.set(false);
+        if (failure?.status === 403) {
+          // Not the credentials: the CSRF token is stale or gone (a sign-out, a long idle tab).
+          // Blaming the passphrase here sends someone to retype the one thing that was right.
+          // Fetch a fresh token so the retry can succeed, and say what actually happened.
+          this.api.primeCsrf().subscribe({ error: () => undefined });
+          this.error.set('The page had gone stale. Try signing in again.');
+          return;
+        }
         // A lockout is called a lockout. The usual reason to hide it — not confirming an address
         // exists — buys nothing on a single-user app reachable only from this machine, while
         // "not accepted" in the face of a correct passphrase is genuinely maddening.

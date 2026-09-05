@@ -36,6 +36,9 @@
         <!-- money(null) is a dash. This used to fall back to 0, which rendered a confident $0.00
              when the request failed — the same class of bug as "Invalid Date". -->
         <div class="headline" [class]="amountClass(combined())">{{ money(combined()) }}</div>
+        @if (snapshotNote(); as note) {
+          <p class="as-of muted">{{ note }}</p>
+        }
         <div class="entity-split">
           @for (entity of perEntity(); track entity.name) {
             <div class="entity">

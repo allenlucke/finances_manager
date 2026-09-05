@@ -51,9 +51,9 @@ describe('ApiClient', () => {
 
   it('separates per-entity net worth from the combined row', () => {
     const rows: NetWorthRow[] = [
-      { ledgerEntityId: 1, netWorth: 1607.38 },
-      { ledgerEntityId: 2, netWorth: 5000 },
-      { ledgerEntityId: null, netWorth: 6607.38 },
+      { ledgerEntityId: 1, netWorth: 1607.38, snapshotAccounts: 0, oldestSnapshot: null },
+      { ledgerEntityId: 2, netWorth: 5000, snapshotAccounts: 0, oldestSnapshot: null },
+      { ledgerEntityId: null, netWorth: 6607.38, snapshotAccounts: 0, oldestSnapshot: null },
     ];
 
     let actual: NetWorthRow[] | undefined;

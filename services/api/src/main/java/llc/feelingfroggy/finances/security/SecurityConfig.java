@@ -25,6 +25,12 @@ import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredent
 import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository;
 import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
+import org.springframework.security.web.webauthn.management.WebAuthnRelyingPartyOperations;
+import org.springframework.security.web.webauthn.management.Webauthn4JRelyingPartyOperations;
+import org.springframework.security.web.webauthn.api.PublicKeyCredentialRpEntity;
+import org.springframework.security.web.webauthn.authentication.WebAuthnAuthenticationFilter;
+import org.springframework.security.web.webauthn.authentication.WebAuthnAuthenticationProvider;
+import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -79,8 +85,25 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http, WebAuthnRelyingPartyOperations relyingParty,
+                                    UserDetailsService userDetailsService,
+                                    ApplicationEventPublisher events) throws Exception {
         var entryPoint = new ApiAuthenticationEntryPoint();
+        // The passkey login filter gets an authentication manager that keeps the password factor
+        // when the passkey factor arrives. Spring's WebAuthnConfigurer builds the filter with a
+        // private ProviderManager and offers no hook for it, but it does post-process the filter —
+        // so the manager is replaced with the same provider, wrapped. See
+        // FactorMergingAuthenticationManager for what went wrong without it.
+        var mergeFactors = new ObjectPostProcessor<WebAuthnAuthenticationFilter>() {
+            @Override
+            public <O extends WebAuthnAuthenticationFilter> O postProcess(O filter) {
+                var provider = new WebAuthnAuthenticationProvider(relyingParty, userDetailsService);
+                var manager = new ProviderManager(provider);
+                manager.setAuthenticationEventPublisher(new DefaultAuthenticationEventPublisher(events));
+                filter.setAuthenticationManager(new FactorMergingAuthenticationManager(manager));
+                return filter;
+            }
+        };
         http
             .addFilterBefore(new LocalTokenAuthenticationFilter(localToken, users),
                 AuthorizationFilter.class)
@@ -118,15 +141,13 @@ public class SecurityConfig {
                 .deleteCookies("SESSION")
                 .invalidateHttpSession(true))
             .webAuthn(webAuthn -> webAuthn
-                // rpId must match the browser's registrable domain or the authenticator refuses to
-                // sign, and allowedOrigins must list full origins. Both differ between local dev
-                // and the deployed host, so neither can be a constant.
-                .rpId(properties.rpId())
-                .rpName(properties.rpName())
-                .allowedOrigins(Set.copyOf(properties.allowedOrigins()))
+                // rpId, rpName and allowedOrigins live on the relyingPartyOperations bean below,
+                // which the configurer picks up in preference to values set here; setting them
+                // here too would be two places to get one thing wrong.
                 // The SPA owns registration UI; Spring's built-in page would be a second,
                 // unstyled surface on the same endpoints.
-                .disableDefaultRegistrationPage(true))
+                .disableDefaultRegistrationPage(true)
+                .withObjectPostProcessor(mergeFactors))
             .exceptionHandling(ex -> ex
                 // Set for ANY request, not just as the default. The webAuthn configurer installs a
                 // login-page entry point of its own, and without an explicit any-request mapping
@@ -192,5 +213,25 @@ public class SecurityConfig {
     @Bean
     UserCredentialRepository userCredentialRepository(JdbcOperations jdbc) {
         return new JdbcUserCredentialRepository(jdbc);
+    }
+
+    /**
+     * The relying party: who this site claims to be to an authenticator.
+     *
+     * <p>A bean rather than DSL settings because the passkey login filter needs the same object
+     * (see the post-processor in {@link #filterChain}). rpId must equal the browser's registrable
+     * domain or the authenticator refuses to sign, and allowedOrigins must list full origins; both
+     * differ between local dev, the e2e stack and the deployed host, so neither is a constant.
+     */
+    @Bean
+    WebAuthnRelyingPartyOperations relyingPartyOperations(
+            PublicKeyCredentialUserEntityRepository userEntities,
+            UserCredentialRepository credentials) {
+        var relyingParty = PublicKeyCredentialRpEntity.builder()
+            .id(properties.rpId())
+            .name(properties.rpName())
+            .build();
+        return new Webauthn4JRelyingPartyOperations(userEntities, credentials, relyingParty,
+            Set.copyOf(properties.allowedOrigins()));
     }
 }

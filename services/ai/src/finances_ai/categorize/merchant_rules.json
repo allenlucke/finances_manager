@@ -1,0 +1,65 @@
+{
+  "_comment": "Tier 1 merchant rules. Each rule carries the strings it was written for and near-misses it must refuse; tests/test_rules_table.py runs every rule against both, so a rule that cannot match a real description cannot be added. Grow this from corrections (docs/DECISIONS.md D-15).",
+  "rules": [
+    {
+      "pattern": "\\b(KROGER|HY-?VEE|ALDI|TRADER JOE'?S?|WHOLE FOODS|COSTCO|SAM'?S CLUB|PRICE CHOPPER)\\b",
+      "category": "Groceries",
+      "matches": ["KROGER #0123 ANYTOWN KS", "HY-VEE 1234", "TRADER JOE'S #201", "COSTCO WHSE #0412", "SAMS CLUB 6321"],
+      "rejects": ["SAMSUNG ELECTRONICS", "ALDIVAN CONSULTING"]
+    },
+    {
+      "pattern": "\\b(SHELL|QUIKTRIP|QT\\s*\\d+|CASEY'?S|BP#\\s*\\d+|EXXON|PHILLIPS 66|CONOCO)\\b",
+      "category": "Fuel",
+      "matches": ["SHELL OIL 9876543", "QT 1234 OVERLAND PARK KS", "QT1234", "BP#9876 KANSAS CITY MO", "CASEYS GEN STORE 2211", "PHILLIPS 66 - LEES SUMMIT"],
+      "rejects": ["SHELLFISH CO", "QTIP SUPPLY", "BPM FITNESS"]
+    },
+    {
+      "pattern": "\\b(NETFLIX|SPOTIFY|HULU|DISNEY ?PLUS|MAX\\.COM|YOUTUBE ?PREMIUM|APPLE\\.COM/BILL)\\b",
+      "category": "Subscriptions",
+      "matches": ["NETFLIX.COM", "SPOTIFY USA", "DISNEY PLUS", "YOUTUBEPREMIUM G.CO", "APPLE.COM/BILL 866-712-7753"],
+      "rejects": ["MAXWELL HOUSE COFFEE", "HULUBALOO TOYS"]
+    },
+    {
+      "pattern": "\\b(EVERGY|SPIRE|WATER ?ONE|KANSAS CITY WATER|ATMOS ENERGY|KCP&L)\\b",
+      "category": "Utilities",
+      "matches": ["ACH PAYMENT EVERGY METRO EVERGY AUTOPAY - AUTO", "SPIRE MISSOURI", "WATERONE BILL PAY", "KCP&L ONLINE"],
+      "rejects": ["INSPIRE FITNESS", "WATERSTONE MORTGAGE"]
+    },
+    {
+      "pattern": "\\b(GOOGLE ?\\*?CLOUD|AWS|AMAZON WEB SERVICES|DIGITALOCEAN|GITHUB|ANTHROPIC|OPENAI|CLAUDE\\.AI)\\b",
+      "category": "Software & Services",
+      "matches": ["GOOGLE *CLOUD ABC123", "AWS EMEA", "GITHUB INC", "ANTHROPIC PBC", "CLAUDE.AI SUBSCRIPTION"],
+      "rejects": ["AWSOME BURGERS", "GITHUBBARD FARM"]
+    },
+    {
+      "pattern": "\\b(DELTA AIR|SOUTHWES(?:T|\\b)|UNITED AIR|AMERICAN AIR|ALASKA AIR)|\\b(MARRIOTT|HILTON|HYATT|AIRBNB)\\b",
+      "category": "Travel",
+      "matches": ["DELTA AIR LINES ATLANTA", "SOUTHWES 5261234567", "SOUTHWEST AIRLINES", "UNITED AIRLINES", "AMERICAN AIR0012345", "MARRIOTT KANSAS CITY", "AIRBNB * HMXYZ"],
+      "rejects": ["DELTA DENTAL OF KANSAS", "UNITED HEALTHCARE", "HILTONS HARDWARE"]
+    },
+    {
+      "pattern": "\\b(WALGREENS|CVS|LABCORP|MINUTE ?CLINIC)\\b|\\bQUEST DIAG",
+      "category": "Health",
+      "matches": ["WALGREENS #1234", "CVS/PHARMACY #0112", "QUEST DIAGNOSTICS", "LABCORP"],
+      "rejects": ["CVSTORE ONLINE", "QUESTBRIDGE DONATION"]
+    },
+    {
+      "pattern": "\\b(THE HOME DEPOT|HOME DEPOT|LOWE'?S|MENARDS|ACE HARDWARE|ACE HDWE)\\b",
+      "category": "Home & Maintenance",
+      "matches": ["THE HOME DEPOT #2201", "LOWES #01234", "MENARDS KANSAS CITY", "ACE HDWE 2231"],
+      "rejects": ["LOWEST PRICE TIRES", "HOMEDEPOTCLONE"]
+    },
+    {
+      "pattern": "\\b(STATE FARM|GEICO|PROGRESSIVE|ALLSTATE|USAA)\\b",
+      "category": "Insurance",
+      "matches": ["STATE FARM INSURANCE", "GEICO AUTO", "PROGRESSIVE INS", "E-PAYMENT STATE FARM INSURANCE"],
+      "rejects": ["PROGRESSIVELY BETTER LLC"]
+    },
+    {
+      "pattern": "\\b(IRS|USATAXPYMT|KDOR|KS DEPT OF REVENUE|MO DEPT OF REVENUE|DEPT OF REVENUE)\\b",
+      "category": "Taxes",
+      "matches": ["IRS USATAXPYMT 220123", "KDOR KS TAX PYMT", "MO DEPT OF REVENUE"],
+      "rejects": ["TREASURYDIRECT TREAS PURCHASE", "FIRST TREASURY BANK", "IRSA CONSULTING"]
+    }
+  ]
+}

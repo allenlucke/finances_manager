@@ -173,6 +173,34 @@ class HoldingsTest extends PostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("net worth says how much of it is a snapshot, and how old the oldest one is")
+    void netWorthSaysHowStaleItsSnapshotsAre() {
+        // Before any snapshot: nothing to disclose.
+        var before = api.get("/api/v1/reports/net-worth").json().get(0);
+        assertThat(before.get("snapshotAccounts").asInt()).isZero();
+        assertThat(before.get("oldestSnapshot").isNull()).isTrue();
+
+        hold(brokerage, security("FXAIX", false), "14000.00", LocalDate.of(2026, 8, 27));
+        // A deposit AFTER the snapshot. It is real money in the account, and it is not in net
+        // worth: the brokerage is worth what the snapshot said until the next positions import.
+        // That is exactly why the date has to travel with the number.
+        api.postJson("/api/v1/transactions", Map.of("accountId", brokerage.getId(),
+            "transactionDate", "2026-09-01", "amount", "10000.00", "direction", "credit",
+            "description", "Electronic Funds Transfer Received"));
+
+        Map<String, Object> row = jdbc.queryForMap(
+            "SELECT net_worth, snapshot_accounts, oldest_snapshot FROM v_net_worth "
+            + "WHERE ledger_entity_id IS NULL");
+        assertThat((BigDecimal) row.get("net_worth")).isEqualByComparingTo("14000.00");
+        assertThat(((Number) row.get("snapshot_accounts")).intValue()).isEqualTo(1);
+        assertThat(row.get("oldest_snapshot").toString()).isEqualTo("2026-08-27");
+
+        var combined = api.get("/api/v1/reports/net-worth").json().get(0);
+        assertThat(combined.get("snapshotAccounts").asInt()).isEqualTo(1);
+        assertThat(combined.get("oldestSnapshot").asText()).isEqualTo("2026-08-27");
+    }
+
+    @Test
     @DisplayName("the API reports where a balance came from and how stale it is")
     void balanceProvenanceIsVisibleOverHttp() {
         hold(brokerage, security("FXAIX", false), "14000.00", LocalDate.of(2026, 8, 27));

@@ -51,20 +51,7 @@ public class AccountController {
             WHERE user_id = ?
             ORDER BY is_active DESC, account_name
             """,
-            (rs, row) -> new AccountView(
-                rs.getLong("account_id"),
-                rs.getString("account_name"),
-                rs.getString("account_type"),
-                rs.getLong("ledger_entity_id"),
-                rs.getString("currency"),
-                rs.getBoolean("is_active"),
-                rs.getBigDecimal("balance"),
-                rs.getInt("transaction_count"),
-                rs.getObject("last_activity", LocalDate.class),
-                rs.getString("balance_source"),
-                rs.getObject("balance_as_of", LocalDate.class),
-                rs.getBigDecimal("cost_basis"),
-                rs.getString("mask")),
+            this::toView,
             currentUser.id());
     }
 
@@ -92,11 +79,34 @@ public class AccountController {
 
     @GetMapping("/{id}")
     public ResponseEntity<AccountView> get(@PathVariable Long id) {
-        return list().stream()
-            .filter(view -> view.id().equals(id))
-            .findFirst()
-            .map(ResponseEntity::ok)
-            .orElseGet(() -> ResponseEntity.notFound().build());
+        // One row. This used to run the whole balance report and filter in memory — trivial at
+        // ten accounts, and the kind of thing that stops being trivial without anyone touching
+        // this file again.
+        var rows = jdbc.query("""
+            SELECT account_id, account_name, account_type, ledger_entity_id, currency,
+                   is_active, balance, transaction_count, last_activity,
+                   balance_source, balance_as_of, cost_basis, mask
+            FROM v_account_balance
+            WHERE user_id = ? AND account_id = ?
+            """, this::toView, currentUser.id(), id);
+        return rows.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(rows.getFirst());
+    }
+
+    private AccountView toView(java.sql.ResultSet rs, int row) throws java.sql.SQLException {
+        return new AccountView(
+            rs.getLong("account_id"),
+            rs.getString("account_name"),
+            rs.getString("account_type"),
+            rs.getLong("ledger_entity_id"),
+            rs.getString("currency"),
+            rs.getBoolean("is_active"),
+            rs.getBigDecimal("balance"),
+            rs.getInt("transaction_count"),
+            rs.getObject("last_activity", LocalDate.class),
+            rs.getString("balance_source"),
+            rs.getObject("balance_as_of", LocalDate.class),
+            rs.getBigDecimal("cost_basis"),
+            rs.getString("mask"));
     }
 
     /**

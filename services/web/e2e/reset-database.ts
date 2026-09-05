@@ -86,8 +86,10 @@ export const TEST_PASSPHRASE = 'a-long-enough-passphrase';
  * fires, something is misconfigured and stopping is the correct response.
  *
  * <p>"Looks real" is deliberately generous: any account other than the suite's own, or any import
- * batch at all, since the suite never imports. Set E2E_FORCE_RESET=1 to override, which is a
- * deliberate act rather than a default.
+ * batch that belongs to someone other than the suite's own account. (The suite does import now —
+ * the upload journey is the product's primary workflow — so its own batches cannot be the signal;
+ * anybody else's still are.) Set E2E_FORCE_RESET=1 to override, which is a deliberate act rather
+ * than a default.
  */
 function refuseIfDatabaseLooksReal(): void {
   if (process.env.E2E_FORCE_RESET === '1') {
@@ -97,7 +99,10 @@ function refuseIfDatabaseLooksReal(): void {
   const otherUsers = psql(
     `SELECT count(*) FROM app_user WHERE lower(email) <> lower('${TEST_EMAIL}')`,
   );
-  const imports = psql('SELECT count(*) FROM import_batch');
+  const imports = psql(
+    `SELECT count(*) FROM import_batch b JOIN app_user u ON u.id = b.user_id ` +
+      `WHERE lower(u.email) <> lower('${TEST_EMAIL}')`,
+  );
 
   if (otherUsers !== '0' || imports !== '0') {
     throw new Error(
@@ -111,7 +116,7 @@ function refuseIfDatabaseLooksReal(): void {
 
 export function truncateEverything(): void {
   const sql = `TRUNCATE
-    categorization, transaction, target, statement, import_batch,
+    categorization, holding, security, transaction, target, statement, import_batch,
     account, category, ledger_entity, app_user,
     login_attempt, user_credentials, user_entities,
     spring_session_attributes, spring_session

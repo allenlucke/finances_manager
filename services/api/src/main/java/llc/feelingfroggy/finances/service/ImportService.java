@@ -441,9 +441,7 @@ public class ImportService {
         if (summary.periodEnd() == null) {
             return;
         }
-        boolean exists = statements.findByAccountIdOrderByPeriodEndDesc(account.getId()).stream()
-            .anyMatch(existing -> existing.getPeriodEnd().equals(summary.periodEnd()));
-        if (exists) {
+        if (statements.existsByAccountIdAndPeriodEnd(account.getId(), summary.periodEnd())) {
             return;
         }
 

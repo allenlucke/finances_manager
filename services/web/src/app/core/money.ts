@@ -73,3 +73,12 @@ export function firstOfThisMonth(now: Date = new Date()): string {
 export function today(now: Date = new Date()): string {
   return isoDate(now)!;
 }
+
+/** "Aug 27, 2026" from an ISO date, or the raw string when it is not one. Dates only, no time. */
+export function shortDate(iso: string): string {
+  const parsed = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return iso;
+  }
+  return parsed.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}

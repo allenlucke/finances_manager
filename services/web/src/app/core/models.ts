@@ -115,6 +115,14 @@ export interface NetWorthRow {
   /** Null on the combined row. */
   ledgerEntityId: number | null;
   netWorth: number;
+  /**
+   * How many of the accounts in this figure are valued from a holdings snapshot rather than the
+   * ledger, and the date of the oldest such snapshot. A brokerage balance is its last positions
+   * import; a deposit made since is not in the figure until the next one. Shown beside the number
+   * because a net worth without that date can be quietly wrong by whatever moved after it.
+   */
+  snapshotAccounts: number;
+  oldestSnapshot: string | null;
 }
 
 export interface SpendRow {

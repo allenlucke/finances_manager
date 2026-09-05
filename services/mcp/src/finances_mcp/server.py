@@ -526,9 +526,22 @@ def import_positions(file_path: str) -> Any:
     path = _statement_path(file_path)
     if isinstance(path, dict):
         return path
-    return _guard(
+    result = _guard(
         lambda: client().upload("/api/v1/imports/positions", path.name, path.read_bytes(), None)
     )
+    return _positions_result(result)
+
+
+def _positions_result(result: Any) -> Any:
+    """Say what the count means. The API reuses the statement batch's ``duplicateCount`` for a
+    positions import, where it counts holdings updated in place — nothing was skipped."""
+    if isinstance(result, dict) and "duplicateCount" in result:
+        result = dict(result)
+        result["updatedCount"] = result.pop("duplicateCount")
+        result["counts"] = (
+            "appliedCount is new positions; updatedCount is positions refreshed in place"
+        )
+    return result
 
 
 @mcp.tool(annotations=READS)

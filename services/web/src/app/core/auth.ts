@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
@@ -55,8 +56,16 @@ export class Auth {
         this._user.set(me);
         this._state.set('signed-in');
       }),
-      catchError(() => {
+      catchError((error: unknown) => {
         this._user.set(null);
+        // A session that passed the passphrase but still owes a passkey is not "signed out". The
+        // interceptor deliberately leaves this call alone (it is an auth call), so the answer has
+        // to be read here — otherwise a factor-required refresh flipped the state to anonymous and
+        // put the passphrase form back in front of someone who had just satisfied it.
+        if (isFactorRequired(error)) {
+          this._state.set('passkey-required');
+          return of(null);
+        }
         // Distinguish "no account exists yet" from "not signed in", so a fresh install lands on
         // setup instead of a login form nobody can satisfy. Folded into the same stream so the
         // caller's completion still means "state is settled".
@@ -100,6 +109,11 @@ export class Auth {
       this._user.set(null);
       this._state.set('anonymous');
       this.router.navigate(['/login']);
+      // Logging out discards the CSRF cookie along with the session, and the token is only ever
+      // fetched at bootstrap. Without this the very next sign-in — no reload in between — was
+      // refused with a 403 that the form reported as a wrong passphrase. The browser suite's
+      // passkey journey, which signs out and straight back in, is what found it.
+      this.api.primeCsrf().subscribe({ error: () => undefined });
     };
     this.api.logout().subscribe({ next: done, error: done });
   }
@@ -112,4 +126,12 @@ export class Auth {
       ? requested
       : '/dashboard';
   }
+}
+
+function isFactorRequired(error: unknown): boolean {
+  return (
+    error instanceof HttpErrorResponse &&
+    error.status === 401 &&
+    (error.error as { error?: string } | null)?.error === 'factor_required'
+  );
 }

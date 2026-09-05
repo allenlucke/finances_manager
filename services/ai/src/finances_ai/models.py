@@ -28,7 +28,17 @@ class ParsedTransaction(BaseModel):
     posted_date: date | None = None
     description: str
     merchant: str | None = None
-    amount: Decimal = Field(description="Always positive; direction carries the sign")
+    # Enforced, not just described. The API's sign convention — net worth is a plain SUM because
+    # every amount is a magnitude — is only true if nothing on the wire is negative, infinite or
+    # NaN, and a description alone enforces nothing. ge rather than gt: the schema allows a
+    # zero-amount row (a waived fee is a real line on a statement).
+    amount: Decimal = Field(
+        ge=0,
+        max_digits=19,
+        decimal_places=4,
+        allow_inf_nan=False,
+        description="Always a positive magnitude; direction carries the sign",
+    )
     direction: TransactionDirection
     external_id: str | None = Field(
         default=None, description="Provider's own ID, when the source gives one"
@@ -146,7 +156,12 @@ class CategorySuggestion(BaseModel):
     dedupe_key: str
     category: str | None
     confidence: float = Field(ge=0.0, le=1.0)
-    method: str = Field(description="rule | similarity | model")
+    method: str = Field(
+        description=(
+            "rule | similarity | model — or none, when no tier had anything to say. Distinct from "
+            "a rule that fired and decided on no category (a transfer): none means escalate."
+        )
+    )
     rationale: str | None = None
     is_transfer: bool = Field(
         default=False,
@@ -159,6 +174,13 @@ class CategorySuggestion(BaseModel):
 
 class CategorizeRequest(BaseModel):
     transactions: list[ParsedTransaction]
+    # The API's own account-type code (checking, credit_card, ...) for the account these rows
+    # belong to, when it knows. The same words mean different things on different accounts —
+    # "PAYMENT THANK YOU" is a card being paid on a card statement and merchant receipt text on
+    # a checking one — and a rule that cannot see the account type has to guess.
+    account_type: str | None = Field(
+        default=None, description="checking | savings | credit_card | brokerage | loan | cash"
+    )
 
 
 class CategorizeResponse(BaseModel):

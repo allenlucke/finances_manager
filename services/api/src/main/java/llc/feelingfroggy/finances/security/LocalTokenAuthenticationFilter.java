@@ -127,6 +127,12 @@ public class LocalTokenAuthenticationFilter extends OncePerRequestFilter {
      */
     private void warnAboutRemoteAddress(HttpServletRequest request) {
         String address = request.getRemoteAddr();
+        // Bounded. "Once per address" is the intent; a set that keeps every address ever seen is
+        // its own slow leak behind a proxy or a rotating source. Past the cap it forgets and
+        // starts over, which at worst repeats a warning.
+        if (warnedAbout.size() > 256) {
+            warnedAbout.clear();
+        }
         if (warnedAbout.add(address)) {
             log.warn("""
                 A local API token was presented from {}, which is not a loopback address, so it was \

@@ -122,6 +122,36 @@ own, and is not part of the compose stack — Claude Code launches it.
   `$0.00`. For someone with years of statements that is the worst possible message. Every request
   sits behind `LoadState` (value / error / loading) and templates branch on all three; a bare
   array plus a boolean cannot tell "nothing here" from "could not ask".
+- **A controller's refusal must go through `ApiExceptionHandler`.** Boot's default error body
+  omits the exception message, so a `ResponseStatusException(422, "why")` reaches the browser as a
+  bare status and the screen shows a generic fallback. The handler turns them into problem details
+  with the reason in `detail`, which is the field the web reads. The first HTTP-level import test
+  found every import refusal arriving wordless.
+- **A CSV row is judged by its date, not its width.** A row with a date is always attempted and
+  its failure reported with a line number; a narrow row with no date is footer prose. Dates are
+  resolved once per file, never per row — per-row first-fit read `03/04` and `25/04` in the same
+  file as different calendars without noticing. Money goes through the one parser in
+  `ingest/common.py`; `84,31` is refused, not read as 8,431.
+- **Merchant rules live in `merchant_rules.json` and carry their own examples.** Every rule lists
+  descriptions it must match and near-misses it must refuse, and a table test runs both. A rule
+  that cannot match a real description cannot be added. Confidences are one scale across tiers;
+  arbitration is by confidence alone.
+- **A second factor must add to the first.** Spring's `AbstractAuthenticationProcessingFilter`
+  puts the new authentication in an *empty* context on success, so a passkey presented on a
+  password session replaced the password factor instead of joining it, and the session was still
+  one factor short — a different one. `FactorMergingAuthenticationManager` wraps the WebAuthn
+  login filter's manager and unions the authorities for the same user. Only the browser suite's
+  real ceremony could show this; `PasskeyMfaConfig` tests seed rows and never sign in twice.
+- **Sign-out discards the CSRF cookie; fetch a new token before the next sign-in.** The token
+  was only primed at bootstrap, so sign out then sign in without a reload was a 403 that the form
+  blamed on the passphrase. `Auth.logout` re-primes, and a 403 on sign-in is reported as a stale
+  page, never as bad credentials.
+- **Read `TIMESTAMPTZ` as `OffsetDateTime`, never `Instant`, from a `ResultSet`.** The Postgres
+  driver refuses the Instant conversion, and a row mapper that only runs when rows exist hides
+  the failure until the first real row. The passkey list did exactly that.
+- **Passkey settings must reach the container.** `WEBAUTHN_RP_ID`, `WEBAUTHN_ALLOWED_ORIGINS` and
+  `COOKIE_SECURE` are passed through compose and set per stack; the e2e stack on 4201 needs its
+  own origins or no ceremony can succeed there.
 - **Browser tests run on their own stack, never the dev one.** `make e2e` builds a separate compose
   project (`finances-e2e`, ports 4201/8081) with its own volume, and Playwright's defaults point
   there. The suite truncates, and a truncate against a database in use destroys real statements with

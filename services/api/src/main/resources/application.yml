@@ -21,13 +21,26 @@ spring:
   session:
     # Sessions live in Postgres, not Tomcat memory (D-12: revocation, and surviving a restart).
     store-type: jdbc
-    timeout: 30d
+    # This is an INACTIVITY timeout (Spring Session's maxInactiveInterval), not an absolute one:
+    # a session that keeps being used keeps living. Fourteen days idle is generous for a tool used
+    # a few times a week and short enough that a forgotten laptop is not signed in all quarter.
+    timeout: 14d
     jdbc:
       # Flyway owns the schema. Spring Session must never create its own tables.
       initialize-schema: never
 
 server:
   port: ${API_PORT:8080}
+  servlet:
+    session:
+      cookie:
+        # D-12 specifies all three. HttpOnly and SameSite cost nothing anywhere. Secure is off by
+        # default because the dev stack and the Tailscale deployment both serve plain HTTP, and a
+        # Secure cookie over HTTP is a cookie the browser never sends — nobody could sign in. Set
+        # COOKIE_SECURE=true the day this sits behind TLS.
+        http-only: true
+        same-site: lax
+        secure: ${COOKIE_SECURE:false}
 
 spring.servlet.multipart:
   # Statements are small; a real Chase year is well under a megabyte. Bounded so an oversized

@@ -11,18 +11,37 @@ right instinct and the wrong details. Changes worth knowing about:
 * Every row gets a ``dedupe_key`` so re-importing an overlapping statement is a no-op.
 
 Adding a bank means adding one entry to ``_FORMATS``. Do not add branching to the generic parser.
+
+What a row is, and what happens to one that is not
+--------------------------------------------------
+Real exports carry lines that are not transactions: a metadata preamble, footer prose, a "Date
+downloaded" stamp. They used to be recognised by width — anything narrower than half the header
+was dropped, silently, and so was a three-field rent line in a nine-column export. Now a row is
+judged by whether it carries a date:
+
+* a row with a date in the date column is **always attempted**, however narrow, and a failure is
+  reported as a warning with its line number;
+* a row that is narrower than the header *and* has no date is footer prose and is skipped;
+* a full-width row with an unreadable date is a broken row, and is reported.
 """
 
 from __future__ import annotations
 
 import csv
-import hashlib
 import io
 import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
+from finances_ai.ingest.common import (
+    account_hash,
+    decode_text,
+    dedupe_key,
+    normalize_description,
+    parse_money,
+    parse_optional_money,
+)
 from finances_ai.models import (
     ParsedTransaction,
     ParseResult,
@@ -30,9 +49,17 @@ from finances_ai.models import (
     TransactionDirection,
 )
 
-_WHITESPACE = re.compile(r"\s+")
-# Trailing store/reference numbers that make otherwise identical merchants look distinct.
-_TRAILING_REF = re.compile(r"[\s#*]+[0-9]{3,}$")
+# Re-exported: the helpers moved to ``common`` and callers still import them from here.
+__all__ = [
+    "CsvFormat",
+    "ParserNotFoundError",
+    "account_hash",
+    "dedupe_key",
+    "find_header",
+    "normalize_description",
+    "parse_csv",
+    "registered_formats",
+]
 
 # Never echoed back in `raw`. docs/SECURITY.md: account numbers are stored masked. The positions
 # parser has had this filter since its first real file; this one did not, and the Fidelity history
@@ -41,8 +68,20 @@ _TRAILING_REF = re.compile(r"[\s#*]+[0-9]{3,}$")
 # the internal hop and a DEBUG log line; it was still the exact thing the policy forbids.
 _REDACTED_COLUMNS = frozenset({"Account Number", "Account number", "Account No", "Account No."})
 
+# Preamble labels that carry the account NUMBER. Deliberately not a bare "Account": one export
+# writes the account's *name* under that label, and taking the last four characters of "Cashback
+# Free Checking" produced a mask of "king".
+_PREAMBLE_NUMBER_LABELS = ("Account Number", "Account number", "Account No", "Account No.")
+_PREAMBLE_NAME_LABELS = ("Account Name", "Account name")
+
 # How far to look for a header before giving up. Metadata preambles are a few lines, never dozens.
 _MAX_PREAMBLE_ROWS = 12
+
+_DATE_FORMAT_NAMES = {
+    "%m/%d/%Y": "month/day/year",
+    "%d/%m/%Y": "day/month/year",
+    "%Y-%m-%d": "year-month-day",
+}
 
 
 class ParserNotFoundError(ValueError):
@@ -55,6 +94,9 @@ class CsvFormat:
     required_columns: frozenset[str]
     date_column: str
     description_column: str
+    # Tried in order. When more than one fits every date in a file and they disagree about what
+    # those dates are, the first wins and the file gets a warning saying so — see
+    # _resolve_date_formats.
     date_formats: tuple[str, ...]
     # One signed amount column, OR a separate debit/credit pair — banks do both. Exactly one of
     # these arrangements must be configured.
@@ -81,6 +123,10 @@ class CsvFormat:
     non_expense_patterns: tuple[str, ...] = ()
     # Some exports put outflows as negative, some as positive in a separate column.
     negative_is_debit: bool = True
+    # "." for banks that write 1,234.56 and "," for banks that write 1.234,56. Every registered
+    # format is American so far; the field exists so the next one is a one-line change rather than
+    # a hundredfold error in every amount.
+    decimal_separator: str = "."
 
 
 _FORMATS: tuple[CsvFormat, ...] = (
@@ -152,93 +198,6 @@ def registered_formats() -> list[str]:
     return [fmt.name for fmt in _FORMATS]
 
 
-def normalize_description(description: str) -> str:
-    """Collapse a raw statement description toward a stable merchant string.
-
-    Deliberately conservative — it only removes noise that is definitely noise. Aggressive
-    normalization loses information the categorizer needs.
-    """
-    cleaned = _WHITESPACE.sub(" ", description).strip().upper()
-    cleaned = _TRAILING_REF.sub("", cleaned)
-    return cleaned.strip()
-
-
-def _parse_date(value: str, formats: tuple[str, ...]) -> date:
-    for fmt in formats:
-        try:
-            return datetime.strptime(value.strip(), fmt).date()
-        except ValueError:
-            continue
-    raise ValueError(f"Unrecognized date {value!r} (tried {', '.join(formats)})")
-
-
-def _parse_amount(value: str) -> Decimal:
-    cleaned = value.strip().replace("$", "").replace(",", "")
-    if cleaned.startswith("(") and cleaned.endswith(")"):
-        cleaned = "-" + cleaned[1:-1]
-    if not cleaned:
-        raise ValueError("Empty amount")
-    try:
-        return Decimal(cleaned)
-    except InvalidOperation as exc:
-        raise ValueError(f"Unparseable amount {value!r}") from exc
-
-
-def account_hash(account_number: str) -> str:
-    """Stable, non-reversible id for an account number.
-
-    Lets a row be matched to the same account across re-imports without the full number ever being
-    returned or stored (docs/SECURITY.md).
-    """
-    return hashlib.sha256(account_number.strip().encode("utf-8")).hexdigest()[:16]
-
-
-def dedupe_key(
-    account_ref: str,
-    transaction_date: date,
-    amount: Decimal,
-    description: str,
-    external_id: str | None = None,
-) -> str:
-    """Stable identity for a transaction, so re-imports don't duplicate.
-
-    **When the export carries the institution's own transaction id, that is the identity.** Nothing
-    else can distinguish genuinely separate transactions that happen to match on every visible
-    field, and they are not rare: a real month contained three $1,000 transfers to the same payee on
-    the same day, distinguishable only by the bank's Transaction Number. Hashing date, amount and
-    description alone collapsed them into one and silently lost $2,100 — money missing from a
-    ledger, with nothing to show anything had gone wrong.
-
-    Falling back to the hash is for exports that provide no id (a Chase card CSV). It deliberately
-    excludes anything that varies between exports of the same period — row order, posted date,
-    formatting — and includes the normalized description so two same-day, same-amount purchases at
-    different merchants stay distinct.
-    """
-    if external_id:
-        payload = f"{account_ref}|id|{external_id.strip()}"
-    else:
-        payload = "|".join(
-            [
-                account_ref,
-                transaction_date.isoformat(),
-                f"{amount:.4f}",
-                normalize_description(description),
-            ]
-        )
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:32]
-
-
-def detect_format(fieldnames: list[str]) -> CsvFormat:
-    present = {name.strip() for name in fieldnames if name}
-    for fmt in _FORMATS:
-        if fmt.required_columns <= present:
-            return fmt
-    raise ParserNotFoundError(
-        f"No parser matches columns {sorted(present)}. "
-        f"Known formats: {', '.join(registered_formats())}"
-    )
-
-
 def find_header(rows: list[list[str]]) -> tuple[int, CsvFormat, dict[str, str]]:
     """Locate the header row, skipping any metadata the bank puts above it.
 
@@ -268,10 +227,18 @@ def find_header(rows: list[list[str]]) -> tuple[int, CsvFormat, dict[str, str]]:
 
 def parse_csv(content: str | bytes, account_ref: str = "unknown") -> ParseResult:
     """Parse a CSV statement export into normalized transactions."""
+    warnings: list[str] = []
     if isinstance(content, bytes):
-        content = content.decode("utf-8-sig")
+        content, encoding_note = decode_text(content)
+        if encoding_note:
+            warnings.append(encoding_note)
 
-    rows = list(csv.reader(io.StringIO(content)))
+    try:
+        rows = list(csv.reader(io.StringIO(content)))
+    except csv.Error as exc:
+        # A field longer than the reader's limit, or a quote that never closes. Not a row-level
+        # problem: the reader cannot say where the next row begins, so nothing after it is safe.
+        raise ParserNotFoundError(f"Not readable as CSV: {exc}") from exc
     if not rows:
         raise ParserNotFoundError("File is empty")
 
@@ -284,32 +251,58 @@ def parse_csv(content: str | bytes, account_ref: str = "unknown") -> ParseResult
     # Header cells are stripped: at least one bank ships a trailing-space column name ("Fees  "),
     # which otherwise never matches anything that looks it up.
     header = [cell.strip() for cell in rows[header_index]]
+    date_index = header.index(fmt.date_column)
+
+    body = [
+        (header_index + offset + 2, values)
+        for offset, values in enumerate(rows[header_index + 1 :])
+        if any(cell.strip() for cell in values)
+    ]
+
+    # Decided once for the file, not once per row: a row-by-row first-fit reads 03/04 as March 4
+    # and 25/04 as April 25 in the same file without noticing that it just changed its mind.
+    date_formats, date_note = _resolve_date_formats(
+        [values[date_index] for _, values in body if len(values) > date_index],
+        fmt.date_formats,
+    )
+    if date_note:
+        warnings.append(date_note)
 
     transactions: list[ParsedTransaction] = []
-    warnings: list[str] = []
     # (date, running balance after this row, this row's signed movement). The date because which
     # end of the file holds the closing balance depends on the export's ordering; the movement so
     # the opening balance can be derived — see _statement_summary.
     balances: list[tuple[date, Decimal, Decimal]] = []
 
-    for offset, values in enumerate(rows[header_index + 1 :]):
-        line_number = header_index + offset + 2
-        if not any(cell.strip() for cell in values):
-            continue
-        # Footer prose and trailing notes come through as one-or-two-field rows. Without this they
-        # are parsed as data and every one produces a spurious warning about an unreadable date.
-        if len(values) < max(2, len(header) // 2):
+    for line_number, values in body:
+        row = dict(zip(header, values, strict=False))
+        if (
+            len(values) < len(header)
+            and _try_any(row.get(fmt.date_column, ""), fmt.date_formats) is None
+        ):
+            # Narrower than the header and no date: footer prose, a download stamp, a note.
             continue
 
-        row = dict(zip(header, values, strict=False))
         try:
-            transactions.append(_map_row(row, fmt, account_ref, file_account))
-        except ValueError as exc:
+            transactions.append(_map_row(row, fmt, account_ref, file_account, date_formats))
+        except (ValueError, KeyError, InvalidOperation) as exc:
+            # ValueError covers our own messages and pydantic's; KeyError a column the row lacks
+            # that the mapper did not think to .get(); InvalidOperation a Decimal that slipped past
+            # the money parser. One bad row costs one warning, never the file.
             warnings.append(f"line {line_number}: {exc}")
             continue
 
         if fmt.balance_column:
-            running = _parse_optional_amount(row.get(fmt.balance_column))
+            try:
+                running = parse_optional_money(
+                    row.get(fmt.balance_column), decimal_separator=fmt.decimal_separator
+                )
+            except ValueError as exc:
+                # The transaction stands; only the checkpoint loses a data point. Said out loud
+                # because a reconciliation that quietly ignores a row is a reconciliation that
+                # cannot be trusted.
+                warnings.append(f"line {line_number}: balance ignored: {exc}")
+                running = None
             if running is not None:
                 latest = transactions[-1]
                 signed = (
@@ -325,6 +318,76 @@ def parse_csv(content: str | bytes, account_ref: str = "unknown") -> ParseResult
         warnings=warnings,
         statement=_statement_summary(preamble, transactions, balances),
     )
+
+
+def _resolve_date_formats(
+    values: list[str], formats: tuple[str, ...]
+) -> tuple[tuple[str, ...], str | None]:
+    """Pick the one date format that fits the whole file, and say when that choice was a guess.
+
+    ``03/04/2026`` is March 4th in one country and April 3rd in another, and a format list that
+    offers both — ``generic`` does — used to pick per row, first fit wins, with no warning. Now the
+    candidates are the formats that parse *every* date in the file. One candidate: use it, and only
+    it, so a stray row cannot be read differently from its neighbours. Several that agree on every
+    value: no ambiguity, use the first. Several that disagree: the first still wins, because a
+    month-first default is right for every bank registered here, but the file is flagged so the
+    person can check one date against the bank's site. None: the file mixes formats or is broken;
+    fall back to per-row first-fit and say so.
+
+    Only values that at least one format can read take part, so footer prose does not vote.
+    """
+    if len(formats) < 2:
+        return formats, None
+
+    readable = [value for value in values if _try_any(value, formats) is not None]
+    if not readable:
+        return formats, None
+
+    candidates = [
+        fmt for fmt in formats if all(_try_strptime(value, fmt) is not None for value in readable)
+    ]
+    if not candidates:
+        return formats, (
+            "Dates in this file do not all fit one format; each row was read with the first format "
+            "that fits it. Check the dates before trusting the import."
+        )
+
+    chosen = candidates[0]
+    if len(candidates) > 1:
+        differing = [
+            value
+            for value in readable
+            if len({_try_strptime(value, fmt) for fmt in candidates}) > 1
+        ]
+        if differing:
+            return (chosen,), (
+                f"{len(differing)} dates such as {differing[0].strip()!r} could be read as either "
+                f"month/day or day/month; read as {_DATE_FORMAT_NAMES.get(chosen, chosen)}. "
+                "Check one against the bank's site."
+            )
+    return (chosen,), None
+
+
+def _try_strptime(value: str, fmt: str) -> date | None:
+    try:
+        return datetime.strptime(value.strip(), fmt).date()
+    except ValueError:
+        return None
+
+
+def _try_any(value: str, formats: tuple[str, ...]) -> date | None:
+    for fmt in formats:
+        parsed = _try_strptime(value, fmt)
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _parse_date(value: str, formats: tuple[str, ...]) -> date:
+    parsed = _try_any(value, formats)
+    if parsed is None:
+        raise ValueError(f"Unrecognized date {value!r} (tried {', '.join(formats)})")
+    return parsed
 
 
 def _statement_summary(
@@ -384,21 +447,7 @@ def _statement_summary(
 
 
 def _try_date(value: str) -> date | None:
-    for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m/%d/%y"):
-        try:
-            return datetime.strptime(value, fmt).date()
-        except ValueError:
-            continue
-    return None
-
-
-def _parse_optional_amount(value: str | None) -> Decimal | None:
-    if value is None or not value.strip():
-        return None
-    try:
-        return _parse_amount(value)
-    except ValueError:
-        return None
+    return _try_any(value, ("%m/%d/%Y", "%Y-%m-%d", "%m/%d/%y"))
 
 
 def _account_from_preamble(preamble: dict[str, str]) -> tuple[str, str, str | None] | None:
@@ -408,7 +457,7 @@ def _account_from_preamble(preamble: dict[str, str]) -> tuple[str, str, str | No
     never returned (docs/SECURITY.md).
     """
     number = ""
-    for label in ("Account Number", "Account number", "Account"):
+    for label in _PREAMBLE_NUMBER_LABELS:
         if preamble.get(label):
             number = preamble[label].strip()
             break
@@ -416,7 +465,7 @@ def _account_from_preamble(preamble: dict[str, str]) -> tuple[str, str, str | No
         return None
 
     name = None
-    for label in ("Account Name", "Account name"):
+    for label in _PREAMBLE_NAME_LABELS:
         if preamble.get(label):
             name = preamble[label].strip()
             break
@@ -427,10 +476,11 @@ def _map_row(
     row: dict[str, str],
     fmt: CsvFormat,
     account_ref: str,
-    file_account: tuple[str, str, str | None] | None = None,
+    file_account: tuple[str, str, str | None] | None,
+    date_formats: tuple[str, ...],
 ) -> ParsedTransaction:
     raw_amount = _row_amount(row, fmt)
-    txn_date = _parse_date(row[fmt.date_column], fmt.date_formats)
+    txn_date = _parse_date(row.get(fmt.date_column) or "", date_formats)
     description = (row.get(fmt.description_column) or "").strip()
     if not description and fmt.memo_column:
         # Some rows carry only a memo. An empty description would make the row unidentifiable in
@@ -451,10 +501,9 @@ def _map_row(
 
     posted: date | None = None
     if fmt.posted_date_column and row.get(fmt.posted_date_column):
-        try:
-            posted = _parse_date(row[fmt.posted_date_column], fmt.date_formats)
-        except ValueError:
-            posted = None
+        # Lenient on purpose: the posted date is informational, and the same file-level format
+        # applies to it as to the transaction date.
+        posted = _try_any(row[fmt.posted_date_column], date_formats)
 
     is_outflow = raw_amount < 0 if fmt.negative_is_debit else raw_amount > 0
     direction = TransactionDirection.DEBIT if is_outflow else TransactionDirection.CREDIT
@@ -478,6 +527,7 @@ def _map_row(
     if row_account:
         account_mask = row_account[-4:]
         account_key = account_hash(row_account)
+        # Fidelity's per-row "Account" column is the account's nickname, beside its number.
         account_name = (row.get("Account") or "").strip() or None
     elif file_account:
         # A single-account file, identified once in its own metadata.
@@ -516,11 +566,15 @@ def _row_amount(row: dict[str, str], fmt: CsvFormat) -> Decimal:
     whichever applies. The pair needs care — a debit is already written negative in at least one
     real export, so negating it unconditionally would turn every payment into a deposit.
     """
+    separator = fmt.decimal_separator
     if fmt.amount_column:
-        return _parse_amount(row[fmt.amount_column])
+        value = row.get(fmt.amount_column)
+        if value is None or not value.strip():
+            raise ValueError("Empty amount")
+        return parse_money(value, decimal_separator=separator)
 
-    debit = _parse_optional_amount(row.get(fmt.debit_column or ""))
-    credit = _parse_optional_amount(row.get(fmt.credit_column or ""))
+    debit = parse_optional_money(row.get(fmt.debit_column or ""), decimal_separator=separator)
+    credit = parse_optional_money(row.get(fmt.credit_column or ""), decimal_separator=separator)
 
     if debit is not None and credit is not None:
         raise ValueError("Row has both a debit and a credit amount")
@@ -556,7 +610,3 @@ def looks_like_refund(row_type: str | None, fmt: CsvFormat) -> bool:
     if not row_type or not fmt.type_column:
         return False
     return row_type.strip() in fmt.refund_types
-
-
-# Kept for callers that predate the split; means "transfer" and nothing else now.
-looks_like_non_expense = looks_like_transfer

@@ -1,72 +1,16 @@
-import { expect, Page, test } from '@playwright/test';
-import { TEST_EMAIL, TEST_PASSPHRASE } from './reset-database';
+import { expect, test } from '@playwright/test';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { addAccount, goTo, signIn, signOut } from './helpers';
 
 /**
  * The whole product, through a browser: set up an account, sign in, create accounts and a category,
- * enter transactions including a transfer, and read the dashboard back.
+ * enter transactions including a transfer, upload a statement, and read the dashboard back.
  *
  * <p>This is the first test that renders anything. Everything above it verifies the API; this
  * verifies that a person can actually use the thing — cookies, CSRF, routing, guards and forms.
  */
-
-// Shared with the reset guard on purpose: it decides what counts as the suite's own data, and if
-// the two ever disagree the guard stops recognising the account this file creates.
-const EMAIL = TEST_EMAIL;
-const PASSPHRASE = TEST_PASSPHRASE;
-
-/**
- * Signs in, creating the account first if the database is empty.
- *
- * <p>Waits for one of the two headings before deciding which form it is looking at. Checking too
- * early is not a hypothetical: while auth state is still `unknown` the shell renders only a
- * progress bar, so an immediate `isVisible()` returns false, the helper takes the sign-in branch,
- * and it then fills two of the three setup fields and clicks a button that isn't there.
- */
-async function signIn(page: Page) {
-  await page.goto('/');
-
-  const setupHeading = page.getByText('Set up finances');
-  const signInHeading = page.getByText('Sign in', { exact: true });
-  await expect(setupHeading.or(signInHeading).first()).toBeVisible();
-
-  if (await setupHeading.isVisible()) {
-    await page.getByLabel('Email').fill(EMAIL);
-    await page.getByLabel('Name').fill('Allen');
-    // `exact` on both: getByLabel matches on substring, so a bare 'Passphrase' now resolves to
-    // two fields and fails on strict mode rather than filling either.
-    await page.getByLabel('Passphrase', { exact: true }).fill(PASSPHRASE);
-    await page.getByLabel('Confirm passphrase', { exact: true }).fill(PASSPHRASE);
-    await page.getByRole('button', { name: 'Create account' }).click();
-  } else {
-    await page.getByLabel('Email').fill(EMAIL);
-    await page.getByLabel('Passphrase', { exact: true }).fill(PASSPHRASE);
-    await page.getByRole('button', { name: 'Sign in' }).click();
-  }
-
-  await expect(page.getByRole('link', { name: 'Dashboard' })).toBeVisible();
-}
-
-/**
- * Navigates and waits for the destination to actually render.
- *
- * <p>Clicking a link and immediately touching a field is a race, and Playwright's auto-waiting does
- * not save you from it: several screens have a "Name" field, so a locator resolves happily against
- * the page you are *leaving* and the fill lands there. Waiting on something unique to the
- * destination is what makes the navigation observable.
- */
-async function goTo(page: Page, link: string, anchor: string) {
-  await page.getByRole('link', { name: link }).click();
-  await expect(page.getByText(anchor).first()).toBeVisible();
-}
-
-async function addAccount(page: Page, name: string, type: string) {
-  await goTo(page, 'Accounts', 'Add an account');
-  await page.getByLabel('Name').fill(name);
-  await page.getByRole('combobox', { name: 'Type' }).click();
-  await page.getByRole('option', { name: type, exact: true }).click();
-  await page.getByRole('button', { name: 'Add account' }).click();
-  await expect(page.getByRole('cell', { name, exact: true })).toBeVisible();
-}
 
 test.describe('Signed out', () => {
   test('a protected route redirects to login rather than flashing the app', async ({ page }) => {
@@ -178,13 +122,61 @@ test.describe('Journey', () => {
     await expect(page.getByText('Needs a category')).toBeVisible();
   });
 
+  test('a statement can be uploaded, lands in the ledger, and a second upload adds nothing', async ({ page }) => {
+    // The product's primary workflow, and until now the one thing no automated test uploaded.
+    // This goes through the real parser in the e2e stack's own AI container, not a stub.
+    await signIn(page);
+    await addAccount(page, 'Everyday Checking', 'Checking');
+
+    await goTo(page, 'Import', 'Needs a category');
+    await page.getByRole('combobox', { name: 'Account' }).click();
+    await page.getByRole('option', { name: 'Everyday Checking', exact: true }).click();
+    const fixture = statementDatedThisMonth();
+    await page.getByLabel('Statement file').setInputFiles(fixture);
+    await page.getByRole('button', { name: 'Import', exact: true }).click();
+
+    await expect(page.getByText('Added 2 transaction(s), skipped 0 duplicate(s).')).toBeVisible();
+    // The review queue shows what landed: neither row matches a merchant rule, so both wait.
+    await expect(page.getByRole('cell', { name: 'COFFEE SHOP', exact: true })).toBeVisible();
+
+    // Safe to repeat: the same file again is a no-op, not a doubling.
+    await page.getByLabel('Statement file').setInputFiles(fixture);
+    await page.getByRole('button', { name: 'Import', exact: true }).click();
+    await expect(page.getByText('Nothing new — all 2 rows were already here.')).toBeVisible();
+
+    await goTo(page, 'Transactions', 'Add a transaction');
+    await expect(page.getByRole('cell', { name: 'PAYCHECK', exact: true })).toHaveCount(1);
+    await expect(page.getByText('$2,500.00')).toBeVisible();
+  });
+
   test('signing out returns to the login screen', async ({ page }) => {
     await signIn(page);
 
-    await page.getByRole('button', { name: /Account menu/ }).click();
-    await page.getByRole('menuitem', { name: 'Sign out' }).click();
+    await signOut(page);
 
-    await expect(page).toHaveURL(/\/login/);
     await expect(page.getByRole('link', { name: 'Dashboard' })).toBeHidden();
   });
 });
+
+
+/**
+ * A two-row generic export, written fresh with this month's dates.
+ *
+ * <p>Not a checked-in fixture: the ledger opens on the current month, so a file with fixed dates
+ * imports fine and then shows nothing on the Transactions page — which is exactly how this test
+ * failed the first time it ran. The first of the month and today are both always in range.
+ */
+function statementDatedThisMonth(): string {
+  const now = new Date();
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const content =
+    'Date,Description,Amount\n' +
+    `${iso(first)},COFFEE SHOP,-4.50\n` +
+    `${iso(now)},PAYCHECK,"2,500.00"\n`;
+  const dir = mkdtempSync(path.join(tmpdir(), 'finances-e2e-'));
+  const file = path.join(dir, 'generic-statement.csv');
+  writeFileSync(file, content);
+  return file;
+}
