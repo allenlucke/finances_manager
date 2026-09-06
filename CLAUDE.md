@@ -136,6 +136,12 @@ own, and is not part of the compose stack — Claude Code launches it.
   descriptions it must match and near-misses it must refuse, and a table test runs both. A rule
   that cannot match a real description cannot be added. Confidences are one scale across tiers;
   arbitration is by confidence alone.
+- **A message a person has to read is not tested until something reads the DOM.** The setup form
+  had a mismatch test that passed for weeks while the screen said nothing: it asserted the form was
+  invalid and that nothing was posted, both true, while the error text was never rendered. Assert
+  the text is present, and assert it is absent when it should be — the pair is what proves it.
+  (The cause: a group-level validator's error never reaches `MatFormField`, which reads the
+  *control's* error state. An `ErrorStateMatcher` bridges them.)
 - **A second factor must add to the first.** Spring's `AbstractAuthenticationProcessingFilter`
   puts the new authentication in an *empty* context on success, so a passkey presented on a
   password session replaced the password factor instead of joining it, and the session was still

@@ -1,9 +1,17 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroupDirective,
+  NgForm,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { ErrorStateMatcher } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -47,6 +55,7 @@ export class LoginComponent {
   protected readonly error = signal<string | null>(null);
   /** Lets someone check what they typed, rather than trusting a row of dots. */
   protected readonly revealed = signal(false);
+  protected readonly confirmMatcher = new ConfirmPassphraseErrorMatcher();
 
   protected readonly loginForm = this.forms.nonNullable.group({
     username: ['', [Validators.required, Validators.email]],
@@ -172,6 +181,28 @@ export class LoginComponent {
 }
 
 /** Cross-field check: the two passphrase boxes must agree. */
+/**
+ * Puts the Confirm passphrase field into its error state when the *group* reports a mismatch.
+ *
+ * <p>Without this the message never reached the screen at all. `mismatch` is a group-level error —
+ * it has to be, since it compares two controls — but `MatFormField` renders its error slot only
+ * when the control itself is in an error state, and a non-empty confirm field is perfectly valid on
+ * its own. The projected `<mat-error>` was therefore never created: a typo greyed out Create
+ * account and explained nothing, on the first screen of a fresh install, for an app whose own copy
+ * says there is no password reset. Disabled buttons are not focusable either, so there was nothing
+ * to inspect. Found by the QA pass on 2026-09-06; `login.spec.ts` now asserts the text is in the
+ * DOM rather than merely that the form is invalid, which is what let this pass for so long.
+ */
+class ConfirmPassphraseErrorMatcher implements ErrorStateMatcher {
+  isErrorState(control: FormControl | null, form: FormGroupDirective | NgForm | null): boolean {
+    if (control?.invalid && control.touched) {
+      return true;
+    }
+    // Only once something has been typed: an empty field is not yet a mistake.
+    return !!control?.value && !!form?.hasError('mismatch');
+  }
+}
+
 function passphrasesMatch(group: import('@angular/forms').AbstractControl) {
   const password = group.get('password')?.value;
   const confirm = group.get('confirmPassword')?.value;

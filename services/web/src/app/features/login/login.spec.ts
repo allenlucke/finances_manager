@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { provideZonelessChangeDetection } from '@angular/core';
+import { Auth } from '../../core/auth';
 import { LoginComponent } from './login';
 
 /**
@@ -33,6 +34,84 @@ describe('LoginComponent', () => {
   });
 
   afterEach(() => httpMock.verify({ ignoreCancelled: true }));
+
+  /**
+   * Renders the first-run setup form.
+   *
+   * <p>Which form the screen shows is the Auth service's state, not the component's, so a DOM
+   * assertion has to put Auth into `setup-required` first: no session, and an API that says no
+   * account exists yet.
+   */
+  function showSetupForm() {
+    TestBed.inject(Auth).refresh().subscribe();
+    httpMock
+      .match('/api/v1/auth/me')
+      .forEach((request) =>
+        request.flush({ error: 'unauthenticated' }, { status: 401, statusText: 'Unauthorized' }),
+      );
+    httpMock.match('/api/v1/setup').forEach((request) => request.flush({ required: true }));
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('says the two passphrases disagree, instead of only greying out the button', () => {
+    // The button being disabled is not an explanation. `mismatch` is a group-level error and
+    // MatFormField renders its error slot from the *control*, so the message was never created:
+    // a typo on the first screen of a fresh install said nothing at all, on an app with no
+    // password reset. Asserting the form is invalid — which the test below does — passed happily
+    // through all of that, so this one reads the DOM.
+    const page = showSetupForm();
+    component['setupForm'].setValue({
+      email: 'allen@feelingfroggy.llc',
+      displayName: 'Allen',
+      password: 'a-long-enough-passphrase',
+      confirmPassword: 'a-long-enough-passphrasf',
+    });
+    fixture.detectChanges();
+
+    expect(page.textContent).toContain("don't match");
+    const submit = page.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+  });
+
+  it('stays quiet until the confirmation has something in it', () => {
+    const page = showSetupForm();
+    component['setupForm'].setValue({
+      email: 'allen@feelingfroggy.llc',
+      displayName: 'Allen',
+      password: 'a-long-enough-passphrase',
+      confirmPassword: '',
+    });
+    fixture.detectChanges();
+
+    expect(page.textContent).not.toContain("don't match");
+  });
+
+  it('the message goes once the two agree', () => {
+    const page = showSetupForm();
+    component['setupForm'].setValue({
+      email: 'allen@feelingfroggy.llc',
+      displayName: 'Allen',
+      password: 'a-long-enough-passphrase',
+      confirmPassword: 'a-long-enough-passphrasf',
+    });
+    fixture.detectChanges();
+    expect(page.textContent).toContain("don't match");
+
+    component['setupForm'].controls.confirmPassword.setValue('a-long-enough-passphrase');
+    fixture.detectChanges();
+
+    expect(page.textContent).not.toContain("don't match");
+    expect((page.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('the one screen a signed-out person can reach has a real heading', () => {
+    // Every other screen got one in batch 3; this one was still rendering its title as a div, so
+    // the signed-out app had nothing in its heading list.
+    const page = showSetupForm();
+
+    expect(page.querySelector('h1')?.textContent?.trim()).toBe('Set up finances');
+  });
 
   it('refuses to create an account when the two passphrases disagree', () => {
     component['setupForm'].setValue({

@@ -7,7 +7,7 @@
     @switch (state()) {
       @case ('setup-required') {
         <mat-card-header>
-          <mat-card-title>Set up finances</mat-card-title>
+          <mat-card-title><h1 class="card-title">Set up finances</h1></mat-card-title>
           <mat-card-subtitle>No account exists yet. Create yours.</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
@@ -22,7 +22,7 @@
               <input matInput formControlName="displayName" autocomplete="name" />
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Passphrase</mat-label>
               <input
                 matInput
@@ -47,13 +47,14 @@
               >
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Confirm passphrase</mat-label>
               <input
                 matInput
                 [type]="revealed() ? 'text' : 'password'"
                 formControlName="confirmPassword"
                 autocomplete="new-password"
+                [errorStateMatcher]="confirmMatcher"
               />
               @if (setupForm.hasError('mismatch') && setupForm.controls.confirmPassword.value) {
                 <mat-error>The two passphrases don't match.</mat-error>
@@ -72,7 +73,7 @@
 
       @case ('passkey-required') {
         <mat-card-header>
-          <mat-card-title>Passkey required</mat-card-title>
+          <mat-card-title><h1 class="card-title">Passkey required</h1></mat-card-title>
           <mat-card-subtitle
             >You are signed in, but this account requires a passkey.</mat-card-subtitle
           >
@@ -95,7 +96,7 @@
 
       @default {
         <mat-card-header>
-          <mat-card-title>Sign in</mat-card-title>
+          <mat-card-title><h1 class="card-title">Sign in</h1></mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <form [formGroup]="loginForm" (ngSubmit)="submitLogin()">
