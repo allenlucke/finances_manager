@@ -44,6 +44,41 @@ running at all — the job still works without it.
 
 ---
 
+## The continuation prompt
+
+For a second run, after findings have come back and been fixed. Same shape: short, and it reads the
+reference itself.
+
+> You are continuing a QA pass on a personal finance app. The repository is here; the app is running
+> at **http://192.168.87.21:4201**. It was rebuilt since your last run, so the database is empty
+> again and the account you made is gone — you will land on the setup screen.
+>
+> **The three findings you sent are fixed and verified. Do not report them again:** the passphrase
+> mismatch now says so in text as well as colour, the hint no longer prints through the Confirm box,
+> and all three states of the signed-out screen have real headings.
+>
+> **Do these in order, and send what you have whenever you have it. Partial is fine.**
+>
+> 1. **Send the outstanding list from your earlier code review.** You mentioned one and it never
+>    reached me. It needs no browser, so no approval limit affects it.
+> 2. **Empty states on the five screens you never got to** — dashboard, accounts, transactions,
+>    budget, import — signed in with no data entered. Look for `Invalid Date`, `NaN`, `undefined`,
+>    `null`, `$NaN`, `-$0.00`, empty tables with no explanation, and controls that look actionable
+>    but do nothing.
+> 3. **The flows**, from "What to check with the app running" in `docs/COWORK-QA-BRIEF.md`. Skip
+>    sign-in and the statement upload: automated browser tests already cover both. Holdings, budget
+>    cadence, the deleted list and the unlinked-account import are where no test reaches.
+> 4. **Accessibility and the three widths.** Keyboard only, visible focus, heading order, contrast,
+>    and colour never carrying meaning alone.
+>
+> If every action still needs its own approval, do steps 1 and 2 and stop. Those are worth more than
+> a partial crawl through step 3.
+>
+> Report as before: severity, where it is, what you expected, what happened, and a one-sentence
+> suggested fix. Do not fix anything.
+
+---
+
 ## Reference
 
 *This section is for Cowork to read from the repo. It is not meant to be pasted.*
