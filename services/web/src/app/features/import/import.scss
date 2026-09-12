@@ -75,3 +75,19 @@ table {
   font: var(--mat-sys-body-small);
   margin-top: 8px;
 }
+
+// The parser's notes: one per line, as text. An import that lost rows must never look like one
+// that did not, and a tooltip is available only to a sighted mouse user.
+.warnings {
+  margin: 8px 0 4px;
+  padding-left: 18px;
+  font: var(--mat-sys-body-small);
+}
+
+.warnings li {
+  padding: 2px 0;
+}
+
+details.detail summary {
+  cursor: pointer;
+}

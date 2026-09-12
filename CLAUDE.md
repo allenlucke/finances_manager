@@ -132,6 +132,19 @@ own, and is not part of the compose stack — Claude Code launches it.
   resolved once per file, never per row — per-row first-fit read `03/04` and `25/04` in the same
   file as different calendars without noticing. Money goes through the one parser in
   `ingest/common.py`; `84,31` is refused, not read as 8,431.
+- **A running-balance column decides which end of a file is newest; dates only break a tie.**
+  Comparing the first and last dates read a one-day export backwards, so a newest-first file
+  stored its oldest balance as the closing balance and the same figure as the opening — no
+  warning, and a statement is unique per period with nothing to delete it, so the wrong checkpoint
+  was permanent. `_checkpoint_balances` walks each known balance back to a balance-before-everything
+  under both orderings; the ordering where every balance agrees is the file's. When nothing
+  resolves it, no balance is recorded and the file says so.
+- **What the parser says reaches the person.** Row warnings ("line 3: unrecognized date …") and
+  the 422 verdicts ("No parser matches this file …") were counted into a log line and replaced
+  with one fixed sentence, so an import that lost rows looked identical to one that did not, and
+  the one HTTP test claiming otherwise mocked the sentence it asserted. Warnings live on
+  `import_batch.warnings` and on `ImportResult`; a parser's 422 `detail` is the
+  `AiServiceException` message. `AiServiceClientTest` drives a real HTTP server, not a mock.
 - **Merchant rules live in `merchant_rules.json` and carry their own examples.** Every rule lists
   descriptions it must match and near-misses it must refuse, and a table test runs both. A rule
   that cannot match a real description cannot be added. Confidences are one scale across tiers;

@@ -43,7 +43,12 @@ class ParsedTransaction(BaseModel):
     external_id: str | None = Field(
         default=None, description="Provider's own ID, when the source gives one"
     )
-    dedupe_key: str = Field(description="Stable hash used by the API to reject re-imports")
+    # NOT read by the API, which computes the one identity itself (TransactionService.dedupeKey)
+    # from the resolved account, the institution's id when there is one, and otherwise the date,
+    # magnitude and description. Kept so the parser's output stands on its own for anyone else
+    # reading it; two implementations in two languages drifted three ways before the API took it
+    # over.
+    dedupe_key: str = Field(description="Stable hash; informational, the API derives its own")
     # Set only for exports that cover several accounts in one file — a brokerage history or a
     # positions download. The API routes the row by these rather than by a single nominated
     # account. docs/SECURITY.md: the full number is never returned.

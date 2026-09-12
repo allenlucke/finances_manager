@@ -12,6 +12,7 @@ describe('TransactionsComponent', () => {
   let backend: HttpTestingController;
   let component: Record<string, any>;
   let snackBar: MatSnackBar;
+  let fixture: ReturnType<typeof TestBed.createComponent<TransactionsComponent>>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -23,8 +24,8 @@ describe('TransactionsComponent', () => {
         provideRouter([]),
       ],
     });
-    component = TestBed.createComponent(TransactionsComponent)
-      .componentInstance as unknown as Record<string, any>;
+    fixture = TestBed.createComponent(TransactionsComponent);
+    component = fixture.componentInstance as unknown as Record<string, any>;
     backend = TestBed.inject(HttpTestingController);
     snackBar = TestBed.inject(MatSnackBar);
     backend.expectOne('/api/v1/accounts').flush([]);
@@ -85,6 +86,26 @@ describe('TransactionsComponent', () => {
     backend
       .expectOne((r) => r.url.startsWith('/api/v1/transactions'))
       .flush({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 200 });
+  });
+
+  it('labels the other account by where the money went, following the direction', () => {
+    // The server records the chosen direction on the Account field's account and the opposite
+    // on the other. "Moved to" with "Money in" selected therefore named the account the money
+    // came FROM, and a transfer entered that way moved both balances the wrong way — net worth
+    // unchanged, nothing visibly broken. The label is read from the DOM, not the signal: a
+    // label nobody renders is not a label.
+    component['form'].patchValue({ transfer: true });
+    fixture.detectChanges();
+    const screen = fixture.nativeElement as HTMLElement;
+
+    expect(screen.textContent).toContain('Moved to');
+    expect(screen.textContent).not.toContain('Moved from');
+
+    component['form'].controls.direction.setValue('credit');
+    fixture.detectChanges();
+
+    expect(screen.textContent).toContain('Moved from');
+    expect(screen.textContent).not.toContain('Moved to');
   });
 
   it('deleting offers an undo that restores', () => {

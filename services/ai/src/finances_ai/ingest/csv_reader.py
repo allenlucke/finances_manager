@@ -33,6 +33,7 @@ import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+from itertools import pairwise
 
 from finances_ai.ingest.common import (
     account_hash,
@@ -66,7 +67,23 @@ __all__ = [
 # format maps an "Account Number" column — so every row carried the full number in `raw` right
 # beside the mask that was hiding it. Java does not persist `raw`, which limited the exposure to
 # the internal hop and a DEBUG log line; it was still the exact thing the policy forbids.
-_REDACTED_COLUMNS = frozenset({"Account Number", "Account number", "Account No", "Account No."})
+_REDACTED_COLUMNS = frozenset(
+    {
+        "Account Number",
+        "Account number",
+        "Account No",
+        "Account No.",
+        # American Express writes a partial card number, the cardholder's name and their postal
+        # address on every row. None of it is needed for anything downstream.
+        "Account #",
+        "Card Member",
+        "Address",
+        "City/State",
+        "Zip Code",
+        "Country",
+        "Reference",
+    }
+)
 
 # Preamble labels that carry the account NUMBER. Deliberately not a bare "Account": one export
 # writes the account's *name* under that label, and taking the last four characters of "Cashback
@@ -184,6 +201,21 @@ _FORMATS: tuple[CsvFormat, ...] = (
         date_formats=("%m/%d/%Y", "%Y-%m-%d"),
     ),
     CsvFormat(
+        # American Express. Its columns are a superset of the generic shape, so it is registered
+        # ahead of `generic` — and it has to be, because Amex writes the sign the other way round:
+        # a charge is positive and a payment negative. Read by the generic rule every purchase
+        # became a credit and every payment a debit, with no warning and no running balance to
+        # catch it. (Card Member and Account # are what make the header recognisable; neither is
+        # an account number the importer can link by, and neither is echoed in `raw`.)
+        name="amex_card",
+        required_columns=frozenset({"Date", "Description", "Card Member", "Account #", "Amount"}),
+        date_column="Date",
+        description_column="Description",
+        amount_column="Amount",
+        date_formats=("%m/%d/%Y", "%Y-%m-%d"),
+        negative_is_debit=False,
+    ),
+    CsvFormat(
         name="generic",
         required_columns=frozenset({"Date", "Description", "Amount"}),
         date_column="Date",
@@ -269,10 +301,11 @@ def parse_csv(content: str | bytes, account_ref: str = "unknown") -> ParseResult
         warnings.append(date_note)
 
     transactions: list[ParsedTransaction] = []
-    # (date, running balance after this row, this row's signed movement). The date because which
-    # end of the file holds the closing balance depends on the export's ordering; the movement so
-    # the opening balance can be derived — see _statement_summary.
-    balances: list[tuple[date, Decimal, Decimal]] = []
+    # One entry per mapped row, in file order: (date, running balance after this row or None when
+    # the file gave none readable, this row's signed movement). The balances decide which end of
+    # the file is newest; the movements let a row with no readable balance be walked through
+    # rather than guessed around — see _checkpoint_balances.
+    balances: list[tuple[date, Decimal | None, Decimal]] = []
 
     for line_number, values in body:
         row = dict(zip(header, values, strict=False))
@@ -303,20 +336,44 @@ def parse_csv(content: str | bytes, account_ref: str = "unknown") -> ParseResult
                 # cannot be trusted.
                 warnings.append(f"line {line_number}: balance ignored: {exc}")
                 running = None
-            if running is not None:
-                latest = transactions[-1]
-                signed = (
-                    latest.amount
-                    if latest.direction == TransactionDirection.CREDIT
-                    else -latest.amount
-                )
-                balances.append((latest.transaction_date, running, signed))
+            latest = transactions[-1]
+            signed = (
+                latest.amount if latest.direction == TransactionDirection.CREDIT else -latest.amount
+            )
+            balances.append((latest.transaction_date, running, signed))
+
+    if fmt.name == "generic":
+        note = _sign_convention_note(transactions)
+        if note:
+            warnings.append(note)
 
     return ParseResult(
         source_format=fmt.name,
         transactions=transactions,
         warnings=warnings,
-        statement=_statement_summary(preamble, transactions, balances),
+        statement=_statement_summary(preamble, transactions, balances, warnings),
+    )
+
+
+def _sign_convention_note(transactions: list[ParsedTransaction]) -> str | None:
+    """Say so when a file read by the generic rule looks like it uses the opposite sign.
+
+    The generic format has to assume something, and "negative is money out" is right for every
+    bank export seen so far. A card issuer that writes charges positive (Amex does; see its own
+    format above) would have every row inverted with nothing to show it — the balance drifts the
+    wrong way and every spending total is a deposit. A month of ordinary spending is mostly money
+    out, so a file that is mostly credits is worth a sentence.
+    """
+    if len(transactions) < 3:
+        return None
+    credits = sum(1 for t in transactions if t.direction == TransactionDirection.CREDIT)
+    if credits * 10 < len(transactions) * 7:
+        return None
+    return (
+        f"{credits} of {len(transactions)} rows read as money in. This file was read with the "
+        "generic rule, which takes a negative amount as money out; if it is a card export that "
+        "writes charges as positive, every direction is inverted. Check one purchase in the "
+        "ledger before trusting the import."
     )
 
 
@@ -393,7 +450,8 @@ def _parse_date(value: str, formats: tuple[str, ...]) -> date:
 def _statement_summary(
     preamble: dict[str, str],
     transactions: list[ParsedTransaction],
-    balances: list[tuple[date, Decimal, Decimal]],
+    balances: list[tuple[date, Decimal | None, Decimal]],
+    warnings: list[str],
 ) -> StatementSummary | None:
     """Build a reconciliation checkpoint when the file carries enough to support one.
 
@@ -414,36 +472,98 @@ def _statement_summary(
     if end is None and transactions:
         end = max(t.transaction_date for t in transactions)
 
-    # The closing balance is the running balance after the MOST RECENT transaction. That used to
-    # be inferred from the file's ordering by comparing the first and last dates — which chose
-    # wrong whenever those two dates were equal, whenever the file was unsorted, and whenever the
-    # newest row failed to parse. Now: the row with the greatest date, full stop, and on a tie
-    # the one nearest the top for a newest-first file and the bottom for an oldest-first one.
-    #
-    # The opening balance is the oldest row's balance with that row's own movement removed: the
-    # balance the period started from. It is what lets reconciliation work for an account whose
-    # history was not imported from the day it opened — which is every account, the first time.
-    closing = None
-    opening = None
-    if balances:
-        first_date, last_date = balances[0][0], balances[-1][0]
-        newest_first = first_date > last_date
-        newest = max(balances, key=lambda b: b[0])
-        oldest = min(balances, key=lambda b: b[0])
-        if newest_first:
-            newest = next(b for b in balances if b[0] == newest[0])
-            oldest = next(b for b in reversed(balances) if b[0] == oldest[0])
-        else:
-            newest = next(b for b in reversed(balances) if b[0] == newest[0])
-            oldest = next(b for b in balances if b[0] == oldest[0])
-        closing = newest[1]
-        opening = oldest[1] - oldest[2]
+    closing, opening = _checkpoint_balances(balances, warnings)
 
     if start is None and end is None and closing is None:
         return None
     return StatementSummary(
         period_start=start, period_end=end, opening_balance=opening, closing_balance=closing
     )
+
+
+def _checkpoint_balances(
+    rows: list[tuple[date, Decimal | None, Decimal]], warnings: list[str]
+) -> tuple[Decimal | None, Decimal | None]:
+    """The closing and opening balance a running-balance column implies.
+
+    WHICH END OF THE FILE IS NEWEST is decided by the balances themselves, never by the dates
+    alone. Under either ordering, each readable balance implies one balance-before-everything —
+    walk that row's own movement and every older row's movement back off it — and the ordering
+    under which every readable balance implies the *same* figure is the file's. That figure is the
+    opening balance; the closing balance is the opening plus every movement in the file. A row
+    whose balance was blank or unreadable is walked through by its movement rather than guessed
+    around, so a gap on the newest or oldest row does not shift the checkpoint by that amount.
+
+    The previous version compared the first and last dates. A one-day export — every row the same
+    date — read as oldest-first whichever way it was written, so a newest-first file stored the
+    oldest balance as its closing balance and the same figure as its opening. No warning, and
+    because a statement is unique per period and nothing deletes one, no way to correct it.
+
+    When the balances do not settle the order (a row that failed to parse leaves a hole the
+    movements cannot bridge; a single readable balance on a same-day file), the dates decide, and a
+    tie at either end leaves that end empty and says so. A checkpoint that might be wrong is worse
+    than none: reconciliation would accuse a correct ledger.
+    """
+    known = [(index, balance) for index, (_, balance, _) in enumerate(rows) if balance is not None]
+    if not known:
+        return None, None
+
+    movements = [movement for _, _, movement in rows]
+    total = sum(movements, Decimal(0))
+
+    def opening_if(newest_first: bool) -> Decimal | None:
+        implied = set()
+        for index, balance in known:
+            behind = movements[index:] if newest_first else movements[: index + 1]
+            implied.add(balance - sum(behind, Decimal(0)))
+        return implied.pop() if len(implied) == 1 else None
+
+    candidates = {
+        order: opening
+        for order, opening in (
+            ("newest_first", opening_if(True)),
+            ("oldest_first", opening_if(False)),
+        )
+        if opening is not None
+    }
+    distinct = set(candidates.values())
+    if len(distinct) == 1:
+        opening = distinct.pop()
+        return opening + total, opening
+
+    dates = [row_date for row_date, _, _ in rows]
+    if len(distinct) == 2:
+        # Both orderings are internally consistent — one readable balance among several rows —
+        # so the balances cannot say which way the file runs. Strictly ordered dates can.
+        if all(a > b for a, b in pairwise(dates)):
+            opening = candidates["newest_first"]
+            return opening + total, opening
+        if all(a < b for a, b in pairwise(dates)):
+            opening = candidates["oldest_first"]
+            return opening + total, opening
+
+    # The chain does not add up in either direction, or nothing breaks the tie. The readable
+    # balance on the unique newest-dated row is still the bank's own closing figure; the one on
+    # the unique oldest-dated row, less that row's movement, is still the opening. Anything less
+    # certain than that is left empty.
+    newest = [index for index, row_date in enumerate(dates) if row_date == max(dates)]
+    oldest = [index for index, row_date in enumerate(dates) if row_date == min(dates)]
+    closing = rows[newest[0]][1] if len(newest) == 1 else None
+    opening = None
+    if len(oldest) == 1 and rows[oldest[0]][1] is not None:
+        opening = rows[oldest[0]][1] - rows[oldest[0]][2]
+
+    missing = [
+        name for name, value in (("closing", closing), ("opening", opening)) if value is None
+    ]
+    if missing:
+        warnings.append(
+            "The running balances in this file do not add up from row to row, and the dates do "
+            f"not say which row is newest, so no {' or '.join(missing)} balance was recorded. "
+            "The transactions were imported; reconciling this period needs a statement whose "
+            "balances add up."
+        )
+    return closing, opening
 
 
 def _try_date(value: str) -> date | None:
@@ -582,7 +702,9 @@ def _row_amount(row: dict[str, str], fmt: CsvFormat) -> Decimal:
         # Taken as written when already signed; negated only when the bank omits the sign.
         return debit if debit < 0 else -debit
     if credit is not None:
-        return abs(credit)
+        # Also taken as written. A negative figure in the credit column is a reversed deposit —
+        # money leaving — and abs() used to turn it into a deposit of the same size.
+        return credit
     raise ValueError("Row has neither a debit nor a credit amount")
 
 

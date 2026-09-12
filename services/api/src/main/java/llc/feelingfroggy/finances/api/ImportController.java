@@ -156,14 +156,23 @@ public class ImportController {
                                 * client offers to create these rather than asking a person to look
                                 * up and type their own account digits.
                                 */
-                               List<UnlinkedAccountView> unlinkedAccounts) {
+                               List<UnlinkedAccountView> unlinkedAccounts,
+                               /**
+                                * What the parser could not read or had to assume — a row with an
+                                * unreadable date, a file that was not UTF-8, a checkpoint it would
+                                * not record. Each one is a sentence for the person who uploaded
+                                * the file; an import that lost rows must not look like one that
+                                * did not.
+                                */
+                               List<String> warnings) {
         static ImportResult of(ImportBatch batch, List<ImportService.UnlinkedAccount> unlinked) {
             return new ImportResult(batch.getId(),
                 batch.getAccount() == null ? null : batch.getAccount().getId(),
                 batch.getOriginalFilename(), batch.getStatus().code(), batch.getRowCount(),
                 batch.getAppliedCount(), batch.getDuplicateCount(), batch.getError(),
                 batch.getStartedAt(), batch.getCompletedAt(),
-                unlinked.stream().map(UnlinkedAccountView::of).toList());
+                unlinked.stream().map(UnlinkedAccountView::of).toList(),
+                batch.getWarnings());
         }
     }
 

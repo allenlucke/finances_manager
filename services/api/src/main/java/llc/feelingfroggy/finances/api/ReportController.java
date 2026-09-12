@@ -80,13 +80,17 @@ public class ReportController {
      * Whether the ledger agrees with each statement's closing balance.
      *
      * <p>A non-zero {@code difference} means a transaction is missing, duplicated, or wrong — in
-     * dollars, without a manual tally.
+     * dollars, without a manual tally. {@code baseline} says how the computed figure was reached:
+     * from the statement's own opening balance, so a difference is a real discrepancy; or by
+     * summing the whole history, so a difference may only mean the account's early history was
+     * never imported. The view has said this since the opening-balance work and this endpoint
+     * did not pass it on, which left the dashboard's qualifier a branch that could never render.
      */
     @GetMapping("/reconciliation")
     public List<ReconciliationRow> reconciliation() {
         return jdbc.query("""
             SELECT statement_id, account_id, period_start, period_end, closing_balance,
-                   computed_balance, difference, reconciled_at IS NOT NULL AS reconciled
+                   computed_balance, difference, reconciled_at IS NOT NULL AS reconciled, baseline
             FROM v_statement_reconciliation
             WHERE user_id = ?
             ORDER BY period_end DESC
@@ -99,7 +103,8 @@ public class ReportController {
                 rs.getBigDecimal("closing_balance"),
                 rs.getBigDecimal("computed_balance"),
                 rs.getBigDecimal("difference"),
-                rs.getBoolean("reconciled")),
+                rs.getBoolean("reconciled"),
+                rs.getString("baseline")),
             currentUser.id());
     }
 
@@ -116,9 +121,10 @@ public class ReportController {
                            BigDecimal remaining, int transactionCount) {
     }
 
+    /** @param baseline {@code opening_balance} or {@code full_history} — see the method above */
     public record ReconciliationRow(Long statementId, Long accountId, LocalDate periodStart,
                                     LocalDate periodEnd, BigDecimal closingBalance,
                                     BigDecimal computedBalance, BigDecimal difference,
-                                    boolean reconciled) {
+                                    boolean reconciled, String baseline) {
     }
 }

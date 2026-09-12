@@ -8,9 +8,9 @@
       "rejects": ["SAMSUNG ELECTRONICS", "ALDIVAN CONSULTING"]
     },
     {
-      "pattern": "\\b(SHELL|QUIKTRIP|QT\\s*\\d+|CASEY'?S|BP#\\s*\\d+|EXXON|PHILLIPS 66|CONOCO)\\b",
+      "pattern": "\\b(SHELL|QUIKTRIP|QT\\d*|CASEY'?S|BP#?\\d*|EXXON|PHILLIPS 66|CONOCO)\\b",
       "category": "Fuel",
-      "matches": ["SHELL OIL 9876543", "QT 1234 OVERLAND PARK KS", "QT1234", "BP#9876 KANSAS CITY MO", "CASEYS GEN STORE 2211", "PHILLIPS 66 - LEES SUMMIT"],
+      "matches": ["SHELL OIL 9876543", "QT 1234 OVERLAND PARK KS", "QT1234", "QT 1234", "BP#9876 KANSAS CITY MO", "BP#9876", "CASEYS GEN STORE 2211", "PHILLIPS 66 - LEES SUMMIT"],
       "rejects": ["SHELLFISH CO", "QTIP SUPPLY", "BPM FITNESS"]
     },
     {

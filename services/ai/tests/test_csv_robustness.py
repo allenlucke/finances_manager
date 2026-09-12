@@ -219,9 +219,12 @@ def test_an_unreadable_running_balance_is_reported_rather_than_silently_dropped(
     assert len(result.transactions) == 2
     assert len(result.warnings) == 1
     assert "line 2" in result.warnings[0] and "balance" in result.warnings[0]
-    # The checkpoint is built from the rows whose balance was readable.
+    # The newest row's own balance was unreadable, but its movement is known, so the checkpoint
+    # walks the readable balance forward through it: 1084.31 - 84.31. Taking the newest *readable*
+    # balance instead would have recorded a closing figure one transaction stale.
     assert result.statement is not None
-    assert result.statement.closing_balance == Decimal("1084.31")
+    assert result.statement.closing_balance == Decimal("1000.00")
+    assert result.statement.opening_balance == Decimal("1125.41")
 
 
 def test_a_hundred_thousand_rows_parse_in_bounded_time_and_memory():

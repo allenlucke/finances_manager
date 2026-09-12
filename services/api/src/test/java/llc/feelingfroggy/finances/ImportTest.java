@@ -38,6 +38,16 @@ import tools.jackson.databind.ObjectMapper;
  * sides of the wire contract drift — the Java DTOs are hand-mirrored from
  * `finances_ai.models`, and a renamed field would otherwise deserialize to null and be silently
  * imported as missing data.
+ *
+ * <p><strong>Regenerate the fixture whenever the parser changes</strong>, from the CSV kept beside
+ * it, so the drift guard guards against the parser that exists:
+ * <pre>
+ * cd services/ai && uv run python -c "from pathlib import Path; from finances_ai.ingest import parse_csv; \
+ *   p = Path('../api/src/test/resources/fixtures/parse-result-chase'); \
+ *   p.with_suffix('.json').write_text(parse_csv(p.with_suffix('.csv').read_bytes(), account_ref='chase-1234').model_dump_json(indent=2) + '\\n')"
+ * </pre>
+ * It was frozen at the pre-refund-split parser for two weeks, and in that state asserted that a
+ * grocery refund is a transfer — the one thing the split exists to prevent.
  */
 @DisplayName("Statement import")
 class ImportTest extends PostgresIntegrationTest {
@@ -127,9 +137,14 @@ class ImportTest extends PostgresIntegrationTest {
         assertThat(purchase.isProbableTransfer()).isFalse();
         assertThat(purchase.raw()).isNotEmpty();
 
-        // The Chase Type column marks the payment and the refund.
+        // The Chase Type column marks the payment as a transfer and the return as a refund — two
+        // flags, because a transfer is not spending and a refund is negative spending.
         assertThat(parsed.transactions().stream().filter(t -> t.isProbableTransfer()).count())
-            .isEqualTo(2);
+            .isEqualTo(1);
+        var refund = parsed.transactions().getLast();
+        assertThat(refund.raw()).containsEntry("Type", "Return");
+        assertThat(refund.isProbableRefund()).isTrue();
+        assertThat(refund.isProbableTransfer()).isFalse();
     }
 
     @Test
@@ -169,9 +184,14 @@ class ImportTest extends PostgresIntegrationTest {
         Integer categorized = jdbc.queryForObject(
             "SELECT count(*) FROM transaction WHERE is_transfer AND category_id IS NOT NULL",
             Integer.class);
+        Integer refundsStillCategorizable = jdbc.queryForObject(
+            "SELECT count(*) FROM transaction WHERE direction = 'credit' AND NOT is_transfer",
+            Integer.class);
 
-        // The Payment row and the Return row.
-        assertThat(transfers).isEqualTo(2);
+        // The Payment row only. The Return is a refund: negative spending that must stay
+        // bookable against Groceries, or that category is overcharged for good.
+        assertThat(transfers).isEqualTo(1);
+        assertThat(refundsStillCategorizable).isEqualTo(1);
         // The double-count rule, enforced at import as well as by the CHECK constraint.
         assertThat(categorized).isZero();
     }

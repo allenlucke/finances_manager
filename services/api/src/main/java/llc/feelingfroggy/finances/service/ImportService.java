@@ -39,6 +39,15 @@ public class ImportService {
 
     private static final Logger log = LoggerFactory.getLogger(ImportService.class);
 
+    /**
+     * How much of what the parser said is kept. A file with a thousand broken rows needs one
+     * sentence and a count, not a thousand lines, and a single note is cut before it becomes a
+     * paragraph. The parser's notes quote the cell they could not read — a date, an amount — and
+     * nothing else from the row.
+     */
+    static final int MAX_WARNINGS = 50;
+    static final int MAX_WARNING_LENGTH = 240;
+
     private final AiServiceClient aiService;
     private final TransactionRepository transactions;
     private final AccountRepository accounts;
@@ -257,6 +266,10 @@ public class ImportService {
             batch.setError(unlinked.size() + " account(s) in this file are not set up yet: "
                 + names + ". Nothing was guessed — create them and import again.");
         }
+        // What the parser could not read, kept with the batch and shown. These used to be counted
+        // into the log line below and dropped, so a file that lost rows to a bad date looked
+        // exactly like one that did not.
+        batch.setWarnings(bounded(parsed.warnings()));
         // Completed in THIS transaction, so the APPLIED status and its counts commit with the
         // rows they describe — or roll back with them. The recorder's REQUIRES_NEW completion
         // committed first, so a commit failure left a batch claiming rows that did not exist.
@@ -355,6 +368,7 @@ public class ImportService {
             batch.setError(unlinked.size() + " account(s) in this file are not set up yet: "
                 + names + ". Nothing was guessed — create them and import again.");
         }
+        batch.setWarnings(bounded(parsed.warnings()));
         var completed = markApplied(batch, parsed.positions().size(), applied, updated);
 
         // Counts only — docs/SECURITY.md keeps holdings, values and account identifiers out of the log.
@@ -362,6 +376,24 @@ public class ImportService {
             batch.getId(), parsed.positions().size(), applied, updated, parsed.asOf());
 
         return new ImportOutcome(completed, List.copyOf(unlinked.values()));
+    }
+
+    /** The parser's notes, cut to what a person can read and a row can hold. */
+    static List<String> bounded(List<String> warnings) {
+        if (warnings == null || warnings.isEmpty()) {
+            return List.of();
+        }
+        var kept = new java.util.ArrayList<String>();
+        for (String warning : warnings.stream().limit(MAX_WARNINGS).toList()) {
+            String line = warning == null ? "" : warning.replace('\n', ' ').strip();
+            kept.add(line.length() > MAX_WARNING_LENGTH
+                ? line.substring(0, MAX_WARNING_LENGTH - 1) + "…"
+                : line);
+        }
+        if (warnings.size() > MAX_WARNINGS) {
+            kept.add("…and " + (warnings.size() - MAX_WARNINGS) + " more");
+        }
+        return List.copyOf(kept);
     }
 
     /** Marks the batch applied in the caller's transaction, so status commits with the rows. */

@@ -120,3 +120,71 @@ def test_generic_format_has_no_type_column_so_never_guesses_a_transfer():
     # The description looks like a payment, but this format carries no Type column, so the parser
     # reports nothing. Deciding is the categorizer's job.
     assert result.transactions[0].is_probable_transfer is False
+
+
+def test_a_negative_figure_in_the_credit_column_is_money_out():
+    """A reversed deposit. abs() used to make it a deposit of the same size."""
+    content = (
+        "Transaction Number,Date,Description,Memo,Amount Debit,Amount Credit,Balance,Check Number,Fees\n"
+        '"1",08/26/2026,"DEPOSIT REVERSAL","",,-25.00,"975.00",,\n'
+    )
+    result = parse_csv(content, account_ref="cacu")
+
+    assert result.transactions[0].direction == TransactionDirection.DEBIT
+    assert result.transactions[0].amount == Decimal("25.00")
+
+
+AMEX_CSV = """Date,Description,Card Member,Account #,Amount,Extended Details,Appears On Your Statement As,Address,City/State,Zip Code,Country,Reference,Category
+08/14/2026,KROGER #4521,A CARDMEMBER,-31004,84.31,KROGER #4521 ANYTOWN KS,KROGER #4521,123 MAIN ST,ANYTOWN KS,66000,UNITED STATES,'320262290000000001',Merchandise & Supplies-Groceries
+08/10/2026,AUTOPAY PAYMENT - THANK YOU,A CARDMEMBER,-31004,-500.00,,AUTOPAY PAYMENT - THANK YOU,,,,,'320262250000000002',
+"""
+
+
+def test_an_amex_export_is_read_with_its_own_sign_convention():
+    """Amex writes charges positive and payments negative — the opposite of every bank export.
+
+    Its header is a superset of the generic shape, so without its own format the generic rule read
+    every purchase as a credit and every payment as a debit, with no warning and no running balance
+    to catch it.
+    """
+    result = parse_csv(AMEX_CSV, account_ref="amex")
+
+    assert result.source_format == "amex_card"
+    assert result.warnings == []
+    purchase, payment = result.transactions
+    assert purchase.direction == TransactionDirection.DEBIT
+    assert purchase.amount == Decimal("84.31")
+    assert payment.direction == TransactionDirection.CREDIT
+    assert payment.amount == Decimal("500.00")
+
+
+def test_an_amex_row_echoes_neither_the_card_number_nor_the_address():
+    result = parse_csv(AMEX_CSV, account_ref="amex")
+
+    for transaction in result.transactions:
+        assert not {"Account #", "Card Member", "Address", "City/State", "Zip Code"} & set(
+            transaction.raw
+        )
+        assert "-31004" not in " ".join(transaction.raw.values())
+
+
+def test_a_generic_file_that_is_mostly_credits_is_flagged():
+    """The generic rule has to assume a sign convention. A month of spending that reads as mostly
+    money in is the signature of the assumption being wrong for this file."""
+    # Days above 12, so the dates are unambiguous and the only warning is the one under test.
+    content = "Date,Description,Amount\n" + "".join(
+        f"08/{day:02d}/2026,STORE {day},{day}.00\n" for day in range(13, 23)
+    )
+    result = parse_csv(content, account_ref="x")
+
+    assert result.source_format == "generic"
+    assert len(result.warnings) == 1
+    assert "10 of 10 rows read as money in" in result.warnings[0]
+    assert "inverted" in result.warnings[0]
+
+
+def test_a_generic_file_that_is_mostly_debits_is_not_flagged():
+    content = "Date,Description,Amount\n" + "".join(
+        f"08/{day:02d}/2026,STORE {day},-{day}.00\n" for day in range(13, 23)
+    )
+    assert parse_csv(content, account_ref="x").warnings == []

@@ -135,3 +135,64 @@ def test_identical_entries_differing_only_by_fitid_get_different_keys():
     keys = {t.dedupe_key for t in result.transactions}
     assert len(result.transactions) == 3
     assert len(keys) == 3, "identical transfers collapsed into one key"
+
+
+def _bank_statement(acctid: str, accttype: str, fitid: str, amount: str, name: str) -> str:
+    return (
+        "<STMTTRNRS><TRNUID>1</TRNUID><STATUS><CODE>0</CODE><SEVERITY>INFO</SEVERITY></STATUS>"
+        f"<STMTRS><CURDEF>USD</CURDEF><BANKACCTFROM><BANKID>1</BANKID><ACCTID>{acctid}</ACCTID>"
+        f"<ACCTTYPE>{accttype}</ACCTTYPE></BANKACCTFROM><BANKTRANLIST><DTSTART>20260801</DTSTART>"
+        "<DTEND>20260831</DTEND><STMTTRN><TRNTYPE>DEBIT</TRNTYPE><DTPOSTED>20260814000000</DTPOSTED>"
+        f"<TRNAMT>{amount}</TRNAMT><FITID>{fitid}</FITID><NAME>{name}</NAME></STMTTRN></BANKTRANLIST>"
+        "<LEDGERBAL><BALAMT>100.00</BALAMT><DTASOF>20260831</DTASOF></LEDGERBAL>"
+        "</STMTRS></STMTTRNRS>"
+    )
+
+
+def _ofx(*statements: str) -> bytes:
+    return (
+        "OFXHEADER:100\nDATA:OFXSGML\nVERSION:102\nSECURITY:NONE\nENCODING:USASCII\n"
+        "CHARSET:1252\nCOMPRESSION:NONE\nOLDFILEUID:NONE\nNEWFILEUID:NONE\n\n"
+        "<OFX><SIGNONMSGSRSV1><SONRS><STATUS><CODE>0</CODE><SEVERITY>INFO</SEVERITY></STATUS>"
+        "<DTSERVER>20260831000000</DTSERVER><LANGUAGE>ENG</LANGUAGE></SONRS></SIGNONMSGSRSV1>"
+        "<BANKMSGSRSV1>" + "".join(statements) + "</BANKMSGSRSV1></OFX>"
+    ).encode()
+
+
+def test_a_multi_statement_file_routes_each_row_to_its_own_account():
+    """Two accounts in one file, the same FITID in each. Every row used to be filed against the
+    account nominated for the upload, and the shared FITID then made one of them a "duplicate" of
+    the other — a row from savings silently dropped as a copy of a row from checking."""
+    result = parse_ofx(
+        _ofx(
+            _bank_statement("CHK1", "CHECKING", "F1", "-10.00", "GROCER"),
+            _bank_statement("SAV2", "SAVINGS", "F1", "-20.00", "GROCER"),
+        ),
+        account_ref="1",
+    )
+
+    assert len(result.transactions) == 2
+    checking, savings = result.transactions
+    assert checking.account_key and savings.account_key
+    assert checking.account_key != savings.account_key
+    assert (checking.account_mask, savings.account_mask) == ("CHK1", "SAV2")
+    assert (checking.account_name, savings.account_name) == ("Checking", "Savings")
+    assert checking.dedupe_key != savings.dedupe_key
+    # No checkpoint: it would belong to one account, and the upload nominates at most one.
+    assert result.statement is None
+    assert any("2 accounts" in w and "account id" in w for w in result.warnings)
+
+
+def test_a_single_statement_file_keeps_the_nominated_account():
+    result = parse_ofx(read_sample(), account_ref="1")
+
+    assert all(t.account_key is None for t in result.transactions)
+    assert result.statement is not None
+
+
+def test_a_parse_failure_names_the_error_class_not_the_bytes():
+    """The API now shows a parser's reason to the person; a library's message can quote the file."""
+    with pytest.raises(OfxParseError) as refused:
+        parse_ofx(b"OFXHEADER:100\n\n<OFX><BROKEN>", account_ref="1")
+    assert "Not a readable OFX file (" in str(refused.value)
+    assert "BROKEN" not in str(refused.value)

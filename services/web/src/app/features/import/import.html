@@ -99,6 +99,25 @@
             <strong>{{ result.duplicateCount }}</strong> already present.
           </span>
         </div>
+        @if (result.warnings.length) {
+          <!-- The parser's own notes: a row it could not read, an encoding it fell back to, a
+               checkpoint it would not record. As text, one per line, because an import that
+               lost rows must never look like one that did not. -->
+          <div class="result note" role="status">
+            <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">warning</mat-icon>
+            <div>
+              <div>
+                {{ result.warnings.length }} note(s) from reading the file. Rows named here were not
+                imported.
+              </div>
+              <ul class="warnings">
+                @for (warning of result.warnings; track $index) {
+                  <li>{{ warning }}</li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
         @if (result.unlinkedAccounts.length) {
           <div class="result note" role="status">
             <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">link_off</mat-icon>
@@ -241,6 +260,18 @@
                   <!-- As text, not a tooltip on a span: a tooltip needs a mouse and a focusable
                        host, and this is the only explanation of what went wrong. -->
                   <div class="muted detail">{{ row.error }}</div>
+                }
+                @if (row.warnings?.length) {
+                  <details class="detail">
+                    <summary class="muted">
+                      {{ row.warnings.length }} note(s) from the parser
+                    </summary>
+                    <ul class="warnings">
+                      @for (warning of row.warnings; track $index) {
+                        <li>{{ warning }}</li>
+                      }
+                    </ul>
+                  </details>
                 }
               </td>
             </ng-container>

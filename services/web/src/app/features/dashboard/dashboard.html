@@ -67,11 +67,13 @@
               <strong>{{ accountName(row.accountId) }}</strong>
               <span class="muted"> · period ending {{ row.periodEnd }}</span>
               @if (row.baseline === 'full_history') {
-                <span
-                  class="muted"
-                  matTooltip="This statement carried no opening balance, so the ledger was summed from the beginning. A difference here may only mean the account's earlier history was never imported."
-                >
-                  · summed from the beginning
+                <!-- Text, not a tooltip: a tooltip on a plain span needs a mouse and a focusable
+                     host, and this is the one sentence that stops a correct ledger being read as
+                     a wrong one. -->
+                <span class="muted baseline">
+                  · summed from the beginning of the ledger, because this statement carried no
+                  opening balance — a difference here may only mean the account's earlier history
+                  was never imported
                 </span>
               }
             </span>

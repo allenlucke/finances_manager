@@ -178,3 +178,62 @@ def test_opening_balance_is_derived_from_the_oldest_row():
     """
     for order in ("newest_first", "oldest_first", "shuffled"):
         assert _summary(order).opening_balance == Decimal("-927.69"), order
+
+
+def test_a_same_day_export_is_read_the_right_way_round():
+    """Every row on one date. The old heuristic compared the first and last dates, found them
+    equal, and read a newest-first file as oldest-first: the closing balance came back as the
+    oldest balance and the opening as the same figure, with no warning — and a statement is unique
+    per period with nothing to delete it, so the wrong checkpoint was permanent.
+
+    The balances settle it: only one ordering makes every running balance agree.
+    """
+    newest_first = (
+        _CACU_PREAMBLE
+        + '"2",08/26/2026,"KROGER","",-84.31,,"1000.00",,\n'
+        + '"1",08/26/2026,"PAYROLL","",,2000.00,"1084.31",,\n'
+    )
+    oldest_first = (
+        _CACU_PREAMBLE
+        + '"1",08/26/2026,"PAYROLL","",,2000.00,"1084.31",,\n'
+        + '"2",08/26/2026,"KROGER","",-84.31,,"1000.00",,\n'
+    )
+    for content in (newest_first, oldest_first):
+        result = parse_csv(content, account_ref="cacu")
+        assert result.warnings == []
+        assert result.statement.closing_balance == Decimal("1000.00")
+        assert result.statement.opening_balance == Decimal("-915.69")
+
+
+def test_a_blank_balance_on_the_oldest_row_is_walked_through_not_skipped():
+    """The opening balance precedes the oldest *transaction*, whether or not that row's balance
+    cell was filled in. Skipping the row put the opening one movement too late, silently."""
+    content = (
+        _CACU_PREAMBLE
+        + _NEWEST
+        + _MIDDLE
+        + '"20260801",08/01/2026,"Point Of Sale Deposit WAL-MART","ANYTOWN",,12.00,"",,\n'
+    )
+    result = parse_csv(content, account_ref="cacu")
+
+    assert result.warnings == []
+    assert result.statement.closing_balance == Decimal("1000.00")
+    assert result.statement.opening_balance == Decimal("-927.69")
+
+
+def test_balances_that_do_not_add_up_on_a_same_day_file_record_no_checkpoint_and_say_so():
+    """Two rows, one date, the movements do not connect the balances in either direction, so
+    nothing can say which is newer. A checkpoint that might be wrong accuses a correct ledger."""
+    content = (
+        _CACU_PREAMBLE
+        + '"2",08/26/2026,"KROGER","",-84.31,,"1000.00",,\n'
+        + '"1",08/26/2026,"PAYROLL","",,2000.00,"5.00",,\n'
+    )
+    result = parse_csv(content, account_ref="cacu")
+
+    assert len(result.transactions) == 2
+    assert result.statement.closing_balance is None
+    assert result.statement.opening_balance is None
+    assert len(result.warnings) == 1
+    assert "do not add up" in result.warnings[0]
+    assert "closing or opening" in result.warnings[0]

@@ -264,13 +264,28 @@ function guessType(filename: string | null, positions: boolean): string {
   return 'checking';
 }
 
-/** What to tell the person. The API's own sentence when it wrote one; a plain one otherwise. */
-function failureMessage(error: { status?: number; error?: { detail?: string } }): string {
-  if (error?.status === 422) {
-    return (
-      error.error?.detail ||
-      'That file could not be read. Check it is the export your institution produced.'
-    );
+/**
+ * What to tell the person. The API's own sentence when it wrote one; a plain one otherwise.
+ *
+ * <p>Exported for its spec. Two things this must not do: hide a reason the API wrote because it
+ * arrived as a 400 rather than a 422 ("Unknown account" did, and the screen showed the fallback),
+ * and claim "Nothing was saved" for a status it cannot interpret. A gateway timeout mid-import
+ * arrives with no body at all, and by then the batch may well have committed — the history below
+ * is the only honest answer to "did it?"
+ */
+export function failureMessage(error: {
+  status?: number;
+  error?: { detail?: string | null } | null;
+}): string {
+  const detail = error?.error?.detail?.trim();
+  if (detail) {
+    return detail;
   }
-  return 'The import failed. Nothing was saved.';
+  if (error?.status === 422) {
+    return 'That file could not be read. Check it is the export your institution produced.';
+  }
+  if (!error?.status || error.status >= 500) {
+    return 'The server could not be reached, or did not answer. Check the import history below before trying again.';
+  }
+  return 'The import did not finish. Check the import history below before trying again.';
 }

@@ -68,7 +68,7 @@
           </mat-form-field>
         } @else {
           <mat-form-field appearance="outline" class="col-category">
-            <mat-label>Moved to</mat-label>
+            <mat-label>{{ transferLabel() }}</mat-label>
             <mat-select formControlName="transferAccountId">
               @for (account of otherAccounts(); track account.id) {
                 <mat-option [value]="account.id">{{ account.name }}</mat-option>

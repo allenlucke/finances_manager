@@ -20,14 +20,19 @@ from finances_ai.categorize import (
     categorize,
     categorize_one,
 )
+from finances_ai.ingest.common import normalize_description
 from finances_ai.models import ParsedTransaction, TransactionDirection
 
 
 def make_transaction(description: str, **overrides) -> ParsedTransaction:
+    # The merchant is built the way the CSV reader builds it — normalized, which strips a trailing
+    # store number — because that is the text the rules actually see. Uppercasing alone let two
+    # fuel rules pass this table while "QT 1234" and "BP#9876" could never match in production:
+    # the digits the patterns required were exactly what normalization removed.
     fields = {
         "transaction_date": date(2026, 8, 14),
         "description": description,
-        "merchant": description.upper(),
+        "merchant": normalize_description(description),
         "amount": Decimal("10.00"),
         "direction": TransactionDirection.DEBIT,
         "dedupe_key": "k" * 32,

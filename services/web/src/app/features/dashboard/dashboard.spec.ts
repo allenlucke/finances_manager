@@ -12,6 +12,7 @@ import { DashboardComponent } from './dashboard';
 describe('DashboardComponent', () => {
   let backend: HttpTestingController;
   let component: Record<string, any>;
+  let fixture: ReturnType<typeof TestBed.createComponent<DashboardComponent>>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -22,7 +23,7 @@ describe('DashboardComponent', () => {
         provideRouter([]),
       ],
     });
-    const fixture = TestBed.createComponent(DashboardComponent);
+    fixture = TestBed.createComponent(DashboardComponent);
     component = fixture.componentInstance as unknown as Record<string, any>;
     backend = TestBed.inject(HttpTestingController);
   });
@@ -97,6 +98,35 @@ describe('DashboardComponent', () => {
     answer('/api/v1/accounts', []);
 
     expect(component['snapshotNote']()).toBeNull();
+  });
+
+  it('says, in text, when a mismatch was computed by summing the whole ledger — and only then', () => {
+    // The API returns `baseline` per row; the branch on it was dead for two weeks because the
+    // endpoint did not select the column, and no spec rendered this template to notice. Two rows,
+    // one of each kind, so the assertion proves the sentence appears exactly where it should.
+    const row = {
+      accountId: 7,
+      periodStart: '2026-08-01',
+      periodEnd: '2026-08-31',
+      closingBalance: 100,
+      computedBalance: 90,
+      difference: 10,
+      reconciled: false,
+    };
+    answer('/api/v1/entities', []);
+    answer('/api/v1/reports/net-worth', []);
+    answer('/api/v1/reports/reconciliation', [
+      { ...row, statementId: 1, baseline: 'full_history' },
+      { ...row, statementId: 2, periodEnd: '2026-07-31', baseline: 'opening_balance' },
+    ]);
+    answer('/api/v1/reports/spend-vs-target', []);
+    answer('/api/v1/accounts', []);
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('2 statement(s) do not match the ledger');
+    expect(text.match(/summed from the beginning of the ledger/g)).toHaveLength(1);
+    expect(text).toContain('earlier history was never imported');
   });
 
   it('refresh moves the clock so the month follows the calendar', () => {

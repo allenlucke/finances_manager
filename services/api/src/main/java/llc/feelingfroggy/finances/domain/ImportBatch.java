@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * One statement-import run. Populated in M2; it exists now so {@link Transaction} never needs an
@@ -64,6 +65,14 @@ public class ImportBatch {
 
     @Column(name = "error")
     private String error;
+
+    /**
+     * What the parser said about the file, one note per line: rows it could not read, an encoding
+     * it had to fall back to, a statement it could not checkpoint. Null when it had nothing to say.
+     * Shown to the person, never counted into a log line — see V8.
+     */
+    @Column(name = "warnings")
+    private String warnings;
 
     @Column(name = "started_at", insertable = false, updatable = false)
     private Instant startedAt;
@@ -153,6 +162,14 @@ public class ImportBatch {
 
     public void setError(String error) {
         this.error = error;
+    }
+
+    public List<String> getWarnings() {
+        return warnings == null || warnings.isBlank() ? List.of() : List.of(warnings.split("\n"));
+    }
+
+    public void setWarnings(List<String> warnings) {
+        this.warnings = warnings == null || warnings.isEmpty() ? null : String.join("\n", warnings);
     }
 
     public Instant getStartedAt() {

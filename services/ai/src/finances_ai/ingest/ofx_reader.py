@@ -24,7 +24,7 @@ from decimal import Decimal
 
 from ofxtools.Parser import OFXTree
 
-from finances_ai.ingest.common import dedupe_key, normalize_description
+from finances_ai.ingest.common import account_hash, dedupe_key, normalize_description
 from finances_ai.models import (
     ParsedTransaction,
     ParseResult,
@@ -60,7 +60,9 @@ def parse_ofx(content: str | bytes, account_ref: str = "unknown") -> ParseResult
         tree.parse(io.BytesIO(content))
         ofx = tree.convert()
     except Exception as exc:  # ofxtools raises a family of parse and spec errors
-        raise OfxParseError(f"Not a readable OFX file: {exc}") from exc
+        # The class name, not the message: the API now shows a parser's reason to the person, and
+        # a library's parse error can quote the bytes it choked on.
+        raise OfxParseError(f"Not a readable OFX file ({type(exc).__name__})") from exc
 
     statements = list(getattr(ofx, "statements", []) or [])
     if not statements:
@@ -69,30 +71,64 @@ def parse_ofx(content: str | bytes, account_ref: str = "unknown") -> ParseResult
     transactions: list[ParsedTransaction] = []
     warnings: list[str] = []
 
+    # One file, several accounts. Each row carries its own statement's account id, so the API
+    # routes it the way it routes a brokerage history — by the stable key, through the
+    # unlinked-account flow when the account is not set up yet — rather than applying every
+    # statement to whichever account the caller nominated. That used to be the behaviour, and the
+    # warning saying so never reached anyone. A single-statement file keeps the nominated account.
+    several = len(statements) > 1
     for statement in statements:
+        account = _statement_account(statement) if several else None
+        if several and account is None:
+            warnings.append(
+                "A statement in this file names no account id; its rows were read against the "
+                "account chosen for the upload."
+            )
         for entry in getattr(statement, "transactions", []) or []:
             try:
-                transactions.append(_map_transaction(entry, account_ref))
+                transactions.append(_map_transaction(entry, account_ref, account))
             except (ValueError, AttributeError, TypeError) as exc:
-                # One bad row must not cost the other several hundred. The API surfaces the count.
+                # One bad row must not cost the other several hundred.
                 warnings.append(f"transaction {getattr(entry, 'fitid', '?')}: {exc}")
 
-    if len(statements) > 1:
-        # One file, several accounts. Every row is applied to the account the caller nominated,
-        # which would be wrong — say so rather than silently mixing them.
+    if several:
+        # A checkpoint belongs to one account, and the import nominates at most one. Recording
+        # the first statement's closing balance against it — the old behaviour — would have
+        # reconciled one account against another's figure.
         warnings.append(
-            f"File contains {len(statements)} statements; all rows were read as one account."
+            f"This file holds statements for {len(statements)} accounts. Each row was matched to "
+            "its own account by the file's account id. No closing balance was recorded: import "
+            "each account's own statement to reconcile it."
         )
 
     return ParseResult(
         source_format="ofx",
         transactions=transactions,
         warnings=warnings,
-        statement=_map_statement(statements[0]),
+        statement=None if several else _map_statement(statements[0]),
     )
 
 
-def _map_transaction(entry, account_ref: str) -> ParsedTransaction:
+def _statement_account(statement) -> tuple[str, str, str | None] | None:
+    """(mask, key, name) for the account a statement is for, or None when it does not say.
+
+    The full account id is used to derive the key and then dropped — never returned
+    (docs/SECURITY.md). OFX carries no account name; the account type is the nearest thing.
+    """
+    account = getattr(statement, "account", None)
+    acctid = str(getattr(account, "acctid", "") or "").strip()
+    if not acctid:
+        return None
+    accttype = getattr(account, "accttype", None)
+    name = str(accttype).title() if accttype else None
+    if name is None and type(statement).__name__.startswith("CC"):
+        name = "Credit card"
+    return acctid[-4:], account_hash(acctid), name
+
+
+def _map_transaction(
+    entry, account_ref: str, account: tuple[str, str, str | None] | None = None
+) -> ParsedTransaction:
     amount = Decimal(str(entry.trnamt))
     posted: date = entry.dtposted.date()
     # DTUSER is when the user made the purchase, DTPOSTED when it hit the account. Prefer the
@@ -104,6 +140,7 @@ def _map_transaction(entry, account_ref: str) -> ParsedTransaction:
         raise ValueError("Row has neither NAME nor MEMO")
 
     trntype = (getattr(entry, "trntype", "") or "").upper()
+    account_mask, account_key, account_name = account or (None, None, None)
 
     return ParsedTransaction(
         transaction_date=occurred,
@@ -120,12 +157,15 @@ def _map_transaction(entry, account_ref: str) -> ParsedTransaction:
         # into one. (The API now computes its own key and reads external_id directly, so this is
         # belt and braces; it keeps the parser's key honest for anyone else reading it.)
         dedupe_key=dedupe_key(
-            account_ref,
+            account_key or account_ref,
             occurred,
             amount,
             description,
             str(entry.fitid) if getattr(entry, "fitid", None) else None,
         ),
+        account_mask=account_mask,
+        account_key=account_key,
+        account_name=account_name,
         is_probable_transfer=trntype in _TRANSFER_TYPES,
         raw={
             "trntype": trntype,

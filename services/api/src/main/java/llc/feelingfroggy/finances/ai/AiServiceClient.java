@@ -7,6 +7,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Thin client for the Python AI service.
@@ -19,6 +22,11 @@ public class AiServiceClient {
 
     private static final org.slf4j.Logger log =
         org.slf4j.LoggerFactory.getLogger(AiServiceClient.class);
+
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    /** A parser's verdict is a sentence or two; anything longer was not written to be shown. */
+    public static final int MAX_DETAIL_LENGTH = 300;
 
     private final RestClient restClient;
 
@@ -104,11 +112,7 @@ public class AiServiceClient {
         } catch (AiServiceException e) {
             throw e;
         } catch (Exception e) {
-            if (e instanceof org.springframework.web.client.RestClientResponseException response) {
-                log.debug("Parser rejected the positions upload: {} {}", response.getStatusCode(),
-                    response.getResponseBodyAsString());
-            }
-            throw new AiServiceException("The positions file could not be parsed.", e);
+            throw refusal(e, "The positions file could not be parsed.");
         }
     }
 
@@ -143,14 +147,58 @@ public class AiServiceClient {
         } catch (AiServiceException e) {
             throw e;
         } catch (Exception e) {
-            // The parser's own explanation is logged at DEBUG only. It can quote the file, and
-            // docs/SECURITY.md keeps transaction descriptions out of INFO-level logs — but without
-            // it, diagnosing a rejected upload means guessing.
-            if (e instanceof org.springframework.web.client.RestClientResponseException response) {
-                log.debug("Parser rejected the upload: {} {}", response.getStatusCode(),
-                    response.getResponseBodyAsString());
+            throw refusal(e, "The statement could not be parsed.");
+        }
+    }
+
+    /**
+     * What to tell the caller when the parser says no.
+     *
+     * <p>A 422 is the parser's own verdict on the file — "No parser matches this file. Known
+     * formats: …", "Not a positions export: missing Symbol …" — written for a person, and it is
+     * passed through as the message. Every other failure gets the fixed sentence: the service
+     * being down, a 500, a body that is not the expected shape, or a validation list rather than
+     * a sentence. Whatever text those carry was not written to be shown, and can quote the file.
+     *
+     * <p>The fixed sentence used to be the answer for everything. The parser's explanations
+     * reached nobody, and the one HTTP test that claimed otherwise mocked the sentence it asserted.
+     *
+     * <p>The raw body is logged at DEBUG only: docs/SECURITY.md keeps statement content out of
+     * INFO-level logs, and a rejected body can quote the file.
+     */
+    private AiServiceException refusal(Exception e, String fallback) {
+        if (e instanceof RestClientResponseException response) {
+            log.debug("Parser rejected the upload: {} {}", response.getStatusCode(),
+                response.getResponseBodyAsString());
+            if (response.getStatusCode().value() == 422) {
+                String detail = detailOf(response.getResponseBodyAsString());
+                if (detail != null) {
+                    return new AiServiceException(detail, e);
+                }
             }
-            throw new AiServiceException("The statement could not be parsed.", e);
+        }
+        return new AiServiceException(fallback, e);
+    }
+
+    /** FastAPI's {@code {"detail": "…"}} when it is a sentence; null for anything else. */
+    public static String detailOf(String body) {
+        if (body == null || body.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode detail = JSON.readTree(body).path("detail");
+            if (!detail.isString()) {
+                return null;
+            }
+            String text = detail.asString().strip();
+            if (text.isEmpty()) {
+                return null;
+            }
+            return text.length() > MAX_DETAIL_LENGTH
+                ? text.substring(0, MAX_DETAIL_LENGTH - 1) + "…"
+                : text;
+        } catch (RuntimeException notJson) {
+            return null;
         }
     }
 

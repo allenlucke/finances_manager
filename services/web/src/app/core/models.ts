@@ -185,6 +185,12 @@ export interface ImportResult {
    * to create these — nobody should have to look up their own account digits to make an import work.
    */
   unlinkedAccounts: UnlinkedAccount[];
+  /**
+   * What the parser could not read or had to assume: a row with an unreadable date, a file that
+   * was not UTF-8, a checkpoint it would not record. Each one is a sentence for the person who
+   * uploaded the file. Empty is the normal case.
+   */
+  warnings: string[];
 }
 
 export interface UnlinkedAccount {

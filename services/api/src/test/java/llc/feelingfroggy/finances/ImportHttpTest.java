@@ -184,6 +184,57 @@ class ImportHttpTest extends PostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("what the parser could not read reaches the response and the history")
+    void parserWarningsReachThePerson() {
+        // Review 2026-09-11 J1: these were counted into a log line and dropped, so a file that
+        // lost rows to a bad date looked exactly like one that did not.
+        when(aiService.parseCsv(any(), any(), any())).thenReturn(new ParseResult("generic",
+            List.of(row("2026-08-14", "84.31", "KROGER")),
+            List.of("line 3: Unrecognized date 'nope' (tried %m/%d/%Y, %Y-%m-%d)"), null));
+
+        var response = upload(Map.of("accountId", String.valueOf(cardId)));
+
+        assertThat(response.status()).isEqualTo(201);
+        assertThat(response.json().get("warnings")).hasSize(1);
+        assertThat(response.json().get("warnings").get(0).asText()).contains("line 3");
+        var history = api.get("/api/v1/imports").json().get(0);
+        assertThat(history.get("warnings").get(0).asText()).contains("line 3");
+    }
+
+    @Test
+    @DisplayName("a reconciliation row says it summed the whole history when it had no opening balance")
+    void reconciliationSaysWhenItSummedTheWholeHistory() {
+        when(aiService.parseCsv(any(), any(), any())).thenReturn(new ParseResult("cacu",
+            List.of(row("2026-08-14", "84.31", "KROGER")), List.of(),
+            new ParseResult.StatementSummary(LocalDate.parse("2026-08-01"),
+                LocalDate.parse("2026-08-31"), new BigDecimal("-84.31"))));
+        upload(Map.of("accountId", String.valueOf(cardId)));
+
+        var rows = api.get("/api/v1/reports/reconciliation").json();
+
+        assertThat(rows).hasSize(1);
+        // The view has said this since the opening-balance work; the endpoint did not pass it
+        // on, so the dashboard's "summed from the beginning" qualifier could never render.
+        assertThat(rows.get(0).get("baseline").asText()).isEqualTo("full_history");
+        assertThat(new BigDecimal(rows.get(0).get("difference").asText())).isEqualByComparingTo("0");
+    }
+
+    @Test
+    @DisplayName("a reconciliation row says it started from the statement's own opening balance")
+    void reconciliationSaysWhenItUsedTheOpeningBalance() {
+        when(aiService.parseCsv(any(), any(), any())).thenReturn(new ParseResult("cacu",
+            List.of(row("2026-08-14", "84.31", "KROGER")), List.of(),
+            new ParseResult.StatementSummary(LocalDate.parse("2026-08-01"),
+                LocalDate.parse("2026-08-31"), new BigDecimal("100.00"), new BigDecimal("15.69"))));
+        upload(Map.of("accountId", String.valueOf(cardId)));
+
+        var rows = api.get("/api/v1/reports/reconciliation").json();
+
+        assertThat(rows.get(0).get("baseline").asText()).isEqualTo("opening_balance");
+        assertThat(new BigDecimal(rows.get(0).get("difference").asText())).isEqualByComparingTo("0");
+    }
+
+    @Test
     @DisplayName("an unknown account id is a 400, not a guess")
     void unknownAccountIsRefused() {
         parserReturns(row("2026-08-14", "84.31", "KROGER"));

@@ -9,7 +9,10 @@
       "amount": "84.31",
       "direction": "debit",
       "external_id": null,
-      "dedupe_key": "31c3cbdbbfa78a3bbd4a6b6ba9d060d8",
+      "dedupe_key": "0d7f5e1e9c49e7ba398c62959a0471f2",
+      "account_mask": null,
+      "account_key": null,
+      "account_name": null,
       "is_probable_transfer": false,
       "is_probable_refund": false,
       "raw": {
@@ -30,7 +33,10 @@
       "amount": "46.02",
       "direction": "debit",
       "external_id": null,
-      "dedupe_key": "62809d45479d8bbde8616862d0c0bd2b",
+      "dedupe_key": "d1c0af0a4ee8370323384d95864fdab3",
+      "account_mask": null,
+      "account_key": null,
+      "account_name": null,
       "is_probable_transfer": false,
       "is_probable_refund": false,
       "raw": {
@@ -51,7 +57,10 @@
       "amount": "512.44",
       "direction": "credit",
       "external_id": null,
-      "dedupe_key": "de01c89f0901907f734d6bfae172cf42",
+      "dedupe_key": "b9a2be2edf9e2fb4d6b8490e200fe1c1",
+      "account_mask": null,
+      "account_key": null,
+      "account_name": null,
       "is_probable_transfer": true,
       "is_probable_refund": false,
       "raw": {
@@ -72,7 +81,10 @@
       "amount": "22.99",
       "direction": "debit",
       "external_id": null,
-      "dedupe_key": "5213825594f64282c19c407228541386",
+      "dedupe_key": "5aedd50b22370342bbc792883d5821ff",
+      "account_mask": null,
+      "account_key": null,
+      "account_name": null,
       "is_probable_transfer": false,
       "is_probable_refund": false,
       "raw": {
@@ -93,7 +105,10 @@
       "amount": "13.00",
       "direction": "debit",
       "external_id": null,
-      "dedupe_key": "d0e884ed73e54c0eae2f39cd181b8c9a",
+      "dedupe_key": "621f11f69c91829fbd893e2057bab6bf",
+      "account_mask": null,
+      "account_key": null,
+      "account_name": null,
       "is_probable_transfer": false,
       "is_probable_refund": false,
       "raw": {
@@ -114,9 +129,12 @@
       "amount": "12.00",
       "direction": "credit",
       "external_id": null,
-      "dedupe_key": "e6043f3adc1d71d6ff1f49d9dc171c15",
-      "is_probable_transfer": true,
-      "is_probable_refund": false,
+      "dedupe_key": "3c12b3c712e8190fe149cd0378ffebb1",
+      "account_mask": null,
+      "account_key": null,
+      "account_name": null,
+      "is_probable_transfer": false,
+      "is_probable_refund": true,
       "raw": {
         "Transaction Date": "08/07/2026",
         "Post Date": "08/08/2026",
@@ -129,5 +147,10 @@
     }
   ],
   "warnings": [],
-  "statement": null
+  "statement": {
+    "period_start": "2026-08-07",
+    "period_end": "2026-08-14",
+    "opening_balance": null,
+    "closing_balance": null
+  }
 }

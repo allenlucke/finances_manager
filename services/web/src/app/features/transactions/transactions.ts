@@ -102,6 +102,21 @@ export class TransactionsComponent {
     initialValue: this.form.controls.accountId.value,
   });
 
+  private readonly selectedDirection = toSignal(this.form.controls.direction.valueChanges, {
+    initialValue: this.form.controls.direction.value,
+  });
+
+  /**
+   * The other account's label follows the direction. The server records the chosen direction
+   * on the account in the Account field and the opposite on the other one, so with "Money in"
+   * selected the other account is where the money came FROM. The label said "Moved to" either
+   * way, and a transfer entered that way moved both balances the wrong direction — net worth
+   * unchanged, nothing visibly broken.
+   */
+  protected readonly transferLabel = computed(() =>
+    this.selectedDirection() === 'credit' ? 'Moved from' : 'Moved to',
+  );
+
   /** Accounts other than the one selected — a transfer needs two distinct sides. */
   protected readonly otherAccounts = computed(() =>
     this.accounts().filter((account) => account.id !== this.selectedAccountId()),
@@ -197,7 +212,13 @@ export class TransactionsComponent {
       return;
     }
     if (value.transfer && !value.transferAccountId) {
-      this.snackBar.open('Choose the account the money moved to.', undefined, { duration: 3500 });
+      this.snackBar.open(
+        value.direction === 'credit'
+          ? 'Choose the account the money came from.'
+          : 'Choose the account the money moved to.',
+        undefined,
+        { duration: 3500 },
+      );
       return;
     }
 
