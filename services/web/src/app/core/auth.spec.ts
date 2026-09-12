@@ -45,6 +45,20 @@ describe('Auth', () => {
     expect(auth.user()).toBeNull();
   });
 
+  it('a factor this app cannot present here is a sign-in, not a passkey step', () => {
+    // A session that only ever showed a passkey owes the password. Reading every factor_required
+    // as passkey-required looped /login and /dashboard with nothing to do on either.
+    auth.refresh().subscribe();
+    backend
+      .expectOne('/api/v1/auth/me')
+      .flush(
+        { error: 'factor_required', factor: 'password' },
+        { status: 401, statusText: 'Unauthorized' },
+      );
+
+    expect(auth.state()).toBe('anonymous');
+  });
+
   it('a refresh with no session at all asks whether setup is needed', () => {
     auth.refresh().subscribe();
     backend

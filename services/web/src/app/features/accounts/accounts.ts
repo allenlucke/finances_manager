@@ -67,7 +67,8 @@ export class AccountsComponent {
   protected readonly form = this.forms.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(160)]],
     accountType: ['checking', Validators.required],
-    ledgerEntityId: [0, Validators.required],
+    // Null, not 0: `required` accepts a zero, and an id of 0 is a 400 the person cannot read.
+    ledgerEntityId: [null as number | null, Validators.required],
     // Last four only: docs/SECURITY.md is explicit that full account numbers are not stored
     // without a concrete reason.
     mask: ['', [Validators.pattern(/^\d{0,4}$/)]],
@@ -116,8 +117,11 @@ export class AccountsComponent {
     if (this.form.invalid || this.saving()) {
       return;
     }
-    this.saving.set(true);
     const value = this.form.getRawValue();
+    if (value.ledgerEntityId === null) {
+      return; // `required` already refuses this; the check narrows the type.
+    }
+    this.saving.set(true);
 
     this.api
       .createAccount({

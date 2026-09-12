@@ -107,6 +107,48 @@ describe('ImportComponent', () => {
     expect(text).not.toContain('note(s) from reading the file');
   });
 
+  it('describes a positions result in its own words, never as duplicates', () => {
+    component['lastKind'].set('positions');
+    component['lastResult'].set({ ...applied, rowCount: 9, appliedCount: 0, duplicateCount: 9 });
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('9 updated');
+    expect(text).not.toContain('already present');
+  });
+
+  it('sends no account at all when none is chosen', () => {
+    // An id of 0 for "none" was a 400 the person could not read; an export that names its own
+    // accounts, and the first import into an empty install, both have none to give.
+    component['file'].set(new File(['Date,Description,Amount\n'], 'x.csv'));
+    component['form'].setValue({ accountId: null });
+    component['upload']();
+
+    const request = backend.expectOne('/api/v1/imports');
+    expect((request.request.body as FormData).has('accountId')).toBe(false);
+    request.flush({ ...applied, unlinkedAccounts: [] });
+    backend.match(() => true).forEach((r) => r.flush([]));
+  });
+
+  it('a failed accounts request is a sentence, not an empty select', () => {
+    // Reset the flushed-in-beforeEach state by creating a fresh component whose accounts fail.
+    const failing = TestBed.createComponent(ImportComponent);
+    backend
+      .match('/api/v1/accounts')
+      .forEach((r) => r.flush(null, { status: 500, statusText: 'Error' }));
+    backend.match('/api/v1/categories').forEach((r) => r.flush([]));
+    backend.match('/api/v1/entities').forEach((r) => r.flush([]));
+    backend.match('/api/v1/imports').forEach((r) => r.flush([]));
+    backend
+      .match((r) => r.url.startsWith('/api/v1/transactions'))
+      .forEach((r) =>
+        r.flush({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 100 }),
+      );
+    failing.detectChanges();
+
+    expect((failing.nativeElement as HTMLElement).textContent).toContain('Could not load accounts');
+  });
+
   it('keeps the notes with the import in the history', () => {
     component['batches'].value.set([{ ...applied, warnings: ['line 9: Empty amount'] }]);
     fixture.detectChanges();

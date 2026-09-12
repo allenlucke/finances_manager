@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
@@ -144,6 +144,41 @@ export class Passkeys {
       this.http.delete<void>(`/api/v1/passkeys/${encodeURIComponent(credentialId)}`),
     );
   }
+}
+
+/**
+ * What to tell the person when a ceremony fails.
+ *
+ * <p>`navigator.credentials.create` and `.get` reject with a `DOMException` rather than resolving
+ * null, so `error.message` used to put "The operation either timed out or was not allowed. See:
+ * https://www.w3.org/…" on the screen verbatim. And an `HttpErrorResponse` is not an `Error`, so a
+ * server that was simply unreachable was reported as the passkey being refused.
+ */
+export function passkeyFailureMessage(error: unknown, fallback: string): string {
+  if (error instanceof HttpErrorResponse) {
+    if (error.status === 401 || error.status === 403) {
+      return fallback;
+    }
+    return 'Could not reach the server. Check the app is running and try again.';
+  }
+  if (error instanceof DOMException) {
+    switch (error.name) {
+      case 'NotAllowedError':
+      case 'AbortError':
+        return 'The passkey prompt was cancelled or timed out. Try again.';
+      case 'InvalidStateError':
+        return 'This device already has a passkey for this account.';
+      case 'NotSupportedError':
+      case 'SecurityError':
+        return 'This browser or address cannot use passkeys. Passkeys need localhost or HTTPS.';
+      default:
+        return fallback;
+    }
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
 }
 
 export interface RegisteredPasskey {

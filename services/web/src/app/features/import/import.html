@@ -14,11 +14,15 @@
           <mat-progress-bar mode="indeterminate" aria-label="Importing"></mat-progress-bar>
         }
 
+        @if (referenceError()) {
+          <p class="state-error-inline" role="alert">{{ referenceError() }} Reload to try again.</p>
+        }
         <form [formGroup]="form" (ngSubmit)="upload()" class="upload">
           <mat-form-field appearance="outline">
             <mat-label>Account</mat-label>
             <mat-select formControlName="accountId">
-              @for (account of accounts(); track account.id) {
+              <mat-option [value]="null">Let the file say</mat-option>
+              @for (account of accountList(); track account.id) {
                 <mat-option [value]="account.id">{{ account.name }}</mat-option>
               }
             </mat-select>
@@ -95,8 +99,16 @@
             {{ result.appliedCount === 0 ? 'done_all' : 'check_circle' }}
           </mat-icon>
           <span>
-            {{ result.rowCount }} row(s) read — <strong>{{ result.appliedCount }}</strong> added,
-            <strong>{{ result.duplicateCount }}</strong> already present.
+            @if (lastKind() === 'positions') {
+              <!-- A re-imported positions file updates each holding in place; nothing about
+                   that is a duplicate, and the snackbar already said "updated". -->
+              {{ result.rowCount }} position(s) read —
+              <strong>{{ result.appliedCount }}</strong> new,
+              <strong>{{ result.duplicateCount }}</strong> updated.
+            } @else {
+              {{ result.rowCount }} row(s) read — <strong>{{ result.appliedCount }}</strong> added,
+              <strong>{{ result.duplicateCount }}</strong> already present.
+            }
           </span>
         </div>
         @if (result.warnings.length) {
@@ -204,7 +216,7 @@
                   (valueChange)="categorize(row, $event)"
                   [attr.aria-label]="'Category for ' + row.description"
                 >
-                  @for (category of categories(); track category.id) {
+                  @for (category of categoryList(); track category.id) {
                     <mat-option [value]="category.id">{{ category.name }}</mat-option>
                   }
                 </mat-select>

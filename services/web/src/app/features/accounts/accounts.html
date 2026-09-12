@@ -6,10 +6,11 @@
       <mat-card-header>
         <mat-card-title><h2 class="card-title">Balances</h2></mat-card-title>
         <mat-card-subtitle>
-          Net worth:
-          <span [class]="amountClass(combined())">{{ money(combined()) }}</span>
           @if (netWorth.error()) {
-            <span class="state-error-inline"> — {{ netWorth.error() }}</span>
+            <span class="state-error-inline">{{ netWorth.error() }}</span>
+          } @else {
+            Net worth:
+            <span [class]="amountClass(combined())">{{ money(combined()) }}</span>
           }
         </mat-card-subtitle>
       </mat-card-header>
@@ -135,11 +136,9 @@
           @if (group.account.costBasis !== null) {
             <span class="muted"> · cost {{ money(group.account.costBasis) }}</span>
           } @else {
-            <span
-              class="muted"
-              matTooltip="Not every position reported a cost basis, so no total is shown rather than a partial one."
-            >
-              · cost not fully known</span
+            <!-- Text, not a tooltip on a plain span: a tooltip needs a mouse and a focusable host. -->
+            <span class="muted">
+              · cost not fully known, because not every position reported a basis</span
             >
           }
         </mat-card-subtitle>

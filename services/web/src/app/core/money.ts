@@ -7,12 +7,18 @@ const CURRENCY = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 });
 
-/** `-$696.31`. The sign is always shown, so colour is never the only cue. */
+/**
+ * `-$696.31`. The sign is always shown, so colour is never the only cue.
+ *
+ * <p>Negative zero is zero. `Intl` formats `-0` as `-$0.00`, and `money(-row.netAmount)` on an
+ * income row that netted to nothing printed exactly the string the QA brief tells a tester to hunt
+ * for. `-0 === 0` is true, which is what the comparison relies on.
+ */
 export function money(value: number | null | undefined): string {
   if (value === null || value === undefined) {
     return '—';
   }
-  return CURRENCY.format(value);
+  return CURRENCY.format(value === 0 ? 0 : value);
 }
 
 /** Class name carrying the sign, paired with the leading "-" rather than replacing it. */

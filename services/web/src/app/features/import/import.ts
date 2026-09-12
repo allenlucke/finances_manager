@@ -14,7 +14,14 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiClient } from '../../core/api';
 import { LoadState } from '../../core/load-state';
-import { Account, ImportResult, LedgerEntity, Page, Transaction } from '../../core/models';
+import {
+  Account,
+  Category,
+  ImportResult,
+  LedgerEntity,
+  Page,
+  Transaction,
+} from '../../core/models';
 import { amountClass, money } from '../../core/money';
 
 /**
@@ -47,9 +54,18 @@ export class ImportComponent {
   private readonly forms = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
 
-  protected readonly accounts = signal<Account[]>([]);
-  protected readonly entities = signal<LedgerEntity[]>([]);
-  protected readonly categories = signal<{ id: number; name: string }[]>([]);
+  // Behind LoadState like the rest of the screen. Bare `.subscribe()` calls with no error branch
+  // left the account select empty and the create-accounts button disabled with no sentence
+  // anywhere when a request failed — the state of an install with nothing in it, on a screen
+  // whose whole job is putting something in.
+  protected readonly accounts = new LoadState<Account[]>('Could not load accounts.');
+  protected readonly entities = new LoadState<LedgerEntity[]>('Could not load the sets of books.');
+  protected readonly categories = new LoadState<Category[]>('Could not load categories.');
+  protected readonly accountList = computed(() => this.accounts.value() ?? []);
+  protected readonly categoryList = computed(() => this.categories.value() ?? []);
+  protected readonly referenceError = computed(
+    () => this.accounts.error() ?? this.entities.error() ?? this.categories.error(),
+  );
   protected readonly batches = new LoadState<ImportResult[]>('Could not load import history.');
   protected readonly reviewPage = new LoadState<Page<Transaction>>(
     'Could not load the review queue.',
@@ -62,6 +78,13 @@ export class ImportComponent {
   protected readonly positionsFile = signal<File | null>(null);
   protected readonly busy = signal(false);
   protected readonly lastResult = signal<ImportResult | null>(null);
+  /**
+   * Which upload produced `lastResult`. Both uploads write it, and both the result card and the
+   * create-and-retry step used to guess from which file picker was empty — so with both pickers
+   * populated, a positions upload that reported unlinked accounts was retried as the statement,
+   * and a positions result read "N already present" for holdings that had been updated in place.
+   */
+  protected readonly lastKind = signal<'statement' | 'positions' | null>(null);
 
   /**
    * The file inputs, kept so they can be cleared after an upload. A file input fires `change`
@@ -78,37 +101,40 @@ export class ImportComponent {
   protected readonly batchColumns = ['started', 'filename', 'status', 'applied', 'duplicates'];
   protected readonly reviewColumns = ['date', 'description', 'amount', 'category'];
 
+  /**
+   * Nullable, and not required: an export that names an account on every row needs none, and
+   * the first import into an empty install has none to give. The control used to start at 0 with
+   * `required`, which a number satisfies, so an empty install sent `accountId=0` and got a 400 it
+   * could not read. Null is simply not sent, and a single-account file with no account chosen is
+   * refused by the API with a sentence that now reaches the screen.
+   */
   protected readonly form = this.forms.nonNullable.group({
-    accountId: [0, Validators.required],
+    accountId: [null as number | null],
   });
 
   protected readonly canUpload = computed(() => !!this.file() && !this.busy());
   protected readonly canUploadPositions = computed(() => !!this.positionsFile() && !this.busy());
 
   /** The set of books new accounts land in: personal, which is what an import of yours means. */
-  protected readonly defaultEntity = computed<LedgerEntity | undefined>(
-    () => this.entities().find((entity) => entity.kind === 'personal') ?? this.entities()[0],
-  );
+  protected readonly defaultEntity = computed<LedgerEntity | undefined>(() => {
+    const entities = this.entities.value() ?? [];
+    return entities.find((entity) => entity.kind === 'personal') ?? entities[0];
+  });
 
   constructor() {
-    this.api.accounts().subscribe((accounts) => {
-      this.accounts.set(accounts);
-      if (accounts.length) {
+    this.accounts.run(this.api.accounts(), (accounts) => {
+      if (accounts.length && this.form.controls.accountId.value === null) {
         this.form.patchValue({ accountId: accounts[0].id });
       }
     });
-    this.api
-      .categories()
-      .subscribe((categories) =>
-        this.categories.set(categories.map((c) => ({ id: c.id, name: c.name }))),
-      );
-    this.api.entities().subscribe((entities) => this.entities.set(entities));
+    this.categories.run(this.api.categories());
+    this.entities.run(this.api.entities());
     this.reload();
   }
 
   protected accountName(id: number | null): string {
     if (id === null) return '—';
-    return this.accounts().find((account) => account.id === id)?.name ?? '—';
+    return this.accountList().find((account) => account.id === id)?.name ?? '—';
   }
 
   protected chooseFile(event: Event): void {
@@ -127,7 +153,7 @@ export class ImportComponent {
 
   protected upload(): void {
     const chosen = this.file();
-    if (!chosen || this.form.invalid || this.busy()) {
+    if (!chosen || this.busy()) {
       return;
     }
     this.busy.set(true);
@@ -135,6 +161,7 @@ export class ImportComponent {
     this.api.importStatement(this.form.getRawValue().accountId, chosen).subscribe({
       next: (result) => {
         this.busy.set(false);
+        this.lastKind.set('statement');
         this.lastResult.set(result);
         // The file is kept when accounts still need creating, so the retry can reuse it.
         if (!result.unlinkedAccounts.length) {
@@ -169,6 +196,7 @@ export class ImportComponent {
     this.api.importPositions(chosen).subscribe({
       next: (result) => {
         this.busy.set(false);
+        this.lastKind.set('positions');
         this.lastResult.set(result);
         if (!result.unlinkedAccounts.length) {
           this.positionsFile.set(null);
@@ -202,7 +230,7 @@ export class ImportComponent {
     if (!result?.unlinkedAccounts.length || !entity || this.linking()) {
       return;
     }
-    const positions = this.positionsFile() !== null && this.file() === null;
+    const positions = this.lastKind() === 'positions';
 
     this.linking.set(true);
     try {
@@ -218,7 +246,7 @@ export class ImportComponent {
           }),
         );
       }
-      this.api.accounts().subscribe((accounts) => this.accounts.set(accounts));
+      this.accounts.run(this.api.accounts());
 
       if (positions) {
         this.uploadPositions();

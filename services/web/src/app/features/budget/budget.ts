@@ -80,9 +80,14 @@ export class BudgetComponent {
     kind: ['expense' as CategoryKind, Validators.required],
   });
 
+  /**
+   * The id controls start null, not 0. `Validators.required` treats a number as present — zero
+   * included — so with nothing to choose from the form was valid, the button enabled, and the
+   * server answered 400 to an id of 0. Null fails `required`, which is the whole point.
+   */
   protected readonly targetForm = this.forms.nonNullable.group({
-    categoryId: [0, Validators.required],
-    ledgerEntityId: [0, Validators.required],
+    categoryId: [null as number | null, Validators.required],
+    ledgerEntityId: [null as number | null, Validators.required],
     amount: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,4})?$/)]],
     cadence: ['monthly', Validators.required],
     // Defaults to today, and can be changed. It used to be hardcoded to the 1st of the month
@@ -105,18 +110,19 @@ export class BudgetComponent {
    * that positive means spent), and an unfiltered table showed a paycheque as Spent −$3,000 with
    * Remaining $6,000. Income gets its own table with its own words.
    */
+  // Every row the API returned — twelve months by default. A `.slice(0, 40)` here silently
+  // dropped the oldest months for anyone with more than a handful of categories, with nothing on
+  // screen to say so. The table scrolls inside its own container; it does not need a ceiling.
   protected readonly recentSpend = computed(() =>
     [...(this.spend.value() ?? [])]
       .filter((row) => row.categoryKind === 'expense')
-      .sort((a, b) => b.month.localeCompare(a.month))
-      .slice(0, 40),
+      .sort((a, b) => b.month.localeCompare(a.month)),
   );
 
   protected readonly recentIncome = computed(() =>
     [...(this.spend.value() ?? [])]
       .filter((row) => row.categoryKind === 'income')
-      .sort((a, b) => b.month.localeCompare(a.month))
-      .slice(0, 24),
+      .sort((a, b) => b.month.localeCompare(a.month)),
   );
 
   constructor() {
@@ -178,6 +184,9 @@ export class BudgetComponent {
       this.snackBar.open('Choose a real start date.', undefined, { duration: 3500 });
       return;
     }
+    if (value.categoryId === null || value.ledgerEntityId === null) {
+      return; // `required` already refuses this; the check narrows the type.
+    }
     this.saving.set(true);
 
     this.api
@@ -204,12 +213,12 @@ export class BudgetComponent {
             duration: 3500,
           });
         },
-        error: (error: { status?: number }) => {
+        error: (error: { status?: number; error?: { detail?: string | null } | null }) => {
           this.saving.set(false);
           this.snackBar.open(
             error?.status === 409
               ? `A target for this category already starts on or after ${from}. Pick a later start date to replace it.`
-              : 'Could not set the target.',
+              : error?.error?.detail || 'Could not set the target.',
             undefined,
             { duration: 6000 },
           );

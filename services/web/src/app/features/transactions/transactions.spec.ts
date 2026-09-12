@@ -108,6 +108,19 @@ describe('TransactionsComponent', () => {
     expect(screen.textContent).not.toContain('Moved to');
   });
 
+  it('with no accounts, Add is disabled and the screen says why', () => {
+    // `Validators.required` treats a number as present, zero included, so the form used to be
+    // valid with nothing to choose from: Add was enabled and the server answered 400 to an id
+    // of 0, reported as "Could not save the transaction".
+    fixture.detectChanges();
+    const screen = fixture.nativeElement as HTMLElement;
+
+    expect(component['form'].invalid).toBe(true);
+    const add = screen.querySelector<HTMLButtonElement>('button[type="submit"]');
+    expect(add?.disabled).toBe(true);
+    expect(screen.textContent).toContain('No accounts yet');
+  });
+
   it('deleting offers an undo that restores', () => {
     const action = new Subject<void>();
     const open = vi

@@ -7,6 +7,7 @@ import { AccountsComponent } from './accounts';
 describe('AccountsComponent', () => {
   let backend: HttpTestingController;
   let component: Record<string, any>;
+  let fixture: ReturnType<typeof TestBed.createComponent<AccountsComponent>>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -16,11 +17,23 @@ describe('AccountsComponent', () => {
         provideHttpClientTesting(),
       ],
     });
-    component = TestBed.createComponent(AccountsComponent).componentInstance as unknown as Record<
-      string,
-      any
-    >;
+    fixture = TestBed.createComponent(AccountsComponent);
+    component = fixture.componentInstance as unknown as Record<string, any>;
     backend = TestBed.inject(HttpTestingController);
+  });
+
+  it('a net worth that could not be loaded is a sentence, not a dash beside one', () => {
+    backend.expectOne('/api/v1/entities').flush([]);
+    backend.expectOne('/api/v1/accounts').flush([]);
+    backend
+      .expectOne('/api/v1/reports/net-worth')
+      .flush(null, { status: 500, statusText: 'Error' });
+    backend.expectOne('/api/v1/holdings').flush([]);
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Could not load net worth');
+    expect(text).not.toContain('Net worth: —');
   });
 
   afterEach(() => backend.verify());

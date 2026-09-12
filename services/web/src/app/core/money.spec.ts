@@ -14,6 +14,13 @@ describe('money formatting', () => {
     expect(money(0)).toBe('$0.00');
   });
 
+  it('never prints -$0.00', () => {
+    // `money(-row.netAmount)` on an income row that netted to nothing produced negative zero,
+    // which Intl formats with a sign — one of the exact strings the QA brief hunts for.
+    expect(money(-0)).toBe('$0.00');
+    expect(money(0 - 0)).toBe('$0.00');
+  });
+
   it('classes negative and positive amounts differently, and zero as neither', () => {
     expect(amountClass(-1)).toContain('amount--negative');
     expect(amountClass(1)).toContain('amount--positive');

@@ -13,7 +13,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { ApiClient } from '../../core/api';
 import { LoadState } from '../../core/load-state';
@@ -36,6 +36,7 @@ import { Account, Category, Direction, Page, Transaction } from '../../core/mode
     MatDatepickerModule,
     MatProgressBarModule,
     MatTooltipModule,
+    RouterLink,
   ],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
@@ -51,8 +52,14 @@ export class TransactionsComponent {
 
   protected readonly ledger = new LoadState<Page<Transaction>>('Could not load transactions.');
   protected readonly deleted = new LoadState<Transaction[]>('Could not load deleted transactions.');
-  protected readonly accounts = signal<Account[]>([]);
-  protected readonly categories = signal<Category[]>([]);
+  // Behind LoadState like everything else on the screen. A bare `.subscribe()` with no error
+  // branch left the account select empty and every ledger row's account a dash when the request
+  // failed — indistinguishable from an install with no accounts, on the one screen that enters
+  // money by hand.
+  protected readonly accounts = new LoadState<Account[]>('Could not load accounts.');
+  protected readonly categories = new LoadState<Category[]>('Could not load categories.');
+  protected readonly accountList = computed(() => this.accounts.value() ?? []);
+  protected readonly categoryList = computed(() => this.categories.value() ?? []);
   protected readonly saving = signal(false);
   protected readonly showDeleted = signal(false);
   /** Set when the date range cannot be used; the ledger is left as it was rather than blanked. */
@@ -74,7 +81,10 @@ export class TransactionsComponent {
   });
 
   protected readonly form = this.forms.nonNullable.group({
-    accountId: [0, Validators.required],
+    // Null, not 0. `Validators.required` treats a number as present, zero included, so with no
+    // accounts the form was valid, Add was enabled, and the server answered 400 to account 0 —
+    // reported here as "Could not save the transaction".
+    accountId: [null as number | null, Validators.required],
     transactionDate: [new Date() as Date | null, Validators.required],
     // Kept as a string all the way to the server so the value is never rounded by a JS number.
     // Money is NUMERIC(19,4) / BigDecimal on the other side.
@@ -119,25 +129,24 @@ export class TransactionsComponent {
 
   /** Accounts other than the one selected — a transfer needs two distinct sides. */
   protected readonly otherAccounts = computed(() =>
-    this.accounts().filter((account) => account.id !== this.selectedAccountId()),
+    this.accountList().filter((account) => account.id !== this.selectedAccountId()),
   );
 
   protected readonly expenseCategories = computed(() =>
-    this.categories().filter((category) => category.kind === 'expense'),
+    this.categoryList().filter((category) => category.kind === 'expense'),
   );
 
   protected readonly incomeCategories = computed(() =>
-    this.categories().filter((category) => category.kind === 'income'),
+    this.categoryList().filter((category) => category.kind === 'income'),
   );
 
   constructor() {
-    this.api.accounts().subscribe((accounts) => {
-      this.accounts.set(accounts);
+    this.accounts.run(this.api.accounts(), (accounts) => {
       if (accounts.length) {
         this.form.patchValue({ accountId: accounts[0].id });
       }
     });
-    this.api.categories().subscribe((categories) => this.categories.set(categories));
+    this.categories.run(this.api.categories());
 
     // Clearing the category when marking a transfer mirrors the server, which refuses a
     // categorized transfer outright — the budget was already charged at purchase.
@@ -167,12 +176,12 @@ export class TransactionsComponent {
 
   protected accountName(id: number | null): string {
     if (id === null) return '—';
-    return this.accounts().find((account) => account.id === id)?.name ?? '—';
+    return this.accountList().find((account) => account.id === id)?.name ?? '—';
   }
 
   protected categoryName(id: number | null): string {
     if (id === null) return '';
-    return this.categories().find((category) => category.id === id)?.name ?? '';
+    return this.categoryList().find((category) => category.id === id)?.name ?? '';
   }
 
   protected reload(): void {
@@ -210,6 +219,9 @@ export class TransactionsComponent {
     if (date === null) {
       this.snackBar.open('Choose a real date.', undefined, { duration: 3500 });
       return;
+    }
+    if (value.accountId === null) {
+      return; // `required` already refuses this; the check narrows the type.
     }
     if (value.transfer && !value.transferAccountId) {
       this.snackBar.open(
@@ -250,12 +262,12 @@ export class TransactionsComponent {
             { duration: 2500 },
           );
         },
-        error: (error: { status?: number }) => {
+        error: (error: { status?: number; error?: { detail?: string | null } | null }) => {
           this.saving.set(false);
           this.snackBar.open(
             error?.status === 409
               ? 'An identical transaction is already recorded for that day. If this is a second one, add something to the description that tells them apart.'
-              : 'Could not save the transaction.',
+              : error?.error?.detail || 'Could not save the transaction.',
             undefined,
             { duration: 6000 },
           );

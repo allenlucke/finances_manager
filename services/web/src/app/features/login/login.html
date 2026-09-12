@@ -91,6 +91,12 @@
               This browser does not support passkeys, so this account cannot sign in here.
             </p>
           }
+          <!-- A way out. The toolbar, and its Sign out, only render once fully signed in, so
+               someone whose passkey is not to hand was held on this screen until the session
+               expired, and every reload brought them straight back to it. -->
+          <button mat-button type="button" class="abandon" (click)="abandon()" [disabled]="busy()">
+            Sign out and use a different browser
+          </button>
         </mat-card-content>
       }
 

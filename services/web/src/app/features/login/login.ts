@@ -18,7 +18,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ApiClient } from '../../core/api';
 import { Auth } from '../../core/auth';
-import { Passkeys } from '../../core/passkeys';
+import { Passkeys, passkeyFailureMessage } from '../../core/passkeys';
 import { offerToSaveCredentials } from '../../core/passwords';
 
 /**
@@ -111,16 +111,15 @@ export class LoginComponent {
           this.error.set('The page had gone stale. Try signing in again.');
           return;
         }
-        // A lockout is called a lockout. The usual reason to hide it — not confirming an address
-        // exists — buys nothing on a single-user app reachable only from this machine, while
-        // "not accepted" in the face of a correct passphrase is genuinely maddening.
-        this.error.set(
-          failure?.status === 429
-            ? 'Too many attempts. Wait a few minutes and try again.'
-            : 'That email and passphrase combination was not accepted.',
-        );
+        this.error.set(signInFailureMessage(failure?.status));
       },
     });
+  }
+
+  /** Signs out of the half-finished session, for someone whose passkey is not to hand. */
+  protected abandon(): void {
+    this.error.set(null);
+    this.auth.logout();
   }
 
   /**
@@ -141,7 +140,7 @@ export class LoginComponent {
       await firstValueFrom(this.auth.refresh());
       this.router.navigateByUrl(this.auth.landingUrl());
     } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'That passkey was not accepted.');
+      this.error.set(passkeyFailureMessage(error, 'That passkey was not accepted.'));
     } finally {
       this.busy.set(false);
     }
@@ -201,6 +200,29 @@ class ConfirmPassphraseErrorMatcher implements ErrorStateMatcher {
     // Only once something has been typed: an empty field is not yet a mistake.
     return !!control?.value && !!form?.hasError('mismatch');
   }
+}
+
+/**
+ * What a failed sign-in means, by status. Exported for its spec.
+ *
+ * <p>"Not accepted" is said only when the server actually refused the credentials. A lockout is
+ * called a lockout: the usual reason to hide it — not confirming an address exists — buys nothing
+ * on a single-user app reachable only from this machine, while "not accepted" in the face of a
+ * correct passphrase is genuinely maddening. And a server that could not be reached at all — a
+ * status of 0, a 502 while the API restarts — used to be reported as the passphrase being wrong,
+ * which sent someone to retype the one thing that was right.
+ */
+export function signInFailureMessage(status: number | undefined): string {
+  if (status === 401) {
+    return 'That email and passphrase combination was not accepted.';
+  }
+  if (status === 429) {
+    return 'Too many attempts. Wait a few minutes and try again.';
+  }
+  if (!status || status >= 500) {
+    return 'Could not reach the server. Check the app is running and try again.';
+  }
+  return `Sign-in failed (the server answered ${status}). Try again.`;
 }
 
 function passphrasesMatch(group: import('@angular/forms').AbstractControl) {

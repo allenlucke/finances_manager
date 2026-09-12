@@ -6,6 +6,8 @@
       <mat-card-subtitle>
         @if (loadError()) {
           <span class="state-error-inline">{{ loadError() }}</span>
+        } @else if (checking()) {
+          Checking which passkeys are registered…
         } @else if (twoFactor()) {
           Passphrase and a passkey are both required
         } @else {
@@ -22,7 +24,7 @@
         </p>
       }
 
-      @if (!twoFactor() && !loadError()) {
+      @if (!twoFactor() && !loadError() && !checking()) {
         <p class="muted">
           Adding a passkey turns on two-factor sign-in for this account immediately. A passkey is
           phishing-resistant — unlike a code from an app, it cannot be handed to a fake site.
@@ -31,11 +33,13 @@
 
       @if (loadError()) {
         <p class="state-error-inline" role="alert">{{ loadError() }} Reload to try again.</p>
-      } @else if (items().length === 0) {
+      } @else if (checking()) {
+        <p class="muted">Checking…</p>
+      } @else if (registered().length === 0) {
         <p class="muted">No passkeys registered.</p>
       } @else {
         <div class="table-scroll">
-          <table mat-table [dataSource]="items()">
+          <table mat-table [dataSource]="registered()">
             <tr mat-header-row *matHeaderRowDef="columns"></tr>
             <tr mat-row *matRowDef="let row; columns: columns"></tr>
 
@@ -60,21 +64,13 @@
 
             <ng-container matColumnDef="backedUp">
               <th mat-header-cell *matHeaderCellDef>Synced</th>
-              <td mat-cell *matCellDef="let row">
+              <!-- Text, not a tooltip on a plain span: a tooltip needs a mouse and a focusable
+                   host, and "will I lose this if I lose the device" is the whole column. -->
+              <td mat-cell *matCellDef="let row" class="muted">
                 @if (row.backedUp) {
-                  <span
-                    class="muted"
-                    matTooltip="Stored in a keychain — losing this device does not lose the passkey"
-                  >
-                    yes
-                  </span>
+                  yes — in a keychain, so losing this device does not lose it
                 } @else {
-                  <span
-                    class="muted"
-                    matTooltip="Bound to this device only — losing it loses this passkey"
-                  >
-                    device only
-                  </span>
+                  no — bound to this device, so losing it loses this passkey
                 }
               </td>
             </ng-container>

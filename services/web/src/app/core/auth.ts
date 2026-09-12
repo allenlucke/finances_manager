@@ -62,8 +62,16 @@ export class Auth {
         // interceptor deliberately leaves this call alone (it is an auth call), so the answer has
         // to be read here — otherwise a factor-required refresh flipped the state to anonymous and
         // put the passphrase form back in front of someone who had just satisfied it.
-        if (isFactorRequired(error)) {
+        const factor = factorRequired(error);
+        if (factor === 'webauthn') {
           this._state.set('passkey-required');
+          return of(null);
+        }
+        if (factor !== null) {
+          // The server wants a factor this app cannot present here — a password on a session
+          // that only ever showed a passkey. Not a passkey step, then: a sign-in. Treating every
+          // factor_required as passkey-required looped /login and /dashboard with nothing to do.
+          this._state.set('anonymous');
           return of(null);
         }
         // Distinguish "no account exists yet" from "not signed in", so a fresh install lands on
@@ -128,10 +136,16 @@ export class Auth {
   }
 }
 
-function isFactorRequired(error: unknown): boolean {
-  return (
-    error instanceof HttpErrorResponse &&
-    error.status === 401 &&
-    (error.error as { error?: string } | null)?.error === 'factor_required'
-  );
+/** Which factor the API asked for, or null when the 401 was not about a factor at all. */
+function factorRequired(error: unknown): string | null {
+  if (!(error instanceof HttpErrorResponse) || error.status !== 401) {
+    return null;
+  }
+  const body = error.error as { error?: string; factor?: string } | null;
+  if (body?.error !== 'factor_required') {
+    return null;
+  }
+  // The server has always named the factor; an unnamed one is read as the passkey, which is the
+  // only second factor this app knows how to present.
+  return body.factor ?? 'webauthn';
 }

@@ -9,11 +9,20 @@
       }
     </mat-card-header>
     <mat-card-content>
+      @if (accounts.error() || categories.error()) {
+        <p class="state-error-inline" role="alert">
+          {{ accounts.error() ?? categories.error() }} Reload to try again.
+        </p>
+      } @else if (accounts.isEmpty()) {
+        <p class="muted">
+          No accounts yet — <a routerLink="/accounts">add one</a> to record anything.
+        </p>
+      }
       <form [formGroup]="form" (ngSubmit)="submit()" class="entry-form">
         <mat-form-field appearance="outline" class="col-account">
           <mat-label>Account</mat-label>
           <mat-select formControlName="accountId">
-            @for (account of accounts(); track account.id) {
+            @for (account of accountList(); track account.id) {
               <mat-option [value]="account.id">{{ account.name }}</mat-option>
             }
           </mat-select>
@@ -184,7 +193,7 @@
                     [attr.aria-label]="'Category for ' + row.description"
                   >
                     <mat-option [value]="null">Uncategorized</mat-option>
-                    @for (category of categories(); track category.id) {
+                    @for (category of categoryList(); track category.id) {
                       <mat-option [value]="category.id">{{ category.name }}</mat-option>
                     }
                   </mat-select>

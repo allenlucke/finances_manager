@@ -8,8 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { Passkeys, RegisteredPasskey } from '../../core/passkeys';
+import { Passkeys, RegisteredPasskey, passkeyFailureMessage } from '../../core/passkeys';
 
 /**
  * Passkey management.
@@ -30,7 +29,6 @@ import { Passkeys, RegisteredPasskey } from '../../core/passkeys';
     MatInputModule,
     MatButtonModule,
     MatIconModule,
-    MatTooltipModule,
   ],
   templateUrl: './security.html',
   styleUrl: './security.scss',
@@ -40,20 +38,25 @@ export class SecurityComponent {
   private readonly forms = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
 
-  protected readonly items = signal<RegisteredPasskey[]>([]);
   /**
-   * Set when the list could not be fetched. Without it, a failed request rendered "No passkeys
-   * registered" and "Passphrase only" — the security screen asserting, in its own voice, that
-   * two-factor was off when it was on.
+   * Null until the list has arrived. Three states, and the template branches on all three: a
+   * failed request rendered "No passkeys registered" and "Passphrase only" — the security screen
+   * asserting, in its own voice, that two-factor was off when it was on — and once that was fixed
+   * the same claim was still made for the moment between opening the page and the answer landing.
+   * A page that says "passphrase only" must have checked.
    */
+  protected readonly items = signal<RegisteredPasskey[] | null>(null);
   protected readonly loadError = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly supported = Passkeys.supported();
 
   protected readonly columns = ['label', 'created', 'lastUsed', 'backedUp', 'actions'];
 
-  /** With none registered the account is single-factor; the page says so plainly. */
-  protected readonly twoFactor = computed(() => this.items().length > 0);
+  protected readonly checking = computed(() => this.items() === null && this.loadError() === null);
+  protected readonly registered = computed(() => this.items() ?? []);
+
+  /** With none registered the account is single-factor; the page says so plainly — once it knows. */
+  protected readonly twoFactor = computed(() => (this.items()?.length ?? 0) > 0);
 
   protected readonly form = this.forms.nonNullable.group({
     label: ['', [Validators.required, Validators.maxLength(100)]],
@@ -69,7 +72,7 @@ export class SecurityComponent {
     }
     this.busy.set(true);
     try {
-      const first = this.items().length === 0;
+      const first = this.registered().length === 0;
       await this.passkeys.register(this.form.getRawValue().label.trim());
       this.form.reset({ label: '' });
       await this.reload();
@@ -81,14 +84,16 @@ export class SecurityComponent {
         { duration: 6000 },
       );
     } catch (error) {
-      this.snackBar.open(message(error), undefined, { duration: 6000 });
+      this.snackBar.open(passkeyFailureMessage(error, 'Could not add the passkey.'), undefined, {
+        duration: 6000,
+      });
     } finally {
       this.busy.set(false);
     }
   }
 
   protected async remove(passkey: RegisteredPasskey): Promise<void> {
-    const last = this.items().length === 1;
+    const last = this.registered().length === 1;
     if (
       last &&
       !confirm(
@@ -107,8 +112,14 @@ export class SecurityComponent {
         undefined,
         { duration: 6000 },
       );
-    } catch {
-      this.snackBar.open('Could not remove that passkey.', undefined, { duration: 4000 });
+    } catch (error) {
+      this.snackBar.open(
+        passkeyFailureMessage(error, 'Could not remove that passkey.'),
+        undefined,
+        {
+          duration: 4000,
+        },
+      );
     } finally {
       this.busy.set(false);
     }
@@ -119,11 +130,8 @@ export class SecurityComponent {
       this.items.set(await this.passkeys.list());
       this.loadError.set(null);
     } catch {
+      this.items.set(null);
       this.loadError.set('Could not check which passkeys are registered.');
     }
   }
-}
-
-function message(error: unknown): string {
-  return error instanceof Error ? error.message : 'Could not add the passkey.';
 }

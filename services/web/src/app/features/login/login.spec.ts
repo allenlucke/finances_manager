@@ -4,7 +4,28 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter } from '@angular/router';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { Auth } from '../../core/auth';
-import { LoginComponent } from './login';
+import { LoginComponent, signInFailureMessage } from './login';
+
+describe('signInFailureMessage', () => {
+  it('blames the credentials only when the server refused them', () => {
+    expect(signInFailureMessage(401)).toContain('not accepted');
+    expect(signInFailureMessage(429)).toContain('Too many attempts');
+  });
+
+  it('says the server could not be reached when that is what happened', () => {
+    // A status of 0 (no connection) or a 502 while the API restarts used to read "That email and
+    // passphrase combination was not accepted" — sending someone to retype the right passphrase.
+    for (const status of [0, undefined, 500, 502, 504]) {
+      expect(signInFailureMessage(status), `status ${status}`).toContain('Could not reach');
+      expect(signInFailureMessage(status), `status ${status}`).not.toContain('not accepted');
+    }
+  });
+
+  it('names any other status rather than guessing', () => {
+    expect(signInFailureMessage(400)).toContain('400');
+    expect(signInFailureMessage(400)).not.toContain('not accepted');
+  });
+});
 
 /**
  * The sign-in screen is the one place a mistake locks the owner out of his own data, so the two
@@ -192,6 +213,47 @@ describe('LoginComponent', () => {
       .flush(null, { status: 401, statusText: 'Unauthorized' });
 
     expect(component['error']()).toContain('not accepted');
+  });
+
+  it('renders an unreachable server as such, in the DOM, not as a wrong passphrase', () => {
+    component['loginForm'].setValue({
+      username: 'owner@finances.invalid',
+      password: 'a-long-enough-passphrase',
+    });
+    component['submitLogin']();
+    httpMock.expectOne('/api/v1/auth/login').flush(null, { status: 0, statusText: 'Unknown' });
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Could not reach the server');
+    expect(text).not.toContain('not accepted');
+  });
+
+  it('the passkey step offers a way out', () => {
+    // The toolbar, and its Sign out, render only once fully signed in, so someone whose passkey
+    // was not to hand was held on this screen until the session expired.
+    const auth = TestBed.inject(Auth);
+    auth.refresh().subscribe();
+    httpMock
+      .match('/api/v1/auth/me')
+      .forEach((request) =>
+        request.flush(
+          { error: 'factor_required', factor: 'webauthn' },
+          { status: 401, statusText: 'Unauthorized' },
+        ),
+      );
+    fixture.detectChanges();
+    const page = fixture.nativeElement as HTMLElement;
+    expect(page.querySelector('h1')?.textContent?.trim()).toBe('Passkey required');
+
+    const logout = vi.spyOn(auth, 'logout').mockImplementation(() => undefined);
+    const button = [...page.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Sign out'),
+    );
+    expect(button, 'a sign-out button on the passkey step').toBeDefined();
+    button!.click();
+
+    expect(logout).toHaveBeenCalled();
   });
 
   it('hides the passphrase until asked, then shows it', () => {

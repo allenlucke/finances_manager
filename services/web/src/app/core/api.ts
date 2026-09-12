@@ -162,9 +162,14 @@ export class ApiClient {
    * <p>Sent as multipart, so no Content-Type is set here — the browser must add its own boundary,
    * and setting the header by hand produces a request the server cannot parse.
    */
-  importStatement(accountId: number, file: File): Observable<ImportResult> {
+  importStatement(accountId: number | null, file: File): Observable<ImportResult> {
     const form = new FormData();
-    form.append('accountId', String(accountId));
+    // Optional: an export that names an account on every row needs none, and the first import
+    // into an empty install has none to give. Sending 0 for "none" was a 400 the person could
+    // not read.
+    if (accountId !== null) {
+      form.append('accountId', String(accountId));
+    }
     form.append('file', file);
     return this.http.post<ImportResult>(`${this.base}/imports`, form);
   }

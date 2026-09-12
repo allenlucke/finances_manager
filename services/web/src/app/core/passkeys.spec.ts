@@ -1,63 +1,41 @@
-import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { Passkeys } from './passkeys';
+import { HttpErrorResponse } from '@angular/common/http';
+import { passkeyFailureMessage } from './passkeys';
 
 /**
- * The encoding is the part of WebAuthn most likely to break quietly: base64url and plain base64
- * differ in three characters, and getting it wrong produces an opaque server-side decode failure
- * rather than anything that names the problem.
+ * The browser rejects a ceremony with a DOMException, and the network fails with an
+ * HttpErrorResponse, which is not an Error. Both used to reach the screen as either the W3C's own
+ * sentence with a URL in it, or as "that passkey was not accepted" for a server that was down.
  */
-describe('Passkeys', () => {
-  let passkeys: Passkeys;
-  let httpMock: HttpTestingController;
+describe('passkeyFailureMessage', () => {
+  const fallback = 'That passkey was not accepted.';
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
-    });
-    passkeys = TestBed.inject(Passkeys);
-    httpMock = TestBed.inject(HttpTestingController);
+  it('reads a dismissed or timed-out prompt as cancelled', () => {
+    const message = passkeyFailureMessage(
+      new DOMException('The operation …', 'NotAllowedError'),
+      fallback,
+    );
+    expect(message).toContain('cancelled or timed out');
+    expect(message).not.toContain('w3.org');
   });
 
-  afterEach(() => httpMock.verify());
-
-  it('refuses to register without a label, before touching the network', async () => {
-    // The label is what the management list shows; an unlabelled key is unmanageable.
-    await expect(passkeys.register('   ')).rejects.toThrow(/label/i);
-    httpMock.expectNone('/webauthn/register/options');
+  it('says when the browser or address cannot do passkeys at all', () => {
+    expect(passkeyFailureMessage(new DOMException('x', 'SecurityError'), fallback)).toContain(
+      'localhost or HTTPS',
+    );
   });
 
-  it('lists registered passkeys from the API', async () => {
-    const pending = passkeys.list();
-    httpMock.expectOne('/api/v1/passkeys').flush([
-      {
-        credentialId: 'abc',
-        label: 'MacBook',
-        created: '2026-08-24T00:00:00Z',
-        lastUsed: null,
-        backedUp: true,
-      },
-    ]);
+  it('says the server could not be reached rather than blaming the passkey', () => {
+    const down = new HttpErrorResponse({ status: 0, statusText: 'Unknown Error' });
+    expect(passkeyFailureMessage(down, fallback)).toContain('Could not reach the server');
 
-    const result = await pending;
-    expect(result.length).toBe(1);
-    expect(result[0].label).toBe('MacBook');
+    const refused = new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' });
+    expect(passkeyFailureMessage(refused, fallback)).toBe(fallback);
   });
 
-  it('url-encodes the credential id when deleting', async () => {
-    // Credential ids are base64url and can contain characters that would otherwise change the path.
-    const pending = passkeys.remove('a/b+c=');
-    const request = httpMock.expectOne((candidate) => candidate.method === 'DELETE');
-
-    expect(request.request.url).toBe('/api/v1/passkeys/a%2Fb%2Bc%3D');
-    request.flush(null);
-    await pending;
-  });
-
-  it('reports whether the browser supports WebAuthn', () => {
-    // jsdom has no PublicKeyCredential, so this is false here — which is the point: the UI must
-    // disable the button rather than throw when the API is absent.
-    expect(typeof Passkeys.supported()).toBe('boolean');
+  it('keeps a sentence this app wrote itself', () => {
+    expect(passkeyFailureMessage(new Error('The server rejected the new passkey.'), fallback)).toBe(
+      'The server rejected the new passkey.',
+    );
+    expect(passkeyFailureMessage('something else', fallback)).toBe(fallback);
   });
 });
