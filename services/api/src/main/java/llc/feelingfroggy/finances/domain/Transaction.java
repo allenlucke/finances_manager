@@ -147,6 +147,27 @@ public class Transaction extends UserOwned {
         this.transferAccount = otherSide;
     }
 
+    /**
+     * Says this row is not a transfer after all.
+     *
+     * <p>For a row the importer or a rule called a transfer wrongly — a Zelle to a plumber, a wire
+     * to a contractor, "TRANSFER TO" wording about a payee rather than an account. Until this
+     * existed there was no way back: the CHECK constraint kept the row uncategorizable and the only
+     * recovery was to delete it and hope a later import re-keyed it differently.
+     *
+     * <p>Only a single-sided row. A manual transfer has a second leg on the other account, and
+     * un-marking one leg would leave money arriving from nowhere; that one is deleted as a whole
+     * and entered again. The category stays null, so the row returns to the review queue.
+     */
+    public void clearTransfer() {
+        if (transferGroupId != null) {
+            throw new DomainRuleViolation("This is one side of a two-sided transfer. Remove the "
+                + "transfer and enter the transaction again instead.");
+        }
+        this.transfer = false;
+        this.transferAccount = null;
+    }
+
     /** Soft delete: the dedupe key stays claimed so a re-import cannot resurrect this row. */
     public void softDelete(Instant when) {
         this.deletedAt = when;

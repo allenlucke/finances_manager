@@ -1,59 +1,16 @@
 # Web
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.5.
-
-## Development server
-
-To start a local development server, run:
+The Angular 22 SPA. Everything is driven from the repository root's `Makefile`:
 
 ```bash
-ng serve
+make web        # dev server on :4200, proxying /api, /webauthn and /login/webauthn to :8080
+make test-web   # Vitest unit suite (`npm run test:ci` here)
+make e2e        # Playwright, on its own throwaway compose stack — never the dev database
+make fmt        # prettier over src/
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Conventions: standalone components, signals, `inject()`, the new control flow, Angular Material
+alone (D-13). Every request sits behind `LoadState`, and every message a person reads has a spec
+that reads the DOM. See `CLAUDE.md` at the root for the agreements and why each exists.
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Browser tests live in `e2e/`; `playwright.config.ts` defaults to the scratch stack on 4201.

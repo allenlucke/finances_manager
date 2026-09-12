@@ -95,8 +95,10 @@ a wrong secret.
 
 ## The AI service specifically
 
-- It gets transaction data, not credentials. It has no database access and no outbound network
-  access except to whatever inference endpoint is configured.
+- It gets transaction data, not credentials. It has no database access. It should have no outbound
+  network access except to whatever inference endpoint is configured; today compose gives it no
+  egress control at all, so that is a goal for the homelab setup (an internal-only network, or a
+  proxy) rather than a property it has.
 - If a hosted LLM is used for categorization or PDF extraction, understand exactly what leaves the
   machine. Sending a full statement to a third-party API is a real decision with a real answer —
   it is not automatically wrong, but it should be deliberate and documented here when made.
@@ -138,7 +140,8 @@ unencrypted copy of the ledger and should be treated as such.
 
 ## The AI service
 
-Runs as an unprivileged user on a pinned base image with dependencies installed from the lockfile
+Runs as an unprivileged user with a pinned `uv` on a floating `python:3.13-slim` base — the tool
+that installs everything is pinned; the base image is not — with dependencies installed from the lockfile
 (`--frozen`), and compose gives it a read-only filesystem, no capabilities and
 `no-new-privileges`. It still has no authentication of its own and no upload-size cap of its own;
 containment rests on it being unpublished and on the API's 10 MB limit in front of it. That is

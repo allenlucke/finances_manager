@@ -2,10 +2,7 @@
   "mcpServers": {
     "finances": {
       "command": "uv",
-      "args": ["run", "--directory", "services/mcp", "finances-mcp"],
-      "env": {
-        "API_URL": "http://localhost:8080"
-      }
+      "args": ["run", "--directory", "services/mcp", "finances-mcp"]
     }
   }
 }

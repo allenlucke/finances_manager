@@ -107,6 +107,29 @@ class HoldingsTest extends PostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("a partial cost basis is no basis: one unknown position makes the account's null")
+    void aPartialCostBasisIsReportedAsUnknown() {
+        // SQL's SUM skips NULLs. Ten positions with two unknown bases used to report the other
+        // eight as *the* basis, and market value minus that understated figure overstated the
+        // gain with nothing to mark it. The view has said null since batch 1 of the first review;
+        // nothing asserted it until now.
+        var fund = hold(brokerage, security("FXAIX", false), "13100.00", LocalDate.of(2026, 8, 27));
+        fund.setCostBasis(new BigDecimal("10000.00"));
+        holdings.save(fund);
+        hold(brokerage, security("SPAXX", true), "900.00", LocalDate.of(2026, 8, 27));
+
+        var row = jdbc.queryForMap(
+            "SELECT cost_basis, cost_basis_complete FROM v_account_market_value WHERE account_id = ?",
+            brokerage.getId());
+
+        assertThat(row.get("cost_basis")).isNull();
+        assertThat(row.get("cost_basis_complete")).isEqualTo(false);
+        assertThat(jdbc.queryForObject(
+            "SELECT cost_basis FROM v_account_balance WHERE account_id = ?", BigDecimal.class,
+            brokerage.getId())).isNull();
+    }
+
+    @Test
     @DisplayName("uninvested cash is inside the snapshot, so switching sources drops nothing")
     void cashRowsAreIncludedInMarketValue() {
         hold(brokerage, security("AAPL", false), "2200.00", LocalDate.of(2026, 8, 27));

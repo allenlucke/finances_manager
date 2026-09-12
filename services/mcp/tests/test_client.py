@@ -111,3 +111,26 @@ def test_upload_omits_the_account_when_the_file_names_its_own():
     # A brokerage export covers several accounts; nominating one would file all of it against that
     # account, which is silently wrong rather than loudly wrong.
     assert "accountId" not in seen["url"]
+
+
+def test_an_error_body_that_is_not_an_object_does_not_crash_the_unwrap():
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(400, json="Bad Request")
+
+    with pytest.raises(ApiError) as caught:
+        client_returning(handler).get("/api/v1/accounts")
+
+    assert caught.value.status == 400
+    assert "Bad Request" in caught.value.detail
+
+
+def test_validation_reasons_are_read_out_rather_than_returned_as_raw_json():
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            400, json={"title": "Not accepted", "fields": {"amount": "must be greater than 0"}}
+        )
+
+    with pytest.raises(ApiError) as caught:
+        client_returning(handler).post("/api/v1/transactions", {"amount": "0"})
+
+    assert caught.value.detail == "amount: must be greater than 0"

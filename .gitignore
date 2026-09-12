@@ -43,7 +43,6 @@ backups/
 !services/ai/tests/*.csv
 !services/ai/tests/*.ofx
 !services/api/src/test/resources/**/*.csv
-!services/web/e2e/fixtures/*.csv
 
 # --- Java ---
 services/api/target/

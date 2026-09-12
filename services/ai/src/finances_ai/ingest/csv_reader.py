@@ -267,7 +267,10 @@ def parse_csv(content: str | bytes, account_ref: str = "unknown") -> ParseResult
             warnings.append(encoding_note)
 
     try:
-        rows = list(csv.reader(io.StringIO(content)))
+        # strict: a quote that never closes is an error, not a field. Python's default swallows
+        # everything to the end of the file into one cell, so one broken row silently ate every
+        # row after it — and the row it landed on was reported as "Empty amount".
+        rows = list(csv.reader(io.StringIO(content), strict=True))
     except csv.Error as exc:
         # A field longer than the reader's limit, or a quote that never closes. Not a row-level
         # problem: the reader cannot say where the next row begins, so nothing after it is safe.
@@ -677,11 +680,36 @@ def _map_row(
         account_name=account_name,
         is_probable_transfer=looks_like_transfer(row_type, fmt),
         is_probable_refund=looks_like_refund(row_type, fmt),
+        # Only the columns this format reads, plus the institution's own category when it offers
+        # one. `raw` used to carry every column verbatim behind a blocklist of four names — and
+        # every export invents its own name for the cardholder's address. Nothing on the Java side
+        # reads it; it exists so a captured response shows what the parser saw.
         raw={
             k: v
             for k, v in row.items()
-            if k and v is not None and k not in _REDACTED_COLUMNS and k != fmt.account_number_column
+            if k in _raw_columns(fmt) and v is not None and k not in _REDACTED_COLUMNS
         },
+    )
+
+
+def _raw_columns(fmt: CsvFormat) -> frozenset[str]:
+    """The columns a format is configured to read, which is all `raw` ever echoes."""
+    return frozenset(
+        column
+        for column in (
+            fmt.date_column,
+            fmt.posted_date_column,
+            fmt.description_column,
+            fmt.memo_column,
+            fmt.amount_column,
+            fmt.debit_column,
+            fmt.credit_column,
+            fmt.balance_column,
+            fmt.external_id_column,
+            fmt.type_column,
+            "Category",
+        )
+        if column
     )
 
 

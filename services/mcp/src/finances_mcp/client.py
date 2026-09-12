@@ -81,13 +81,27 @@ class FinancesClient:
             except ValueError:
                 return response.text
 
-        # Spring puts the useful part in "message" or "detail" depending on which handler ran.
+        # Spring puts the useful part in "message" or "detail" depending on which handler ran; a
+        # validation failure carries its reasons under "fields" with no detail at all.
         detail = response.text
         try:
             body = response.json()
-            detail = body.get("message") or body.get("detail") or body.get("error") or detail
         except ValueError:
-            pass
+            body = None
+        if isinstance(body, dict):
+            fields = body.get("fields")
+            described = (
+                "; ".join(f"{name}: {reason}" for name, reason in fields.items())
+                if isinstance(fields, dict) and fields
+                else None
+            )
+            detail = (
+                body.get("message")
+                or body.get("detail")
+                or described
+                or body.get("error")
+                or detail
+            )
 
         if response.status_code == 401:
             detail = (

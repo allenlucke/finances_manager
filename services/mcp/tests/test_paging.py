@@ -81,3 +81,13 @@ def test_has_more_prefers_the_envelope_over_arithmetic(api):
     api["value"] = {"content": [{"id": 1}], "totalElements": 1, "last": False}
 
     assert server.list_transactions(page=0, size=50)["has_more"] is True
+
+
+def test_a_full_bare_page_says_there_may_be_more(api):
+    """The deleted listing is a bare list capped by size. A full page used to answer has_more:
+    False, which the model read as "that is all of them"."""
+    api["value"] = [{"id": n} for n in range(100)]
+
+    assert server.list_deleted_transactions(page=0, size=100)["has_more"] is True
+    api["value"] = [{"id": 1}]
+    assert server.list_deleted_transactions(page=1, size=100)["has_more"] is False

@@ -228,8 +228,8 @@ Do not start writing feature code before steps 1–3.
 
 * **Reporting SQL lives in Flyway-created views** (D-11), not `@Query` strings. JPA will not
   generate the balance-sheet queries; that is expected, not a surprise.
-* **CSRF protection must come back on** when session cookies land (D-12). The scaffold's
-  `SecurityConfig` disables it, which is correct for M0 and wrong for cookies.
+* **CSRF protection is on** (D-12, done in M1a) — cookie token, echoed as a header by the SPA,
+  pinned by `ApiFlowTest.csrfIsEnforced`. Sign-out re-primes it; see the agreement above.
 * **The transaction schema must be aggregator-ready in M2** (D-14) — pending-transaction linkage
   above all, or the dedupe key double-counts pending→posted.
 * **A tested restore path precedes real data** (D-16). It does not depend on the hosting choice.

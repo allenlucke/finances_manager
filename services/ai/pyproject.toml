@@ -34,6 +34,9 @@ line-length = 100
 src = ["src", "tests"]
 
 [tool.ruff.lint]
+# The same set services/mcp uses. Without a `select` the `ignore` list below was a no-op: neither
+# rule was enabled to begin with, and neither was anything but the default E/F.
+select = ["E", "F", "I", "UP", "B", "SIM"]
 # Statement dates are calendar dates in the institution's own reporting, not instants.
 # Timestamps that represent instants are TIMESTAMPTZ in the API service and UTC everywhere.
 ignore = [
@@ -41,6 +44,13 @@ ignore = [
     # FastAPI's dependency defaults (File(...), Query(...)) are calls by design.
     "B008",
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["finances_ai"]
+
+[tool.ruff.lint.per-file-ignores]
+# Fixture rows are real export shapes written out in full, and wrapping a CSV line changes it.
+"tests/*" = ["E501"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

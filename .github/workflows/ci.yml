@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# Actions are referenced by major tag rather than commit SHA. That is a mutable reference and a
+# real supply-chain surface; it is accepted here because this workflow has read-only permissions,
+# handles no secrets, and runs on a public repo with no deploy step. Pin by SHA before either of
+# those changes.
+
 # A newer push to the same branch supersedes the run in progress.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -28,7 +33,9 @@ jobs:
           cache: maven
       - name: Test
         working-directory: services/api
-        run: mvn -B --no-transfer-progress test
+        # The wrapper, not whatever Maven the runner has: D-10 pins 3.9.16 and the Makefile uses
+        # the same, so CI and a laptop build with one version.
+        run: ./mvnw -B --no-transfer-progress test
 
   web:
     name: Web (Angular)

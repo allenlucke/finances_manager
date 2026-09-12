@@ -89,6 +89,9 @@ def test_no_two_rules_claim_the_same_example():
         "ACH PAYMENT FID BKG SVC LLC - MONEYLINE",
         "FIDELITY BROKERAGE",
         "TRANSFER TO SAVINGS 1234",
+        "ONLINE TRANSFER FROM CHK ...4521",
+        "TRANSFER TO SHARE 0010",
+        "TRANSFER FROM BROKERAGE XXXX9876",
         "INTERNAL TRANSFER",
         "CARDMEMBER SERV WEB PYMT",
         "ACH PAYMENT CHASE CREDIT CRD - AUTOPAY",
@@ -111,6 +114,12 @@ def test_the_transfer_wording_list(description):
         "E-PAYMENT DENTIST",
         "ZELLE PAYMENT TO PLUMBER JOE",
         "ZELLE TO LANDLORD",
+        # "TRANSFER TO" alone is how banks describe P2P payments and wires. Bare, it removed
+        # every one of these from the budget by CHECK constraint.
+        "ZELLE TRANSFER TO PLUMBER JOE",
+        "WIRE TRANSFER TO ACME CONTRACTORS LLC",
+        "ONLINE TRANSFER TO JOHN SMITH",
+        "TRANSFER TO PAYPAL",
         "AUTOPAY EVERGY METRO",
         "PAYMENT TO DR SMITH",
         "VENMO PAYMENT",

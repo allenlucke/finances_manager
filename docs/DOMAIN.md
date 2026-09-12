@@ -197,16 +197,11 @@ What it got wrong, found by using it:
   every later import of that file. Now unique per user.
 * **`transaction.external_id` carried the same flaw** and is now unique per account.
 
-Still absent, and deliberately so: **`security` / `holding`**. A brokerage buy currently lands as an
-ordinary transaction with its symbol, quantity and price surviving only inside `raw`. That is
-acceptable while positions are not persisted, and is precisely the gap M4 exists to close — the
-positions parser already produces exactly the fields those tables need.
-
-### Deferred
-
-`security` / `holding` / `position` are **M4**, not M1. Share quantity, cost basis, and market value
-are genuinely different from a cash transaction and must not be forced into `transaction` — but
-building them speculatively before there is brokerage data would be guesswork.
+**`security` / `holding` arrived on 2026-08-29 (V5)**, once a real positions export existed to
+design against — share quantity, cost basis and market value are genuinely different from a cash
+transaction and were deliberately not forced into `transaction` before then. A brokerage buy still
+lands as an ordinary transaction (it is a money movement); what the account is *worth* now comes
+from its latest holdings snapshot. See docs/ROADMAP.md → M4.
 
 ## Naming
 

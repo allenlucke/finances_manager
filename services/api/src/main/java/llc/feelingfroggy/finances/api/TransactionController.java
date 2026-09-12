@@ -129,6 +129,27 @@ public class TransactionController {
     }
 
     /**
+     * Marks a row as a transfer, or says it is not one after all.
+     *
+     * <p>Marking clears the category, because a transfer is never spending. Un-marking is for a
+     * row that was called a transfer wrongly, and only a single-sided row can be un-marked — see
+     * {@link Transaction#clearTransfer()}, whose refusal the handler turns into a 422.
+     */
+    @PutMapping("/{id}/transfer")
+    @Transactional
+    public TransactionView setTransfer(@PathVariable Long id,
+                                       @Valid @RequestBody SetTransfer request) {
+        var transaction = transactions.findLive(id, currentUser.id())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (request.transfer()) {
+            transaction.markAsTransfer(null);
+        } else {
+            transaction.clearTransfer();
+        }
+        return TransactionView.of(transactions.save(transaction));
+    }
+
+    /**
      * Soft delete. The row stays, so its dedupe key stays claimed and re-importing the same
      * statement cannot bring it back.
      *
@@ -192,6 +213,9 @@ public class TransactionController {
                 t.getTransferGroupId() == null ? null : t.getTransferGroupId().toString(),
                 t.getSource().code());
         }
+    }
+
+    public record SetTransfer(@NotNull Boolean transfer) {
     }
 
     public record CreateTransaction(

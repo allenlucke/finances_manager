@@ -140,7 +140,17 @@ TRANSFER_PATTERNS: tuple[TransferPattern, ...] = (
         )
     ),
     TransferPattern(re.compile(r"\bCARDMEMBER\s+SERV\b")),
-    TransferPattern(re.compile(r"\bTRANSFER\s+(TO|FROM)\b")),
+    # "TRANSFER TO" alone is how banks describe P2P payments and wires as well as moves between
+    # the user's own accounts: "ZELLE TRANSFER TO PLUMBER JOE", "WIRE TRANSFER TO ACME
+    # CONTRACTORS LLC". Bare, it removed both from the budget by CHECK constraint. The object of
+    # TO/FROM has to look like one of the user's own accounts — an account type, or masked digits.
+    TransferPattern(
+        re.compile(
+            r"\bTRANSFER\s+(TO|FROM)\b.{0,30}?"
+            r"\b(SAVINGS?|CHECKING|CHK|SAV|SHARE|BROKERAGE|MONEY\s*MARKET|IRA|401K|HSA|CD|"
+            r"X{2,}\d{2,4}|\*{2,}\d{2,4}|\.{2,}\d{2,4}|\d{4})\b"
+        )
+    ),
     # ZELLE is gone. A Zelle to a plumber, a landlord or a friend is spending, and nothing in the
     # description can tell that apart from a Zelle to your own savings. The review queue can; a
     # suppression cannot.

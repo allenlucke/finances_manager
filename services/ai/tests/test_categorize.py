@@ -1,6 +1,8 @@
 from datetime import date
 from decimal import Decimal
 
+import pytest
+
 from finances_ai.categorize import categorize_one
 from finances_ai.models import ParsedTransaction, TransactionDirection
 
@@ -122,9 +124,6 @@ def test_a_purchase_is_not_flagged_just_because_it_is_a_credit():
 
     assert suggestion.is_transfer is False
     assert suggestion.category == "Groceries"
-
-
-import pytest
 
 
 @pytest.mark.parametrize(

@@ -59,9 +59,12 @@ def _page(result: Any, page: int, size: int) -> Any:
         total = result.get("totalElements", len(rows))
         has_more = not result["last"] if "last" in result else (page + 1) * size < total
     elif isinstance(result, list):
+        # A bare list says nothing about what it left out. A full page may be the end or may
+        # not; a short page is the end. Saying "no more" for a full page of 100 was a lie the
+        # model believed, and this is the honest reading of the only evidence there is.
         rows = result
         total = len(rows)
-        has_more = False
+        has_more = len(rows) >= size
     else:
         # An error, or some other single object. Wrapping it would produce exactly the trap this
         # function exists to prevent: len(dict) is a key count, and the model would read
@@ -138,10 +141,11 @@ def list_transactions(
     """Transactions in a date range, newest first.
 
     Args:
-        date_from: ISO date (YYYY-MM-DD) to start from. Omit for no lower bound.
-        date_to: ISO date to stop at. Omit for no upper bound.
+        date_from: ISO date (YYYY-MM-DD) to start from. Omitted, the API uses the first of the
+            current month — not the beginning of time. Pass a date to reach further back.
+        date_to: ISO date to stop at. Omitted, the API uses today.
         page: zero-based page number.
-        size: rows per page, up to 500.
+        size: rows per page; the API caps it at 200.
 
     Returns ``transactions`` along with ``total`` and ``has_more`` for paging.
 
@@ -234,7 +238,9 @@ def list_deleted_transactions(page: int = 0, size: int = 100) -> Any:
 
     Deletion here is soft, so anything listed can be brought back with ``restore_transaction``.
 
-    Returns ``transactions`` along with ``total`` and ``has_more`` for paging.
+    Returns ``transactions`` along with ``total`` and ``has_more`` for paging. This endpoint
+    answers a bare page rather than a count, so ``total`` is the rows on this page and ``has_more``
+    is true whenever the page came back full — ask for the next page to be sure.
     """
     return _page(
         _guard(lambda: client().get("/api/v1/transactions/deleted", page=page, size=size)),
@@ -419,11 +425,31 @@ def delete_transaction(transaction_id: int) -> Any:
     result = _guard(lambda: client().delete(f"/api/v1/transactions/{transaction_id}"))
     if isinstance(result, dict) and "error" in result:
         return result
+    # Reversibility is the API's contract, not this tool's guess: DELETE on a transaction is a
+    # soft delete by design (TransactionController), and the dedupe key stays claimed so a
+    # re-import cannot resurrect it either. `restore_transaction` is the proof.
     return {
         "deleted": transaction_id,
         "reversible": True,
         "undo_with": f"restore_transaction({transaction_id})",
     }
+
+
+@mcp.tool(annotations=WRITES)
+def set_transfer(transaction_id: int, transfer: bool) -> Any:
+    """Mark a transaction as a transfer, or say it is not one after all.
+
+    A transfer is money moving between the user's own accounts and is never spending, so marking
+    one clears its category. Un-marking is for a row the importer or a rule called a transfer
+    wrongly — a Zelle to a plumber, a wire to a contractor — so it can be categorized again. Only
+    single-sided rows can be un-marked: a manual transfer has two legs and is removed with
+    ``delete_transaction`` instead.
+    """
+    return _guard(
+        lambda: client().put(
+            f"/api/v1/transactions/{transaction_id}/transfer", {"transfer": transfer}
+        )
+    )
 
 
 @mcp.tool(annotations=WRITES)

@@ -185,6 +185,19 @@
               <td mat-cell *matCellDef="let row">
                 @if (row.transfer) {
                   <span class="muted">not spending</span>
+                  @if (!row.transferGroupId) {
+                    <!-- Only a single-sided row: a manual transfer has a second leg, and
+                         un-marking one side would leave money arriving from nowhere. -->
+                    <button
+                      mat-button
+                      type="button"
+                      class="unmark"
+                      (click)="unmarkTransfer(row)"
+                      [attr.aria-label]="'Not a transfer: ' + row.description"
+                    >
+                      Not a transfer
+                    </button>
+                  }
                 } @else {
                   <mat-select
                     class="inline-select"

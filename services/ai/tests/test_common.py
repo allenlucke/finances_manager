@@ -92,6 +92,20 @@ def test_a_windows_export_is_read_as_cp1252_and_says_so():
     assert note is not None and "Windows-1252" in note
 
 
+@pytest.mark.parametrize("text", ["84 31", "1 234.56", "12 34"])
+def test_parse_money_refuses_a_space_between_digits(text):
+    with pytest.raises(ValueError):
+        parse_money(text)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [("$ 1,234.56", Decimal("1234.56")), ("- 5.00", Decimal("-5.00")), (" 12 ", Decimal("12"))],
+)
+def test_parse_money_ignores_space_beside_a_symbol_or_sign(text, expected):
+    assert parse_money(text) == expected
+
+
 def test_every_reader_uses_the_one_account_hash():
     """Two implementations had already drifted once. There is one now, and the readers share it."""
     assert csv_reader.account_hash is account_hash

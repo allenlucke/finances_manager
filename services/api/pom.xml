@@ -65,7 +65,7 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-session-jdbc</artifactId>
     </dependency>
-    <!-- Persistence. See docs/DECISIONS.md D-11 — this choice is OPEN. -->
+    <!-- Persistence: JPA for the domain, Flyway-created views for reporting (D-11, settled). -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>

@@ -155,3 +155,19 @@ def test_rejects_a_transaction_export_rather_than_half_reading_it():
 def test_rejects_an_empty_file():
     with pytest.raises(PositionsParseError):
         parse_positions(b"")
+
+
+def test_an_oversized_field_mid_file_is_a_refusal_not_a_crash():
+    """csv.Error is raised lazily from inside the row loop; the guard used to cover the header only,
+    so a broken row mid-file was a 500 while the same file in the statement reader was a 422."""
+    import pytest
+
+    from finances_ai.ingest import PositionsParseError, parse_positions
+
+    content = (
+        "Account number,Account name,Symbol,Description,Quantity,Last price,Current value\n"
+        "Z11111111,Brokerage,AAPL,APPLE INC,10,220.00,$2200.00\n"
+        "Z11111111,Brokerage," + "x" * 200_000 + ",BROKEN,1,1.00,$1.00\n"
+    )
+    with pytest.raises(PositionsParseError, match="Not readable as CSV"):
+        parse_positions(content)

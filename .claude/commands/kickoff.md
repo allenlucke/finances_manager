@@ -1,16 +1,19 @@
 ---
-description: Open a working session on this repo — review open decisions before writing code
+description: Open a working session on this repo — orient, verify the suites, then ask what to build
 ---
 
-Start by orienting yourself, then work through the open questions with Allen.
+Start by orienting yourself. Every decision in `docs/DECISIONS.md` is settled; do not re-open any.
 
-1. Read `CLAUDE.md`, `docs/DECISIONS.md`, `docs/DOMAIN.md`, and `docs/ROADMAP.md`.
-2. Verify the scaffold actually runs here: `make test`. The Java build in particular was authored
-   without a compiler available, so treat the first `mvn test` as a real check, not a formality.
-   Fix whatever it turns up before anything else.
-3. Walk Allen through the **OPEN** items in `docs/DECISIONS.md` one at a time — D-10 through D-16.
-   For each: state the tradeoff in two or three sentences, give a recommendation with a reason,
-   and wait for his answer. Do not batch them into one wall of text.
-4. As each is decided, move it from OPEN to SETTLED in `docs/DECISIONS.md` with the reasoning,
-   and update the scaffold to match.
-5. Only then confirm M1 scope and start building.
+1. Read `CLAUDE.md` (the working agreements are hard-won and each has a test), then
+   `docs/DECISIONS.md`, `docs/DOMAIN.md`, and the status sections of `docs/ROADMAP.md`.
+2. Read the newest `docs/REVIEW-*.md`. Its Progress section says what was closed in which batch
+   and what is still open; anything listed as open there is the shortlist.
+3. Verify the suites run here: `make test`. If Docker is not up, start it — the Java suite needs
+   Testcontainers. A red suite is fixed before anything else.
+4. Check `git status` and `docker ps`. The dev stack (`finances-manager`, ports 4200/8080) holds
+   Allen's real account and is never truncated; the scratch stack (`finances-e2e`, 4201/8081) is
+   throwaway. Say which are up.
+5. Then ask Allen what to work on, or propose the next open item from the review ledger with a
+   sentence on why. Do not start feature work before that.
+
+Standing rules: commit per batch with its tests, never push, no real identifiers in tracked files.

@@ -72,8 +72,9 @@ class ParsedTransaction(BaseModel):
     is_probable_refund: bool = Field(
         default=False,
         description=(
-            "The source file's own row type says refund or adjustment. Deliberately NOT folded into "
-            "is_probable_transfer: a transfer is not spending and must stay uncategorizable, while "
+            "The source file's own row type says refund or adjustment. Deliberately NOT folded "
+            "into is_probable_transfer: a transfer is not spending and must stay "
+            "uncategorizable, while "
             "a refund is negative spending and must be bookable against the category it refunds. "
             "One flag carrying both meanings forced every refund into the transfer path, where the "
             "database's CHECK constraint made it uncategorizable forever."

@@ -107,8 +107,10 @@ first-party `WebAuthnConfigurer`, `WebAuthnDsl`, `EnableMfaFiltersConfiguration`
 `WhenWebAuthnRegisteredMfaConfiguration`. Passkeys are enabled, not assembled — and they are
 phishing-resistant, unlike the TOTP this file assumed you would hand-roll.
 
-*Required follow-up:* `SecurityConfig` currently disables CSRF, which is correct for a bearer-token
-scaffold and **wrong** for cookies. CSRF protection comes back on with the session work.
+*Follow-up, done in M1a:* the scaffold's `SecurityConfig` disabled CSRF, which was correct for a
+bearer-token scaffold and wrong for cookies. It is on: `CookieCsrfTokenRepository` with the SPA
+echoing `XSRF-TOKEN` as a header, exempting only local-token requests. `ApiFlowTest.csrfIsEnforced`
+pins it, and sign-out re-primes the token (CLAUDE.md).
 
 ### D-13 — Frontend styling: Angular Material, alone
 No Tailwind, no utility framework layered on top, no second styling system.
@@ -124,8 +126,9 @@ Material's look is retunable via its token-based theming since v17; CSS Grid and
 layout without a utility framework.
 
 ### D-14 — Aggregator: no vendor yet, but an aggregator-ready schema now
-No vendor commitment. `AccountConnector` is an interface in the API service with a file-import
-implementation first, exactly as originally proposed. **What changed: this is no longer fully
+No vendor commitment. `AccountConnector` is the name of the port — file import is its first
+implementation, and the Java interface itself arrives with the second, at M5, when there is
+something to abstract over. **What changed: this is no longer fully
 deferred.** The M2 schema must absorb aggregator semantics up front, or M5 becomes a migration
 instead of an adapter.
 
@@ -153,9 +156,9 @@ Postgres, fighting the "only `services/api` touches the database" rule. A queue 
 
 **Tier 1 (rules)** — built and working.
 
-*Improvement owed in M3:* `looks_like_non_expense()` in `ingest/csv_reader.py` is dead code. The
-Chase `Type` column (`Payment`/`Return`/`Adjustment`) is a stronger non-expense signal than
-regex-matching the description, is already parsed into `raw`, and nothing consumes it.
+*Done in M2:* the Chase `Type` column is consumed — `Payment` marks a transfer, `Return` and
+`Adjustment` a refund (two flags, because a refund must stay categorizable) — and the categorizer's
+source-hint tier ranks it above any description pattern. The dead `looks_like_non_expense()` is gone.
 
 **Tier 2 (similarity) — local, on CPU.** Anthropic has no embeddings endpoint, so "hosted" here
 would mean a second vendor anyway. A personal ledger has hundreds of distinct merchants, not

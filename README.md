@@ -12,17 +12,17 @@ keeps the domain model and replaces the implementation.
 | Piece | Choice | Notes |
 |---|---|---|
 | API | Java 25 (LTS) + Spring Boot 4.1 | System of record; owns the database |
-| Web | Angular 22 | Standalone components, signals, Vitest |
+| Web | Angular 22 + Angular Material | Standalone components, signals, Vitest, Playwright |
 | AI | Python 3.13 + FastAPI | Statement parsing, categorization; stateless |
-| DB | PostgreSQL 18 | Flyway migrations, forward-only |
+| MCP | Python | Lets Claude Code drive the API (D-17) |
+| DB | PostgreSQL 18 | Flyway migrations, forward-only; reporting in SQL views |
 
-Several choices are still open for discussion — see [`docs/DECISIONS.md`](docs/DECISIONS.md).
+Every choice is settled and recorded with its reasoning in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ## Quick start
 
 ```bash
-cp .env.example .env
-make up          # postgres + api + web + ai via Docker Compose
+make up          # postgres + api + web + ai via Docker Compose; creates .env and its secrets
 open http://localhost:4200
 ```
 
@@ -33,7 +33,8 @@ make db          # postgres only
 make api         # Spring Boot on :8080
 make web         # Angular dev server on :4200 (proxies /api to :8080)
 make ai          # FastAPI on :8000
-make test        # every suite
+make test        # every unit suite
+make e2e         # browser tests on a throwaway stack (4201/8081)
 ```
 
 `make help` lists everything.
@@ -42,14 +43,18 @@ make test        # every suite
 
 | Doc | What's in it |
 |---|---|
-| [CLAUDE.md](CLAUDE.md) | Project brief and working agreements for Claude Code |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Service boundaries and request flow |
-| [docs/DOMAIN.md](docs/DOMAIN.md) | The budget model, including the credit-card subtlety |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | M0 → M6 milestones |
-| [docs/DECISIONS.md](docs/DECISIONS.md) | Settled choices, and the open ones worth arguing about |
-| [docs/SECURITY.md](docs/SECURITY.md) | Handling credentials and real financial data |
+| [CLAUDE.md](CLAUDE.md) | Project brief and working agreements, each one earned by a bug |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Service boundaries, authentication, and the import flow |
+| [docs/DOMAIN.md](docs/DOMAIN.md) | The money model, including the credit-card subtlety |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Milestones, with what each one found when it met real data |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Settled choices and why they won |
+| [docs/SECURITY.md](docs/SECURITY.md) | Credentials, real financial data, the automation token, backups |
+| [docs/REVIEW-2026-09-11.md](docs/REVIEW-2026-09-11.md) | The current review ledger: findings, and which batch closed each |
+| [docs/COWORK-QA-BRIEF.md](docs/COWORK-QA-BRIEF.md) | The brief for an outside QA pass |
 
 ## Status
 
-**M0 — scaffold.** The three services start, find each other, and report health. No features yet.
-M1 (rebuilding the budgeting core) is the next milestone.
+**M1 through M2.5 built; M4 partly.** The budgeting core, statement import (CSV, OFX/QFX) with
+idempotent re-import and reconciliation checkpoints, passkeys, holdings from a positions export, and
+conversational control through Claude Code. Two review passes have been worked through; the ledger
+above says what remains. M3 (automatic categorization) is next.

@@ -298,3 +298,15 @@ def test_creating_an_account_without_a_link_sends_none(api):
     # The client drops nulls from the body, so the link is simply absent — never a blank string,
     # which the API would store as a real (empty) link.
     assert json.loads(api.last.read()).get("externalId") is None
+
+
+def test_un_marking_a_transfer_puts_the_flag_to_the_transfer_endpoint(api):
+    """A row wrongly called a transfer has a way back (review 2026-09-11, P8); the tool is one
+    PUT and adds no rule of its own."""
+    import json
+
+    server.set_transfer(9, False)
+
+    assert api.last.method == "PUT"
+    assert api.last.url.path == "/api/v1/transactions/9/transfer"
+    assert json.loads(api.last.content) == {"transfer": False}

@@ -89,9 +89,17 @@ public class ApiExceptionHandler {
     @ExceptionHandler(ResponseStatusException.class)
     ProblemDetail onRefusal(ResponseStatusException exception) {
         var problem = ProblemDetail.forStatus(exception.getStatusCode());
-        problem.setTitle(exception.getStatusCode().is5xxServerError()
-            ? "Something went wrong" : "Not accepted");
-        problem.setDetail(exception.getReason());
+        if (exception.getStatusCode().is5xxServerError()) {
+            // A 5xx reason is a fault's explanation, not a person's, and the two handlers below
+            // keep those out of the body on purpose. Nothing throws one today; this keeps the
+            // policy from depending on that staying true.
+            log.error("Server fault reported as a status exception", exception);
+            problem.setTitle("Something went wrong");
+            problem.setDetail("Something went wrong on the server. The cause has been logged.");
+        } else {
+            problem.setTitle("Not accepted");
+            problem.setDetail(exception.getReason());
+        }
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }

@@ -34,6 +34,8 @@ _NOT_APPLICABLE = frozenset({"", "--", "-", "n/a", "N/A", "na", "NA"})
 
 # "84.31 CR" / "CR 84.31" — bank shorthand for credit and debit. Matched as whole tokens only.
 _CR_DR = re.compile(r"^(CR|DR)\b\s*|\s*\b(CR|DR)$", re.IGNORECASE)
+# Whitespace touching a currency symbol or a sign, which is layout rather than meaning.
+_SPACE_BESIDE_SIGN = re.compile(r"(?<=[$+-])\s+|\s+(?=[$+-])")
 
 
 def decode_text(content: bytes) -> tuple[str, str | None]:
@@ -49,7 +51,8 @@ def decode_text(content: bytes) -> tuple[str, str | None]:
     except UnicodeDecodeError:
         return (
             content.decode("cp1252", errors="replace"),
-            "File was not UTF-8; read as Windows-1252. Check descriptions with accented characters.",
+            "File was not UTF-8; read as Windows-1252. "
+            "Check descriptions with accented characters.",
         )
 
 
@@ -133,7 +136,10 @@ def parse_money(value: str, *, decimal_separator: str = ".") -> Decimal:
         negative = negative or (found.group(1) or found.group(2)).upper() == "DR"
         cleaned = _CR_DR.sub("", cleaned).strip()
 
-    cleaned = cleaned.replace("$", "").replace(" ", "")
+    # Spaces are removed only beside a currency symbol or a sign ("$ 1,234.56", "- 5.00"). A
+    # space between digits is not a grouping mark any bank uses, and stripping it read "84 31"
+    # as 8431 — the same hundredfold trap the comma rule refuses.
+    cleaned = _SPACE_BESIDE_SIGN.sub("", cleaned).replace("$", "")
     if cleaned.endswith("-"):
         negative = True
         cleaned = cleaned[:-1]

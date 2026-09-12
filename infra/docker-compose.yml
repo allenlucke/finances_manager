@@ -77,7 +77,9 @@ services:
       db:
         condition: service_healthy
       ai:
-        condition: service_started
+        # Healthy, not merely started, the same rule web applies to api: the first import after
+        # a restart used to race the parser's own startup.
+        condition: service_healthy
     environment:
       DATABASE_URL: jdbc:postgresql://db:5432/${DATABASE_NAME:-finances}
       DATABASE_USER: ${DATABASE_USER:-finances}

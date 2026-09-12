@@ -87,25 +87,31 @@ def parse_positions(content: str | bytes, source: str = "fidelity_positions") ->
     positions: list[ParsedPosition] = []
     as_of: date | None = None
 
-    for line_number, row in enumerate(reader, start=2):
-        cleaned = {
-            (key.strip().lstrip("﻿") if key else ""): (value or "").strip()
-            for key, value in row.items()
-            if key is not None  # drops the phantom column from the trailing comma
-        }
+    try:
+        for line_number, row in enumerate(reader, start=2):
+            cleaned = {
+                (key.strip().lstrip("﻿") if key else ""): (value or "").strip()
+                for key, value in row.items()
+                if key is not None  # drops the phantom column from the trailing comma
+            }
 
-        # The footer begins once rows stop looking like holdings. Capture the download date from it
-        # rather than discarding it — it is the only "as of" the file gives.
-        if not cleaned.get("Symbol") or not cleaned.get("Current value"):
-            found = _DOWNLOADED.search(" ".join(v for v in cleaned.values() if v))
-            if found:
-                as_of = _parse_download_date(found.group(1))
-            continue
+            # The footer begins once rows stop looking like holdings. Capture the download date
+            # from it rather than discarding it — it is the only "as of" the file gives.
+            if not cleaned.get("Symbol") or not cleaned.get("Current value"):
+                found = _DOWNLOADED.search(" ".join(v for v in cleaned.values() if v))
+                if found:
+                    as_of = _parse_download_date(found.group(1))
+                continue
 
-        try:
-            positions.append(_map_position(cleaned))
-        except (ValueError, InvalidOperation) as exc:
-            warnings.append(f"line {line_number}: {exc}")
+            try:
+                positions.append(_map_position(cleaned))
+            except (ValueError, InvalidOperation) as exc:
+                warnings.append(f"line {line_number}: {exc}")
+    except csv.Error as exc:
+        # Raised lazily, from inside the loop, for a field over the reader's limit or a quote
+        # that never closes. The guard above the loop caught it only for the header row, so a
+        # broken row mid-file was a 500 while the same file in the statement reader was a 422.
+        raise PositionsParseError(f"Not readable as CSV: {exc}") from exc
 
     if not positions:
         raise PositionsParseError("No positions found in the file")

@@ -90,14 +90,34 @@ def test_an_oversized_field_is_refused_as_unreadable_rather_than_crashing():
 
 
 def test_an_unterminated_quote_is_refused_as_unreadable():
+    """Python's default reader swallows everything after an open quote into one field, so one
+    broken row silently ate the five real rows after it and was reported as "Empty amount". The
+    reader runs strict now: a quote that never closes is a refusal with a sentence."""
     content = 'Date,Description,Amount\n08/14/2026,"KROGER,-1.00\n' + "08/15/2026,X,-2.00\n" * 5
-    try:
-        result = parse_csv(content, account_ref="acct")
-    except ParserNotFoundError:
-        return
-    # Python's reader swallows a trailing open quote as one long field. Then the row must at
-    # least be reported, never silently merged into a phantom transaction.
-    assert len(result.transactions) + len(result.warnings) >= 1
+    with pytest.raises(ParserNotFoundError, match="Not readable as CSV"):
+        parse_csv(content, account_ref="acct")
+
+
+def test_a_space_between_digits_is_not_a_grouping_mark():
+    """'84 31' read as 8431 — the hundredfold trap the comma rule refuses, by another separator."""
+    content = 'Date,Description,Amount\n08/14/2026,X,"84 31"\n08/14/2026,Y,"$ 12.00"\n'
+    result = parse_csv(content, account_ref="acct")
+
+    assert [t.description for t in result.transactions] == ["Y"]
+    assert result.transactions[0].amount == Decimal("12.00")
+    assert len(result.warnings) == 1 and "84 31" in result.warnings[0]
+
+
+def test_raw_carries_only_the_columns_the_format_reads():
+    """`raw` used to echo every column behind a blocklist of four names, and every export invents
+    its own name for the cardholder's address. Nothing reads it on the Java side."""
+    content = (
+        "Date,Description,Amount,Cardholder Home Address,Phone\n"
+        "08/14/2026,KROGER,-84.31,123 MAIN ST,555-0100\n"
+    )
+    result = parse_csv(content, account_ref="acct")
+
+    assert set(result.transactions[0].raw) == {"Date", "Description", "Amount"}
 
 
 @pytest.mark.parametrize("amount", ["NaN", "Infinity", "1E5", "1_000", "abc"])

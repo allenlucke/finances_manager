@@ -121,6 +121,54 @@ describe('TransactionsComponent', () => {
     expect(screen.textContent).toContain('No accounts yet');
   });
 
+  it('offers "Not a transfer" on a single-sided transfer, and not on a leg of a two-sided one', () => {
+    component['range'].setValue(
+      { from: new Date(2026, 7, 1), to: new Date(2026, 7, 31) },
+      { emitEvent: false },
+    );
+    component['reload']();
+    const row = {
+      accountId: 1,
+      categoryId: null,
+      transactionDate: '2026-08-14',
+      amount: 50,
+      direction: 'debit',
+      signedAmount: -50,
+      merchant: null,
+      transfer: true,
+      transferAccountId: null,
+      source: 'file_import',
+    };
+    backend
+      .expectOne((r) => r.url.startsWith('/api/v1/transactions'))
+      .flush({
+        content: [
+          { ...row, id: 1, description: 'ZELLE TRANSFER TO PLUMBER JOE', transferGroupId: null },
+          { ...row, id: 2, description: 'To savings', transferGroupId: 'g-1' },
+        ],
+        totalElements: 2,
+        totalPages: 1,
+        number: 0,
+        size: 200,
+      });
+    fixture.detectChanges();
+    const buttons = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].filter(
+      (b) => b.textContent?.includes('Not a transfer'),
+    );
+
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0].getAttribute('aria-label')).toContain('PLUMBER JOE');
+
+    buttons[0].click();
+    const request = backend.expectOne('/api/v1/transactions/1/transfer');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ transfer: false });
+    request.flush({ ...row, id: 1, transfer: false });
+    backend
+      .expectOne((r) => r.url.startsWith('/api/v1/transactions'))
+      .flush({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 200 });
+  });
+
   it('deleting offers an undo that restores', () => {
     const action = new Subject<void>();
     const open = vi

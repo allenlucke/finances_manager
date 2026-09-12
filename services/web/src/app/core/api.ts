@@ -153,6 +153,14 @@ export class ApiClient {
     return this.http.get<Holding[]>(`${this.base}/holdings`);
   }
 
+  /**
+   * Marks a row as a transfer, or says it is not one after all. Un-marking is for a row the
+   * importer or a rule called a transfer wrongly, and only a single-sided row can be un-marked.
+   */
+  setTransfer(id: number, transfer: boolean): Observable<Transaction> {
+    return this.http.put<Transaction>(`${this.base}/transactions/${id}/transfer`, { transfer });
+  }
+
   // --- imports ---
 
   /**

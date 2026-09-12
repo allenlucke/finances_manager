@@ -295,6 +295,27 @@ export class TransactionsComponent {
   }
 
   /**
+   * Says a row is not a transfer after all — a Zelle to a plumber the importer or a rule read as
+   * money moving between accounts. Until the API had a way back, the CHECK constraint kept such a
+   * row uncategorizable for good.
+   */
+  protected unmarkTransfer(row: Transaction): void {
+    this.api.setTransfer(row.id, false).subscribe({
+      next: () => {
+        this.reload();
+        this.snackBar.open('Marked as spending. It is back in the review queue.', undefined, {
+          duration: 4000,
+        });
+      },
+      error: (error: { error?: { detail?: string | null } | null }) => {
+        this.snackBar.open(error?.error?.detail || 'Could not change that.', undefined, {
+          duration: 5000,
+        });
+      },
+    });
+  }
+
+  /**
    * Deletes, and offers to undo in the same breath.
    *
    * <p>Deletion is soft on the server and every leg of a transfer goes together, so this is
