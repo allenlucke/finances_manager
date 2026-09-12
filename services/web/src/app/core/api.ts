@@ -8,6 +8,7 @@ import {
   CreateTransaction,
   Holding,
   ImportResult,
+  MonthlyTotalsRow,
   LedgerEntity,
   Me,
   NetWorthRow,
@@ -208,5 +209,17 @@ export class ApiClient {
 
   reconciliation(): Observable<ReconciliationRow[]> {
     return this.http.get<ReconciliationRow[]>(`${this.base}/reports/reconciliation`);
+  }
+
+  monthlyTotals(from?: string, to?: string): Observable<MonthlyTotalsRow[]> {
+    let params = new HttpParams();
+    if (from) params = params.set('from', from);
+    if (to) params = params.set('to', to);
+    return this.http.get<MonthlyTotalsRow[]>(`${this.base}/reports/monthly-totals`, { params });
+  }
+
+  /** Removes a reconciliation checkpoint. A real delete: it is metadata, not money. */
+  deleteStatement(statementId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/statements/${statementId}`);
   }
 }

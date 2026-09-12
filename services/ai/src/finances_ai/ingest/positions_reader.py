@@ -46,8 +46,6 @@ _DOWNLOADED = re.compile(r"Date downloaded\s+([A-Za-z]{3}-\d{1,2}-\d{4})", re.IG
 
 _REQUIRED_COLUMNS = frozenset({"Symbol", "Current value"})
 
-# Never echoed back in `raw`. See docs/SECURITY.md: account numbers are stored masked.
-_REDACTED_COLUMNS = frozenset({"Account number"})
 
 # Symbols Fidelity uses for the cash sweep rather than a security.
 _CASH_SYMBOLS = frozenset({"SPAXX", "FDRXX", "FZFXX", "USD", "CASH", "FCASH"})
@@ -152,15 +150,9 @@ def _map_position(row: dict[str, str]) -> ParsedPosition:
         # cash-registered account as a cash holding. Caught only by running a real export.
         is_cash=symbol in _CASH_SYMBOLS,
         account_registration=row.get("Type") or None,
-        # The account number is deliberately excluded. `raw` is a convenience passthrough of the
-        # source row, and without this filter the full number rides along inside it — defeating the
-        # masking two fields above and putting it into every response and stored payload
-        # (docs/SECURITY.md).
-        raw={
-            key: value
-            for key, value in row.items()
-            if key and value and key not in _REDACTED_COLUMNS
-        },
+        # No `raw` passthrough. It once carried the full account number beside the mask that was
+        # hiding it; a blocklist fixed that column, and the field went in the end because nothing
+        # read it and every export invents its own headings (docs/SECURITY.md).
     )
 
 

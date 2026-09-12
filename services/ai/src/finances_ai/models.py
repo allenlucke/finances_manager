@@ -80,7 +80,14 @@ class ParsedTransaction(BaseModel):
             "database's CHECK constraint made it uncategorizable forever."
         ),
     )
-    raw: dict[str, str] = Field(default_factory=dict, description="Original source row, verbatim")
+    # The file's own word for the row — Chase's Type ("Sale", "Payment", "Return"), OFX's TRNTYPE
+    # ("XFER"), a brokerage's Action — which is what the transfer and refund hints were read from.
+    # This replaced `raw`, which echoed every column of every row verbatim behind a blocklist of
+    # column names, was read by nothing on the Java side, and was the one place a cardholder's
+    # address could ride along under whatever heading an issuer chose for it.
+    source_type: str | None = Field(
+        default=None, description="The source file's own row type, when it has one"
+    )
 
 
 class StatementSummary(BaseModel):
@@ -102,13 +109,20 @@ class StatementSummary(BaseModel):
         default=None,
         description="Signed per the project convention: negative means owed.",
     )
+    # Set only on a per-account summary from a multi-statement file, by the same key the file's
+    # rows carry, so the API records the checkpoint against the account it resolved the rows to.
+    account_key: str | None = None
+    account_mask: str | None = None
 
 
 class ParseResult(BaseModel):
     source_format: str
     transactions: list[ParsedTransaction]
     warnings: list[str] = Field(default_factory=list)
+    # The checkpoint for the account the caller nominated. None for a multi-account file.
     statement: StatementSummary | None = None
+    # One checkpoint per account for a file holding several statements. Empty otherwise.
+    statements: list[StatementSummary] = Field(default_factory=list)
 
 
 class ParsedPosition(BaseModel):
@@ -153,7 +167,6 @@ class ParsedPosition(BaseModel):
     account_registration: str | None = Field(
         default=None, description="Cash or Margin, as the broker classifies the account."
     )
-    raw: dict[str, str] = Field(default_factory=dict)
 
 
 class PositionsResult(BaseModel):

@@ -8,6 +8,7 @@ import { BudgetComponent } from './budget';
 describe('BudgetComponent', () => {
   let backend: HttpTestingController;
   let component: Record<string, any>;
+  let fixture: ReturnType<typeof TestBed.createComponent<BudgetComponent>>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -18,14 +19,71 @@ describe('BudgetComponent', () => {
         provideNativeDateAdapter(),
       ],
     });
-    component = TestBed.createComponent(BudgetComponent).componentInstance as unknown as Record<
-      string,
-      any
-    >;
+    fixture = TestBed.createComponent(BudgetComponent);
+    component = fixture.componentInstance as unknown as Record<string, any>;
     backend = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => backend.verify());
+
+  const text = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+  it('reports income in its own words, never as spending', () => {
+    // The view flips sign so that "spent" is positive, which makes a paycheque arrive negative;
+    // unfiltered it read Spent -$3,000.00 / Remaining $6,000.00. Income has its own table.
+    backend.expectOne('/api/v1/entities').flush([]);
+    backend.expectOne('/api/v1/categories').flush([]);
+    backend.expectOne('/api/v1/targets').flush([]);
+    backend
+      .expectOne((r) => r.url.startsWith('/api/v1/reports/spend-vs-target'))
+      .flush([
+        {
+          month: '2026-08-01',
+          categoryId: 2,
+          categoryName: 'Salary',
+          categoryKind: 'income',
+          ledgerEntityId: 1,
+          netAmount: -3000,
+          targetAmount: 3000,
+          remaining: 6000,
+          transactionCount: 1,
+        },
+      ]);
+    fixture.detectChanges();
+
+    expect(text()).toContain('Income by month');
+    expect(text()).toContain('Received');
+    expect(text()).toContain('$3,000.00');
+    expect(text()).not.toContain('-$3,000.00');
+    expect(text()).not.toContain('$6,000.00');
+  });
+
+  it('with nothing to choose from, Set target is disabled and the empty states say so', () => {
+    backend.expectOne('/api/v1/entities').flush([]);
+    backend.expectOne('/api/v1/categories').flush([]);
+    backend.expectOne('/api/v1/targets').flush([]);
+    backend.expectOne((r) => r.url.startsWith('/api/v1/reports/spend-vs-target')).flush([]);
+    fixture.detectChanges();
+
+    const buttons = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')];
+    const setTarget = buttons.find((b) => b.textContent?.includes('Set target'));
+    expect(setTarget?.disabled).toBe(true);
+    expect(text()).toContain('No targets set');
+    expect(text()).toContain('No categories yet');
+  });
+
+  it('a failed spending request is a sentence, not "nothing categorized yet"', () => {
+    backend.expectOne('/api/v1/entities').flush([]);
+    backend.expectOne('/api/v1/categories').flush([]);
+    backend.expectOne('/api/v1/targets').flush([]);
+    backend
+      .expectOne((r) => r.url.startsWith('/api/v1/reports/spend-vs-target'))
+      .flush(null, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+
+    expect(text()).toContain('Could not load spending history');
+    expect(text()).not.toContain('Nothing categorized yet');
+  });
 
   it('keeps income out of the spending table', () => {
     // The view flips sign so that "spent" is positive, which makes a paycheque arrive negative.

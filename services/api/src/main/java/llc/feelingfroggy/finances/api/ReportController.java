@@ -81,6 +81,36 @@ public class ReportController {
     }
 
     /**
+     * What moved in each month, categorized or not: the denominator every other spend figure
+     * lacks. A month where most rows are still in the review queue looked like a cheap month on
+     * every screen, so this says how much is still uncategorized. Transfers are excluded, as
+     * everywhere. The row with a null entity is the combined figure.
+     */
+    @GetMapping("/monthly-totals")
+    public List<MonthlyTotalsRow> monthlyTotals(@RequestParam(required = false) LocalDate from,
+                                                @RequestParam(required = false) LocalDate to) {
+        LocalDate start = from == null ? LocalDate.now(clock).withDayOfMonth(1) : from;
+        LocalDate end = to == null ? LocalDate.now(clock) : to;
+
+        return jdbc.query("""
+            SELECT month, ledger_entity_id, money_out, money_in, uncategorized_out,
+                   uncategorized_count, transaction_count
+            FROM v_monthly_totals
+            WHERE user_id = ? AND month >= date_trunc('month', ?::date) AND month <= ?::date
+            ORDER BY month DESC, ledger_entity_id NULLS FIRST
+            """,
+            (rs, row) -> new MonthlyTotalsRow(
+                rs.getObject("month", LocalDate.class),
+                rs.getObject("ledger_entity_id", Long.class),
+                rs.getBigDecimal("money_out"),
+                rs.getBigDecimal("money_in"),
+                rs.getBigDecimal("uncategorized_out"),
+                rs.getInt("uncategorized_count"),
+                rs.getInt("transaction_count")),
+            currentUser.id(), start, end);
+    }
+
+    /**
      * Whether the ledger agrees with each statement's closing balance.
      *
      * <p>A non-zero {@code difference} means a transaction is missing, duplicated, or wrong — in
@@ -123,6 +153,18 @@ public class ReportController {
     public record SpendRow(LocalDate month, Long categoryId, String categoryName, String categoryKind,
                            Long ledgerEntityId, BigDecimal netAmount, BigDecimal targetAmount,
                            BigDecimal remaining, int transactionCount) {
+    }
+
+    /**
+     * @param ledgerEntityId null on the combined row
+     * @param moneyIn credits that are not transfers — income and refunds both, which is why it is
+     *     not called income
+     * @param uncategorizedOut debits still waiting for a category, the part of moneyOut that no
+     *     spend-by-category figure includes
+     */
+    public record MonthlyTotalsRow(LocalDate month, Long ledgerEntityId, BigDecimal moneyOut,
+                                   BigDecimal moneyIn, BigDecimal uncategorizedOut,
+                                   int uncategorizedCount, int transactionCount) {
     }
 
     /** @param baseline {@code opening_balance} or {@code full_history} — see the method above */

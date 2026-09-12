@@ -158,14 +158,14 @@ def test_an_amex_export_is_read_with_its_own_sign_convention():
     assert payment.amount == Decimal("500.00")
 
 
-def test_an_amex_row_echoes_neither_the_card_number_nor_the_address():
+def test_an_amex_row_carries_neither_the_card_number_nor_the_address():
     result = parse_csv(AMEX_CSV, account_ref="amex")
 
     for transaction in result.transactions:
-        assert not {"Account #", "Card Member", "Address", "City/State", "Zip Code"} & set(
-            transaction.raw
-        )
-        assert "-31004" not in " ".join(transaction.raw.values())
+        on_the_wire = transaction.model_dump_json()
+        assert "-31004" not in on_the_wire
+        assert "123 MAIN ST" not in on_the_wire
+        assert "A CARDMEMBER" not in on_the_wire
 
 
 def test_a_generic_file_that_is_mostly_credits_is_flagged():

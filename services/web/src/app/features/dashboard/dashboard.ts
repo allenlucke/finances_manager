@@ -17,7 +17,15 @@ import {
   shortDate,
   today,
 } from '../../core/money';
-import { Account, LedgerEntity, NetWorthRow, ReconciliationRow, SpendRow } from '../../core/models';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import {
+  Account,
+  LedgerEntity,
+  MonthlyTotalsRow,
+  NetWorthRow,
+  ReconciliationRow,
+  SpendRow,
+} from '../../core/models';
 
 /**
  * Net worth, account balances, this month's spending, and anything that fails to reconcile.
@@ -44,6 +52,7 @@ import { Account, LedgerEntity, NetWorthRow, ReconciliationRow, SpendRow } from 
 })
 export class DashboardComponent {
   private readonly api = inject(ApiClient);
+  private readonly snackBar = inject(MatSnackBar);
 
   /**
    * The moment this dashboard last loaded. A `computed` over a bare `new Date()` evaluates once
@@ -56,6 +65,9 @@ export class DashboardComponent {
   protected readonly entities = new LoadState<LedgerEntity[]>('Could not load the sets of books.');
   protected readonly netWorth = new LoadState<NetWorthRow[]>('Could not load net worth.');
   protected readonly spend = new LoadState<SpendRow[]>('Could not load spending.');
+  protected readonly totals = new LoadState<MonthlyTotalsRow[]>(
+    "Could not load the month's totals.",
+  );
   protected readonly reconciliation = new LoadState<ReconciliationRow[]>(
     'Could not check statements.',
   );
@@ -108,13 +120,25 @@ export class DashboardComponent {
       .sort((a, b) => b.netAmount - a.netAmount);
   });
 
+  /**
+   * The month's denominator: everything that moved, not only what has a category. The spending
+   * card below lists categorized rows, so a month that is mostly still in the review queue looked
+   * cheap here with nothing to say so. The combined row (no entity) is the one to show.
+   */
+  protected readonly thisMonthTotals = computed(
+    () =>
+      this.totals
+        .value()
+        ?.find((row) => row.ledgerEntityId === null && row.month === this.monthStart()) ?? null,
+  );
+
   /** Only statements that disagree with the ledger are worth surfacing. */
   protected readonly unreconciled = computed(() =>
     (this.reconciliation.value() ?? []).filter((row) => Number(row.difference) !== 0),
   );
 
   protected readonly anyError = computed(() =>
-    [this.accounts, this.entities, this.netWorth, this.spend, this.reconciliation]
+    [this.accounts, this.entities, this.netWorth, this.spend, this.totals, this.reconciliation]
       .map((state) => state.error())
       .filter((message): message is string => message !== null),
   );
@@ -142,7 +166,28 @@ export class DashboardComponent {
     this.netWorth.run(this.api.netWorth());
     this.reconciliation.run(this.api.reconciliation());
     this.spend.run(this.api.spendVsTarget(this.monthStart(), today(this.now())));
+    this.totals.run(this.api.monthlyTotals(this.monthStart(), today(this.now())));
     this.accounts.run(this.api.accounts());
+  }
+
+  /**
+   * Removes a checkpoint no file will ever replace. A re-import replaces one it disagrees with on
+   * its own; this is for the figure that came from a file read the wrong way round and has no
+   * corrected twin. Importing the statement again recreates it.
+   */
+  protected removeCheckpoint(row: ReconciliationRow): void {
+    this.api.deleteStatement(row.statementId).subscribe({
+      next: () => {
+        this.reconciliation.run(this.api.reconciliation());
+        this.snackBar.open(
+          'Checkpoint removed. Importing that statement again will record a fresh one.',
+          undefined,
+          { duration: 5000 },
+        );
+      },
+      error: () =>
+        this.snackBar.open('Could not remove that checkpoint.', undefined, { duration: 4000 }),
+    });
   }
 
   protected accountName(id: number): string {

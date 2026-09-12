@@ -354,6 +354,41 @@ class ReportingViewsTest extends PostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("monthly totals count every non-transfer row, categorized or not")
+    void monthlyTotalsAreTheDenominator() {
+        // Every other spend figure joins the category, so a month that is mostly uncategorized
+        // looked cheap on every screen. This view is what it is measured against.
+        txn(cardId, "2026-08-05", "500.00", "debit", "KROGER", groceriesId, "k1");
+        txn(cardId, "2026-08-06", "80.00", "debit", "SOME NEW PLACE", null, "k2");
+        txn(checkingId, "2026-08-01", "3000.00", "credit", "Paycheck", null, "k3");
+        txn(cardId, "2026-08-07", "12.00", "credit", "KROGER REFUND", groceriesId, "k4");
+        // A card payment: a transfer, and no part of any total.
+        jdbc.update("""
+            INSERT INTO transaction
+              (user_id, account_id, transaction_date, amount, direction, description,
+               is_transfer, transfer_account_id, dedupe_key)
+            VALUES (?, ?, '2026-08-20'::date, 500.00, 'debit', 'Payment Thank You', TRUE, ?, 'k5')
+            """, userId, checkingId, cardId);
+
+        var combined = jdbc.queryForMap("""
+            SELECT money_out, money_in, uncategorized_out, uncategorized_count, transaction_count
+            FROM v_monthly_totals WHERE user_id = ? AND ledger_entity_id IS NULL AND month = '2026-08-01'
+            """, userId);
+
+        assertThat((BigDecimal) combined.get("money_out")).isEqualByComparingTo("580.00");
+        assertThat((BigDecimal) combined.get("money_in")).isEqualByComparingTo("3012.00");
+        assertThat((BigDecimal) combined.get("uncategorized_out")).isEqualByComparingTo("80.00");
+        assertThat(combined.get("uncategorized_count")).isEqualTo(2L);
+        assertThat(combined.get("transaction_count")).isEqualTo(4L);
+
+        // And per entity beside it, with the same numbers here because everything is Personal.
+        Integer perEntity = jdbc.queryForObject(
+            "SELECT count(*) FROM v_monthly_totals WHERE user_id = ? AND ledger_entity_id = ?",
+            Integer.class, userId, personalId);
+        assertThat(perEntity).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("a yearly target is compared as a twelfth, not as a whole")
     void cadenceIsNormalizedToTheMonth() {
         // $1,200 a year against $150 this month used to report "$1,050 remaining".

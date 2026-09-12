@@ -71,3 +71,14 @@ table {
   font: var(--mat-sys-body-small);
   margin-top: 4px;
 }
+
+.alert-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.totals {
+  margin: 0 0 8px;
+  font: var(--mat-sys-body-medium);
+}

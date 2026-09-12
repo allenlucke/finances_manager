@@ -132,9 +132,9 @@ def test_the_raw_passthrough_does_not_smuggle_the_account_number():
     result = parse_positions(read_sample())
 
     for position in result.positions:
-        assert "Account number" not in position.raw
-        assert "Z11111111" not in str(position.raw)
-        assert "9900112233" not in str(position.raw)
+        # Nothing on the wire carries the number: not a field, not a passthrough of the row.
+        assert "Z11111111" not in position.model_dump_json()
+        assert "9900112233" not in position.model_dump_json()
 
 
 def test_the_account_key_is_stable_across_parses():

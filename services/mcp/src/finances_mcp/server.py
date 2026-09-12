@@ -203,9 +203,45 @@ def reconciliation() -> Any:
     """Statement closing balances against what the ledger computes.
 
     A non-zero ``difference`` means a transaction is missing, duplicated, or has the wrong amount —
-    it is the strongest signal that an import went wrong.
+    it is the strongest signal that an import went wrong. ``baseline`` says whether the computed
+    figure started from the statement's own opening balance (a difference is real) or summed the
+    whole history (a difference may only mean earlier history was never imported).
     """
     return _guard(lambda: client().get("/api/v1/reports/reconciliation"))
+
+
+@mcp.tool(annotations=READS)
+def monthly_totals(date_from: str | None = None, date_to: str | None = None) -> Any:
+    """What moved each month, categorized or not: money out, money in, and how much of the month
+    is still uncategorized.
+
+    Every figure from ``spending`` is categorized spend only, so a month where most rows are still
+    in the review queue looks cheap there. This is the denominator. Transfers are excluded;
+    ``moneyIn`` includes refunds, which is why it is not called income. The row with a null
+    ``ledgerEntityId`` is the combined figure.
+
+    Args:
+        date_from: ISO date; defaults to the start of the current month.
+        date_to: ISO date; defaults to today.
+    """
+    return _guard(
+        lambda: client().get("/api/v1/reports/monthly-totals", **{"from": date_from, "to": date_to})
+    )
+
+
+@mcp.tool(annotations=REMOVES)
+def delete_checkpoint(statement_id: int) -> Any:
+    """Remove a reconciliation checkpoint — a statement's closing balance — by its ``statementId``
+    from ``reconciliation``.
+
+    For a checkpoint no file will ever replace: a re-import replaces one it disagrees with on its
+    own. This is a real delete, not a soft one; a checkpoint is metadata about the ledger, not
+    money in it, and importing the statement again recreates it.
+    """
+    result = _guard(lambda: client().delete(f"/api/v1/statements/{statement_id}"))
+    if isinstance(result, dict) and "error" in result:
+        return result
+    return {"deleted_checkpoint": statement_id}
 
 
 @mcp.tool(annotations=READS)

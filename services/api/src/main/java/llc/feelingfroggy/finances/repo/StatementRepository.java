@@ -13,4 +13,6 @@ public interface StatementRepository extends JpaRepository<Statement, Long> {
 
     /** Mirrors {@code ux_statement_period}: one checkpoint per account per period end. */
     boolean existsByAccountIdAndPeriodEnd(Long accountId, java.time.LocalDate periodEnd);
+
+    Optional<Statement> findByAccountIdAndPeriodEnd(Long accountId, java.time.LocalDate periodEnd);
 }

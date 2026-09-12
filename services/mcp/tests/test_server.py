@@ -310,3 +310,20 @@ def test_un_marking_a_transfer_puts_the_flag_to_the_transfer_endpoint(api):
     assert api.last.method == "PUT"
     assert api.last.url.path == "/api/v1/transactions/9/transfer"
     assert json.loads(api.last.content) == {"transfer": False}
+
+
+def test_removing_a_checkpoint_deletes_the_statement(api):
+    api.reply("DELETE", "/api/v1/statements/4", 204)
+
+    result = server.delete_checkpoint(4)
+
+    assert api.last.method == "DELETE"
+    assert api.last.url.path == "/api/v1/statements/4"
+    assert result == {"deleted_checkpoint": 4}
+
+
+def test_monthly_totals_uses_the_names_the_api_expects(api):
+    server.monthly_totals(date_from="2026-08-01", date_to="2026-08-31")
+
+    assert api.last.url.path == "/api/v1/reports/monthly-totals"
+    assert dict(api.last.url.params) == {"from": "2026-08-01", "to": "2026-08-31"}

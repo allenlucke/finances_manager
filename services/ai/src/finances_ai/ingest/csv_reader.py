@@ -63,29 +63,6 @@ __all__ = [
     "registered_formats",
 ]
 
-# Never echoed back in `raw`. docs/SECURITY.md: account numbers are stored masked. The positions
-# parser has had this filter since its first real file; this one did not, and the Fidelity history
-# format maps an "Account Number" column — so every row carried the full number in `raw` right
-# beside the mask that was hiding it. Java does not persist `raw`, which limited the exposure to
-# the internal hop and a DEBUG log line; it was still the exact thing the policy forbids.
-_REDACTED_COLUMNS = frozenset(
-    {
-        "Account Number",
-        "Account number",
-        "Account No",
-        "Account No.",
-        # American Express writes a partial card number, the cardholder's name and their postal
-        # address on every row. None of it is needed for anything downstream.
-        "Account #",
-        "Card Member",
-        "Address",
-        "City/State",
-        "Zip Code",
-        "Country",
-        "Reference",
-    }
-)
-
 # Preamble labels that carry the account NUMBER. Deliberately not a bare "Account": one export
 # writes the account's *name* under that label, and taking the last four characters of "Cashback
 # Free Checking" produced a mask of "king".
@@ -680,36 +657,7 @@ def _map_row(
         account_name=account_name,
         is_probable_transfer=looks_like_transfer(row_type, fmt),
         is_probable_refund=looks_like_refund(row_type, fmt),
-        # Only the columns this format reads, plus the institution's own category when it offers
-        # one. `raw` used to carry every column verbatim behind a blocklist of four names — and
-        # every export invents its own name for the cardholder's address. Nothing on the Java side
-        # reads it; it exists so a captured response shows what the parser saw.
-        raw={
-            k: v
-            for k, v in row.items()
-            if k in _raw_columns(fmt) and v is not None and k not in _REDACTED_COLUMNS
-        },
-    )
-
-
-def _raw_columns(fmt: CsvFormat) -> frozenset[str]:
-    """The columns a format is configured to read, which is all `raw` ever echoes."""
-    return frozenset(
-        column
-        for column in (
-            fmt.date_column,
-            fmt.posted_date_column,
-            fmt.description_column,
-            fmt.memo_column,
-            fmt.amount_column,
-            fmt.debit_column,
-            fmt.credit_column,
-            fmt.balance_column,
-            fmt.external_id_column,
-            fmt.type_column,
-            "Category",
-        )
-        if column
+        source_type=(row_type or "").strip() or None,
     )
 
 

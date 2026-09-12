@@ -138,6 +138,22 @@ export interface SpendRow {
   transactionCount: number;
 }
 
+/**
+ * What moved in a month, categorized or not. Every SpendRow is categorized spend only, so a month
+ * that is mostly still in the review queue looks cheap without this beside it. Transfers are
+ * excluded; `moneyIn` includes refunds, which is why it is not called income.
+ */
+export interface MonthlyTotalsRow {
+  month: string;
+  /** Null on the combined row. */
+  ledgerEntityId: number | null;
+  moneyOut: number;
+  moneyIn: number;
+  uncategorizedOut: number;
+  uncategorizedCount: number;
+  transactionCount: number;
+}
+
 export interface ReconciliationRow {
   statementId: number;
   accountId: number;

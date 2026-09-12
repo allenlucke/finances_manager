@@ -72,7 +72,7 @@ class ImportIdentityTest extends PostgresIntegrationTest {
         return new ParsedTransaction(LocalDate.parse(date), null, description, description,
             new BigDecimal(amount), direction, externalId,
             "parser-key-" + java.util.Objects.hashCode(description),
-            transfer, refund, null, null, null, Map.of());
+            transfer, refund, null, null, null);
     }
 
     /** Whichever parser the filename selects, since the identity rule must hold for both. */

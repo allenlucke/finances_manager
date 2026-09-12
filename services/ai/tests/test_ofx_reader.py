@@ -68,7 +68,7 @@ def test_only_xfer_is_treated_as_a_transfer():
 
     flagged = [t for t in result.transactions if t.is_probable_transfer]
     assert len(flagged) == 1
-    assert flagged[0].raw["trntype"] == "XFER"
+    assert flagged[0].source_type == "XFER"
 
     # The CREDIT refund is NOT flagged: a credit is not automatically a transfer.
     refund = result.transactions[4]
@@ -178,8 +178,15 @@ def test_a_multi_statement_file_routes_each_row_to_its_own_account():
     assert (checking.account_mask, savings.account_mask) == ("CHK1", "SAV2")
     assert (checking.account_name, savings.account_name) == ("Checking", "Savings")
     assert checking.dedupe_key != savings.dedupe_key
-    # No checkpoint: it would belong to one account, and the upload nominates at most one.
+    # No single checkpoint — it would belong to one account, and the upload nominates at most
+    # one — but one per statement, each carrying the key its rows carry.
     assert result.statement is None
+    assert [s.account_key for s in result.statements] == [
+        checking.account_key,
+        savings.account_key,
+    ]
+    assert [s.account_mask for s in result.statements] == ["CHK1", "SAV2"]
+    assert all(s.closing_balance == Decimal("100.00") for s in result.statements)
     assert any("2 accounts" in w and "account id" in w for w in result.warnings)
 
 
@@ -188,6 +195,7 @@ def test_a_single_statement_file_keeps_the_nominated_account():
 
     assert all(t.account_key is None for t in result.transactions)
     assert result.statement is not None
+    assert result.statements == []
 
 
 def test_a_parse_failure_names_the_error_class_not_the_bytes():

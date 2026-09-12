@@ -108,16 +108,20 @@ def test_a_space_between_digits_is_not_a_grouping_mark():
     assert len(result.warnings) == 1 and "84 31" in result.warnings[0]
 
 
-def test_raw_carries_only_the_columns_the_format_reads():
-    """`raw` used to echo every column behind a blocklist of four names, and every export invents
-    its own name for the cardholder's address. Nothing reads it on the Java side."""
+def test_nothing_on_the_wire_echoes_a_column_the_format_does_not_read():
+    """`raw` used to echo every column verbatim behind a blocklist of four names, and every export
+    invents its own name for the cardholder's address. It is gone; the file's own row type is the
+    one thing kept, as `source_type`."""
     content = (
         "Date,Description,Amount,Cardholder Home Address,Phone\n"
         "08/14/2026,KROGER,-84.31,123 MAIN ST,555-0100\n"
     )
     result = parse_csv(content, account_ref="acct")
 
-    assert set(result.transactions[0].raw) == {"Date", "Description", "Amount"}
+    on_the_wire = result.transactions[0].model_dump_json()
+    assert "123 MAIN ST" not in on_the_wire
+    assert "555-0100" not in on_the_wire
+    assert result.transactions[0].source_type is None
 
 
 @pytest.mark.parametrize("amount", ["NaN", "Infinity", "1E5", "1_000", "abc"])

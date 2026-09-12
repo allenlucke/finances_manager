@@ -63,7 +63,7 @@ class ImportHttpTest extends PostgresIntegrationTest {
     private static ParsedTransaction row(String date, String amount, String description) {
         return new ParsedTransaction(LocalDate.parse(date), null, description, description,
             new BigDecimal(amount), "debit", null, "parser-key-" + description, false, false,
-            null, null, null, Map.of());
+            null, null, null);
     }
 
     /** A row from an export that names its own account, as a brokerage history does. */
@@ -71,7 +71,7 @@ class ImportHttpTest extends PostgresIntegrationTest {
                                             String amount, String description) {
         return new ParsedTransaction(LocalDate.parse(date), null, description, description,
             new BigDecimal(amount), "debit", null, "parser-key-" + description, false, false,
-            mask, key, name, Map.of());
+            mask, key, name);
     }
 
     private void parserReturns(ParsedTransaction... rows) {

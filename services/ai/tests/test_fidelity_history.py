@@ -123,7 +123,6 @@ def test_the_full_account_number_never_rides_along_in_raw():
     assert result.transactions, "fixture parsed nothing"
     for t in result.transactions:
         assert t.account_mask and len(t.account_mask) == 4
-        joined = " ".join(f"{k}={v}" for k, v in t.raw.items())
-        assert "Account Number" not in t.raw
+        joined = t.model_dump_json()
         assert "Z11111111" not in joined
         assert "Z22222222" not in joined

@@ -197,6 +197,10 @@ public class ImportService {
         // once with the institution's own name — enough for the caller to offer to create them
         // rather than asking a person to type account digits they would have to look up.
         var unlinked = new java.util.LinkedHashMap<String, UnlinkedAccount>();
+        // The parser's notes, plus anything this side adds (a replaced checkpoint). Declared out
+        // here because they are written onto the batch after the attempt below.
+        var notes = new java.util.ArrayList<String>(
+            parsed.warnings() == null ? List.of() : parsed.warnings());
 
         // Everything from here to the flush is one attempt. If any of it fails the batch is marked
         // failed with a reason — in its own transaction, so the record survives the rollback —
@@ -263,11 +267,20 @@ public class ImportService {
             applied++;
         }
 
-        // A checkpoint only makes sense against one account. A multi-account export has no single
-        // closing balance, so none is recorded.
+        // A checkpoint belongs to one account. A single-account file's summary goes against the
+        // nominated account; a multi-statement file names each summary's account by the same key
+        // its rows carry, and it is recorded against whichever account those rows resolved to —
+        // an account the file named but this system lacks gets no checkpoint, as it got no rows.
         if (account != null && parsed.statement() != null
                 && parsed.statement().closingBalance() != null) {
-            recordStatement(userId, account, batch, parsed.statement());
+            recordStatement(userId, account, batch, parsed.statement(), notes);
+        }
+        for (var summary : parsed.perAccountStatements()) {
+            if (summary.closingBalance() == null || summary.accountKey() == null) {
+                continue;
+            }
+            resolveAccount(userId, summary.accountKey(), null, summary.accountMask())
+                .ifPresent(owner -> recordStatement(userId, owner, batch, summary, notes));
         }
 
         // Force the inserts now. A unique-index or NOT NULL violation otherwise surfaces at
@@ -288,8 +301,8 @@ public class ImportService {
         }
         // What the parser could not read, kept with the batch and shown. These used to be counted
         // into the log line below and dropped, so a file that lost rows to a bad date looked
-        // exactly like one that did not.
-        batch.setWarnings(bounded(parsed.warnings()));
+        // exactly like one that did not. A replaced checkpoint is noted here too.
+        batch.setWarnings(bounded(notes));
         // Completed in THIS transaction, so the APPLIED status and its counts commit with the
         // rows they describe — or roll back with them. The recorder's REQUIRES_NEW completion
         // committed first, so a commit failure left a batch claiming rows that did not exist.
@@ -485,16 +498,38 @@ public class ImportService {
     /**
      * Records the statement's closing balance as a reconciliation checkpoint.
      *
-     * <p>Skipped when one already exists for the period: re-importing the same statement must not
-     * create a second checkpoint, and the unique index on {@code (account_id, period_end)} would
-     * reject it anyway — better to no-op than to fail an otherwise successful import.
+     * <p>One per account per period end ({@code ux_statement_period}). Re-importing the same
+     * statement finds the checkpoint already there and leaves it; a re-import whose balances
+     * <em>differ</em> replaces it and says so in the batch's notes. Before this, a checkpoint was
+     * permanent: the parser once read a same-date export backwards and stored the wrong balances,
+     * and no corrected re-import could ever put that right. The parser now emits balances only
+     * when the file's own running balances add up, which is what makes the newer figure the one
+     * to trust.
      */
     private void recordStatement(Long userId, Account account, ImportBatch batch,
-                                 ParseResult.StatementSummary summary) {
+                                 ParseResult.StatementSummary summary, List<String> notes) {
         if (summary.periodEnd() == null) {
             return;
         }
-        if (statements.existsByAccountIdAndPeriodEnd(account.getId(), summary.periodEnd())) {
+        var existing = statements.findByAccountIdAndPeriodEnd(account.getId(), summary.periodEnd());
+        if (existing.isPresent()) {
+            var current = existing.get();
+            boolean sameClosing = current.getClosingBalance().compareTo(summary.closingBalance()) == 0;
+            boolean sameOpening = java.util.Objects.equals(
+                current.getOpeningBalance() == null ? null : current.getOpeningBalance().stripTrailingZeros(),
+                summary.openingBalance() == null ? null : summary.openingBalance().stripTrailingZeros());
+            if (sameClosing && sameOpening) {
+                return;
+            }
+            notes.add("Replaced the checkpoint for " + account.getName() + " for the period ending "
+                + summary.periodEnd() + ": closing balance was " + current.getClosingBalance()
+                + ", now " + summary.closingBalance() + ". This file's running balances add up; "
+                + "the earlier figure came from a file read the wrong way round.");
+            current.setClosingBalance(summary.closingBalance());
+            current.setOpeningBalance(summary.openingBalance());
+            current.setImportBatch(batch);
+            current.setReconciledAt(null);
+            statements.save(current);
             return;
         }
 

@@ -135,14 +135,15 @@ class ImportTest extends PostgresIntegrationTest {
         assertThat(purchase.merchant()).isEqualTo("KROGER");
         assertThat(purchase.dedupeKey()).isNotBlank();
         assertThat(purchase.isProbableTransfer()).isFalse();
-        assertThat(purchase.raw()).isNotEmpty();
+        // The file's own word for the row, which is all that survives of `raw`.
+        assertThat(purchase.sourceType()).isEqualTo("Sale");
 
         // The Chase Type column marks the payment as a transfer and the return as a refund — two
         // flags, because a transfer is not spending and a refund is negative spending.
         assertThat(parsed.transactions().stream().filter(t -> t.isProbableTransfer()).count())
             .isEqualTo(1);
         var refund = parsed.transactions().getLast();
-        assertThat(refund.raw()).containsEntry("Type", "Return");
+        assertThat(refund.sourceType()).isEqualTo("Return");
         assertThat(refund.isProbableRefund()).isTrue();
         assertThat(refund.isProbableTransfer()).isFalse();
     }
@@ -275,6 +276,42 @@ class ImportTest extends PostgresIntegrationTest {
 
         // The whole point of the checkpoint: the ledger agrees with the institution.
         assertThat((BigDecimal) reconciliation.get("difference")).isEqualByComparingTo("0");
+    }
+
+    @Test
+    @DisplayName("a re-import whose balances differ replaces the checkpoint, and says so")
+    void aDifferentCheckpointReplacesTheOldOne() throws IOException {
+        // The first file was read the wrong way round (the same-date bug, now fixed) and stored
+        // the oldest balance as the closing one. A checkpoint used to be permanent: unique per
+        // period, created only by import, with no way to remove it — so the corrected re-import
+        // could never put it right, and reconciliation accused a correct ledger for good.
+        var parsed = realParserOutput();
+        when(aiService.parseCsv(any(), any(), any())).thenReturn(new ParseResult(
+            parsed.sourceFormat(), parsed.transactions(), List.of(),
+            new ParseResult.StatementSummary(java.time.LocalDate.of(2026, 8, 1),
+                java.time.LocalDate.of(2026, 8, 31), new BigDecimal("-12.00"))));
+        imports.importStatement(userId, card, statementBytes(), "chase.csv");
+        assertThat((BigDecimal) jdbc.queryForMap(
+            "SELECT difference FROM v_statement_reconciliation").get("difference"))
+            .isNotEqualByComparingTo("0");
+
+        when(aiService.parseCsv(any(), any(), any())).thenReturn(new ParseResult(
+            parsed.sourceFormat(), parsed.transactions(), List.of(),
+            new ParseResult.StatementSummary(java.time.LocalDate.of(2026, 8, 1),
+                java.time.LocalDate.of(2026, 8, 31), new BigDecimal("358.12"))));
+        var again = imports.importStatement(userId, card, statementBytes(), "chase.csv").batch();
+
+        Integer checkpoints = jdbc.queryForObject("SELECT count(*) FROM statement", Integer.class);
+        assertThat(checkpoints).isEqualTo(1);
+        assertThat((BigDecimal) jdbc.queryForMap(
+            "SELECT difference FROM v_statement_reconciliation").get("difference"))
+            .isEqualByComparingTo("0");
+        // Said, not silent: a replaced figure is exactly the kind of thing to be told about.
+        assertThat(again.getWarnings()).anySatisfy(note -> {
+            assertThat(note).contains("Replaced the checkpoint");
+            assertThat(note).contains("-12.00");
+            assertThat(note).contains("358.12");
+        });
     }
 
     @Test

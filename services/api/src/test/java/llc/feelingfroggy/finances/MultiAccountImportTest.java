@@ -79,7 +79,7 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
     private ParsedTransaction row(String mask, String key, String description, String amount) {
         return new ParsedTransaction(LocalDate.of(2026, 8, 24), null, description, description,
             new BigDecimal(amount), "credit", null, "dedupe-" + key + "-" + description,
-            true, mask, key, "Account " + mask, Map.of());
+            true, mask, key, "Account " + mask);
     }
 
     private void parserReturns(ParsedTransaction... rows) {
@@ -103,7 +103,7 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
         accounts.save(joint);
         var row = new ParsedTransaction(LocalDate.of(2026, 8, 24), null, "Deposit", "DEPOSIT",
             new BigDecimal("100"), "credit", null, "dedupe-1", true, false,
-            "1111", "keyed-1111", "legacy-1111", "Account 1111", Map.of());
+            "1111", "keyed-1111", "legacy-1111", "Account 1111", null);
         parserReturns(row);
 
         var outcome = imports.importStatement(userId, null, anyFile(), "history.csv");
@@ -118,6 +118,42 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
         var again = imports.importStatement(userId, null, anyFile(), "history.csv");
         assertThat(again.batch().getDuplicateCount()).isEqualTo(1);
         assertThat(again.unlinked()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a file holding several statements records a checkpoint for each account")
+    void perAccountStatementsBecomeCheckpoints() {
+        // A multi-account OFX. The old behaviour recorded the first statement's closing balance
+        // against the nominated account, and then nothing at all; now each statement's balance
+        // travels with the key its rows carry and lands on the account those rows resolved to.
+        var joint = account("Joint", "1111");
+        joint.setExternalId("key-1111");
+        var minor = account("Minor", "2222");
+        minor.setExternalId("key-2222");
+        accounts.saveAll(List.of(joint, minor));
+        var period = new ParseResult.StatementSummary(LocalDate.of(2026, 8, 1),
+            LocalDate.of(2026, 8, 31), null, null, null, null);
+        when(aiService.parseOfx(any(), any(), any())).thenReturn(new ParseResult("ofx",
+            List.of(row("1111", "key-1111", "Deposit", "100"), row("2222", "key-2222", "Deposit", "40")),
+            List.of(), null,
+            List.of(
+                new ParseResult.StatementSummary(period.periodStart(), period.periodEnd(), null,
+                    new BigDecimal("100.00"), "key-1111", "1111"),
+                new ParseResult.StatementSummary(period.periodStart(), period.periodEnd(), null,
+                    new BigDecimal("40.00"), "key-2222", "2222"),
+                // An account this system lacks: no rows landed, so no checkpoint either.
+                new ParseResult.StatementSummary(period.periodStart(), period.periodEnd(), null,
+                    new BigDecimal("999.00"), "key-3333", "3333"))));
+
+        imports.importStatement(userId, null, anyFile(), "family.ofx");
+
+        var rows = jdbc.queryForList(
+            "SELECT account_id, closing_balance, difference FROM v_statement_reconciliation ORDER BY account_id");
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).get("account_id")).isEqualTo(joint.getId());
+        assertThat((BigDecimal) rows.get(0).get("difference")).isEqualByComparingTo("0");
+        assertThat(rows.get(1).get("account_id")).isEqualTo(minor.getId());
+        assertThat((BigDecimal) rows.get(1).get("difference")).isEqualByComparingTo("0");
     }
 
     @Test
@@ -248,7 +284,7 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
         // A plain bank CSV: no row names an account.
         when(aiService.parseCsv(any(), any(), any())).thenReturn(new ParseResult("cacu",
             List.of(new ParsedTransaction(LocalDate.of(2026, 8, 24), null, "KROGER", "KROGER",
-                new BigDecimal("84.31"), "debit", null, "dk1", false, null, null, null, Map.of())),
+                new BigDecimal("84.31"), "debit", null, "dk1", false, null, null, null)),
             List.of(), null));
 
         try {

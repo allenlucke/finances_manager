@@ -248,6 +248,35 @@ LEFT JOIN LATERAL (
 ) tg ON TRUE;
 
 
+-- What moved in a month, categorized or not.
+--
+-- Every other spend figure in this file is CATEGORIZED spend: v_monthly_category_spend joins the
+-- category, so a row still waiting in the review queue is in none of them. A month where most rows
+-- are uncategorized therefore looked like a cheap month, on every screen, with nothing to say so.
+-- This view is the denominator: money out, money in, and how much of the month is still
+-- uncategorized. Transfers are excluded here for the same reason as everywhere else — they are not
+-- spending — and refunds land in money_in, which is why money_in is not called income.
+--
+-- GROUPING SETS gives a combined row (ledger_entity_id NULL) beside the per-entity rows, so the
+-- dashboard can show one figure without summing in the browser.
+CREATE OR REPLACE VIEW v_monthly_totals AS
+SELECT r.user_id,
+       r.ledger_entity_id,
+       DATE_TRUNC('month', r.transaction_date)::DATE AS month,
+       SUM(CASE WHEN r.direction = 'debit'  THEN r.amount ELSE 0 END)::NUMERIC(19,4) AS money_out,
+       SUM(CASE WHEN r.direction = 'credit' THEN r.amount ELSE 0 END)::NUMERIC(19,4) AS money_in,
+       SUM(CASE WHEN r.category_id IS NULL AND r.direction = 'debit' THEN r.amount ELSE 0 END)
+           ::NUMERIC(19,4)                                                          AS uncategorized_out,
+       COUNT(*) FILTER (WHERE r.category_id IS NULL)                                 AS uncategorized_count,
+       COUNT(*)                                                                      AS transaction_count
+FROM v_transaction_resolved r
+WHERE r.is_transfer = FALSE
+GROUP BY GROUPING SETS (
+    (r.user_id, r.ledger_entity_id, DATE_TRUNC('month', r.transaction_date)),
+    (r.user_id, DATE_TRUNC('month', r.transaction_date))
+);
+
+
 -- ---------------------------------------------------------------------------------------------
 -- Reconciliation
 -- ---------------------------------------------------------------------------------------------

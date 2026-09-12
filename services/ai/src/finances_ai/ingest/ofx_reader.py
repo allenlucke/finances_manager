@@ -82,12 +82,13 @@ def parse_ofx(content: str | bytes, account_ref: str = "unknown") -> ParseResult
     # statement to whichever account the caller nominated. That used to be the behaviour, and the
     # warning saying so never reached anyone. A single-statement file keeps the nominated account.
     several = len(statements) > 1
+    per_account: list[StatementSummary] = []
     for statement in statements:
         account = _statement_account(statement) if several else None
         if several and account is None:
             warnings.append(
                 "A statement in this file names no account id; its rows were read against the "
-                "account chosen for the upload."
+                "account chosen for the upload, and its closing balance was not recorded."
             )
         for entry in getattr(statement, "transactions", []) or []:
             try:
@@ -95,15 +96,23 @@ def parse_ofx(content: str | bytes, account_ref: str = "unknown") -> ParseResult
             except (ValueError, AttributeError, TypeError) as exc:
                 # One bad row must not cost the other several hundred.
                 warnings.append(f"transaction {getattr(entry, 'fitid', '?')}: {exc}")
+        if several and account is not None:
+            # A checkpoint belongs to one account. Each statement's own closing balance travels
+            # with the same key its rows carry, so the API records it against the account it
+            # resolved those rows to. Recording the first statement's balance against the
+            # nominated account — the old behaviour — reconciled one account against another's
+            # figure.
+            summary = _map_statement(statement)
+            if summary is not None:
+                mask, key, _, _ = account
+                per_account.append(
+                    summary.model_copy(update={"account_key": key, "account_mask": mask})
+                )
 
     if several:
-        # A checkpoint belongs to one account, and the import nominates at most one. Recording
-        # the first statement's closing balance against it — the old behaviour — would have
-        # reconciled one account against another's figure.
         warnings.append(
-            f"This file holds statements for {len(statements)} accounts. Each row was matched to "
-            "its own account by the file's account id. No closing balance was recorded: import "
-            "each account's own statement to reconcile it."
+            f"This file holds statements for {len(statements)} accounts. Each row and each "
+            "closing balance was matched to its own account by the file's account id."
         )
 
     return ParseResult(
@@ -111,6 +120,7 @@ def parse_ofx(content: str | bytes, account_ref: str = "unknown") -> ParseResult
         transactions=transactions,
         warnings=warnings,
         statement=None if several else _map_statement(statements[0]),
+        statements=per_account,
     )
 
 
@@ -174,12 +184,7 @@ def _map_transaction(
         legacy_account_key=legacy_key,
         account_name=account_name,
         is_probable_transfer=trntype in _TRANSFER_TYPES,
-        raw={
-            "trntype": trntype,
-            "fitid": str(getattr(entry, "fitid", "") or ""),
-            "trnamt": str(amount),
-            "dtposted": posted.isoformat(),
-        },
+        source_type=trntype or None,
     )
 
 

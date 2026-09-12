@@ -2,7 +2,6 @@ package llc.feelingfroggy.finances.ai;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
-import java.util.Map;
 
 /**
  * One holding from a brokerage positions export, as the Python parser produced it.
@@ -38,18 +37,17 @@ public record ParsedPosition(
     @JsonProperty("average_cost_basis") BigDecimal averageCostBasis,
     @JsonProperty("total_gain_loss") BigDecimal totalGainLoss,
     @JsonProperty("is_cash") boolean isCash,
-    @JsonProperty("account_registration") String accountRegistration,
-    Map<String, String> raw) {
+    @JsonProperty("account_registration") String accountRegistration) {
 
     /** The pre-re-keying shape: no legacy key. */
     public ParsedPosition(String accountMask, String accountKey, String accountName, String symbol,
                           String description, BigDecimal quantity, BigDecimal lastPrice,
                           BigDecimal currentValue, BigDecimal costBasisTotal,
                           BigDecimal averageCostBasis, BigDecimal totalGainLoss, boolean isCash,
-                          String accountRegistration, Map<String, String> raw) {
+                          String accountRegistration) {
         this(accountMask, accountKey, null, accountName, symbol, description, quantity, lastPrice,
             currentValue, costBasisTotal, averageCostBasis, totalGainLoss, isCash,
-            accountRegistration, raw);
+            accountRegistration);
     }
 
     /** True when this row names its own account. A positions file always does. */

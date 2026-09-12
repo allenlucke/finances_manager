@@ -78,14 +78,29 @@
               }
             </span>
             <span [class]="amountClass(row.difference)">{{ money(row.difference) }}</span>
-            <a
-              mat-button
-              [routerLink]="['/transactions']"
-              [queryParams]="{ from: row.periodStart, to: row.periodEnd }"
-              [attr.aria-label]="'Review ' + accountName(row.accountId) + ' for this period'"
-            >
-              Review
-            </a>
+            <span class="alert-actions">
+              <a
+                mat-button
+                [routerLink]="['/transactions']"
+                [queryParams]="{ from: row.periodStart, to: row.periodEnd }"
+                [attr.aria-label]="'Review ' + accountName(row.accountId) + ' for this period'"
+              >
+                Review
+              </a>
+              <button
+                mat-button
+                type="button"
+                (click)="removeCheckpoint(row)"
+                [attr.aria-label]="
+                  'Remove the checkpoint for ' +
+                  accountName(row.accountId) +
+                  ' ending ' +
+                  row.periodEnd
+                "
+              >
+                Remove checkpoint
+              </button>
+            </span>
           </div>
         }
       </mat-card-content>
@@ -144,6 +159,22 @@
         <mat-card-subtitle>{{ currentMonthLabel() }}</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
+        @if (thisMonthTotals(); as totals) {
+          <!-- The denominator. The rows below are categorized spend only, and a month that is
+               mostly still in the review queue looked cheap here with nothing to say so. -->
+          <p class="totals">
+            <span class="amount">{{ money(totals.moneyOut) }}</span> out this month
+            @if (totals.uncategorizedCount > 0) {
+              <span class="muted">
+                · {{ money(totals.uncategorizedOut) }} in {{ totals.uncategorizedCount }} row(s) not
+                yet categorized —
+                <a routerLink="/import">review</a>
+              </span>
+            }
+          </p>
+        } @else if (totals.error()) {
+          <p class="state-error-inline">{{ totals.error() }}</p>
+        }
         @if (spend.error()) {
           <p class="state-error-inline">{{ spend.error() }}</p>
         } @else if (thisMonth().length === 0 && !spend.loading()) {
