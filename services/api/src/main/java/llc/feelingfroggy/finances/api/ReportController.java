@@ -1,6 +1,7 @@
 package llc.feelingfroggy.finances.api;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,10 +23,12 @@ public class ReportController {
 
     private final JdbcTemplate jdbc;
     private final CurrentUser currentUser;
+    private final Clock clock;
 
-    public ReportController(JdbcTemplate jdbc, CurrentUser currentUser) {
+    public ReportController(JdbcTemplate jdbc, CurrentUser currentUser, Clock clock) {
         this.jdbc = jdbc;
         this.currentUser = currentUser;
+        this.clock = clock;
     }
 
     /**
@@ -53,8 +56,9 @@ public class ReportController {
     @GetMapping("/spend-vs-target")
     public List<SpendRow> spendVsTarget(@RequestParam(required = false) LocalDate from,
                                         @RequestParam(required = false) LocalDate to) {
-        LocalDate start = from == null ? LocalDate.now().withDayOfMonth(1).minusMonths(11) : from;
-        LocalDate end = to == null ? LocalDate.now() : to;
+        // The configured zone, not the container's UTC — see ClockConfig.
+        LocalDate start = from == null ? LocalDate.now(clock).withDayOfMonth(1).minusMonths(11) : from;
+        LocalDate end = to == null ? LocalDate.now(clock) : to;
 
         return jdbc.query("""
             SELECT month, category_id, category_name, category_kind, ledger_entity_id,

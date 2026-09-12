@@ -107,6 +107,10 @@ services:
       # the whole app already relies on, not a new one taken on for this feature. Running the API
       # natively (`make api`) keeps the in-process check, which is why it stays the default.
       LOCAL_API_TOKEN_LOOPBACK_ONLY: ${LOCAL_API_TOKEN_LOOPBACK_ONLY:-false}
+      # "This month" and "today" are decided in this zone, not the container's UTC. At seven in
+      # the evening on the 31st in Kansas, UTC is already next month; every default date range
+      # the API computes itself was off by a month for those hours.
+      APP_TIMEZONE: ${APP_TIMEZONE:-America/Chicago}
     ports:
       # BIND_ADDR defaults to loopback. Docker's default is 0.0.0.0, which publishes to the whole
       # local network — not what "running it locally" implies, and wrong for a service holding

@@ -1,0 +1,13 @@
+# Layered over docker-compose.yml by `make e2e` only. The scratch stack is throwaway: it must not
+# come back on its own after a reboot, which the base file's `restart: unless-stopped` — right for
+# the always-on dev stack — made it do for a week once, published on every interface. Compose
+# merges this over the base, and a quoted "no" is the only spelling YAML does not read as false.
+services:
+  db:
+    restart: "no"
+  ai:
+    restart: "no"
+  api:
+    restart: "no"
+  web:
+    restart: "no"

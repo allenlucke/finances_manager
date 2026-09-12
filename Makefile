@@ -16,7 +16,7 @@ JAVA_HOME ?= $(shell \
 export JAVA_HOME
 
 .PHONY: help ensure-env up down logs db api web ai test test-api test-web test-ai test-mcp \
-	e2e e2e-down mcp mcp-token backup restore fmt clean nuke
+	e2e e2e-down mcp mcp-token backup restore bundle fmt clean nuke
 
 # In-place edits to .env. `sed -i ''` is BSD-only: GNU sed reads the '' as the script and the
 # expression as a file name, fails, and the recipe went on to print "Wrote ..." anyway — so on the
@@ -122,8 +122,11 @@ E2E_WEB_PORT := 4201
 # Two env files: the real one for the parts that must match (database name/user), then
 # infra/e2e.env on top, which blanks LOCAL_API_TOKEN and sets a throwaway password. The scratch
 # stack used to inherit the production token wholesale and sit on :8081 accepting it.
+# infra/e2e.compose.yml is layered last: it turns the restart policy off, so the scratch stack does
+# not resurrect itself after a reboot the way the dev stack should.
 E2E_COMPOSE  := API_PORT=$(E2E_API_PORT) WEB_PORT=$(E2E_WEB_PORT) \
-	docker compose -p $(E2E_PROJECT) -f infra/docker-compose.yml --env-file .env --env-file infra/e2e.env
+	docker compose -p $(E2E_PROJECT) -f infra/docker-compose.yml -f infra/e2e.compose.yml \
+	--env-file .env --env-file infra/e2e.env
 
 e2e: ensure-env ## Browser tests on their own throwaway stack (never touches your dev data)
 	@# A scratch stack with a blank token and an empty database is safe to show to another device
@@ -166,11 +169,22 @@ E2E_DB_EXEC := $(E2E_COMPOSE) exec -T db
 LIVE_TABLES = $(DB_EXEC) psql -U $${DATABASE_USER:-finances} -d $${DATABASE_NAME:-finances} -tA \
 	-c "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename"
 
-backup: ## Dump the dev database to backups/finances-<timestamp>.dump
+backup: ## Dump the dev database to backups/finances-<timestamp>.dump, with a copy of .env beside it
 	@mkdir -p $(BACKUP_DIR)
-	@f=$(BACKUP_DIR)/finances-$$(date +%Y%m%d-%H%M%S).dump; \
+	@stamp=$$(date +%Y%m%d-%H%M%S); f=$(BACKUP_DIR)/finances-$$stamp.dump; \
 		$(DB_EXEC) pg_dump -U $${DATABASE_USER:-finances} -d $${DATABASE_NAME:-finances} -Fc > $$f \
-		&& echo "wrote $$f ($$(du -h $$f | cut -f1))"
+		&& echo "wrote $$f ($$(du -h $$f | cut -f1))"; \
+		cp .env $(BACKUP_DIR)/env-$$stamp && chmod 600 $(BACKUP_DIR)/env-$$stamp \
+		&& echo "wrote $(BACKUP_DIR)/env-$$stamp — the dump is not enough on its own: ACCOUNT_KEY_SECRET keys every import link (docs/SECURITY.md)"
+
+# The branch has never been pushed, so until it is, this Mac is the only copy of everything since
+# 2026-08-21. A bundle is the whole repository in one file; copy it to another disk. Pushing is
+# Allen's call and this does not do it.
+bundle: ## Write the whole repository, every branch and tag, to backups/repo-<timestamp>.bundle
+	@mkdir -p $(BACKUP_DIR)
+	@f=$(BACKUP_DIR)/repo-$$(date +%Y%m%d-%H%M%S).bundle; \
+		git bundle create $$f --all && git bundle verify $$f >/dev/null \
+		&& echo "wrote $$f ($$(du -h $$f | cut -f1)). Restore anywhere with: git clone $$f finances_manager"
 
 restore: ## Restore FILE=backups/x.dump into the scratch stack and verify row counts against dev
 	@test -n "$(FILE)" || { echo "usage: make restore FILE=backups/finances-....dump"; exit 1; }

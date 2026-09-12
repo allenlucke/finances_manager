@@ -128,7 +128,10 @@ a wrong secret.
 Before real data goes in, there is a tested restore path. An untested backup is not a backup, and
 a personal ledger with three years of categorization corrections in it is genuinely irreplaceable.
 
-**What exists (2026-09-05):** `make backup` writes a `pg_dump` archive to `backups/` (gitignored).
+**What exists (2026-09-05, extended 2026-09-12):** `make backup` writes a `pg_dump` archive to
+`backups/` (gitignored) and a copy of `.env` beside it, because the dump alone cannot re-link an
+import: `ACCOUNT_KEY_SECRET` keys every account link. `make bundle` writes the whole repository as
+one file there too — until the branch is pushed, this machine is the only copy of the code.
 `make restore FILE=…` loads it into the throwaway e2e compose project — never the dev stack — and
 then compares row counts, table by table, against the live database. That comparison is the test:
 an archive that restores cleanly but is missing a table is precisely what "tested restore" is meant

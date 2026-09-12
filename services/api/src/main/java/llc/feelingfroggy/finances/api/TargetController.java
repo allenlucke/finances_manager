@@ -36,13 +36,16 @@ public class TargetController {
     private final CategoryRepository categories;
     private final LedgerEntityRepository entities;
     private final CurrentUser currentUser;
+    private final java.time.Clock clock;
 
     public TargetController(TargetRepository targets, CategoryRepository categories,
-                            LedgerEntityRepository entities, CurrentUser currentUser) {
+                            LedgerEntityRepository entities, CurrentUser currentUser,
+                            java.time.Clock clock) {
         this.targets = targets;
         this.categories = categories;
         this.entities = entities;
         this.currentUser = currentUser;
+        this.clock = clock;
     }
 
     @GetMapping
@@ -68,7 +71,8 @@ public class TargetController {
         var entity = entities.findByIdAndUserId(request.ledgerEntityId(), userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown entity"));
 
-        LocalDate from = request.effectiveFrom() == null ? LocalDate.now() : request.effectiveFrom();
+        // The configured zone, not the container's UTC — see ClockConfig.
+        LocalDate from = request.effectiveFrom() == null ? LocalDate.now(clock) : request.effectiveFrom();
 
         targets.findOpen(userId, category.getId(), entity.getId()).ifPresent(open -> {
             if (!open.getEffectiveFrom().isBefore(from)) {

@@ -59,6 +59,9 @@ management:
 
 finances:
   version: 0.1.0-SNAPSHOT
+  # The zone "today" is decided in wherever the API decides it itself. Containers run in UTC, and
+  # a Kansas evening on the 31st is already next month there.
+  zone: ${APP_TIMEZONE:America/Chicago}
   security:
     webauthn:
       # rpId must equal the browser's registrable domain, and allowed-origins must be full origins.

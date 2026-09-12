@@ -38,15 +38,17 @@ public class TransactionController {
     private final AccountRepository accounts;
     private final CategoryRepository categories;
     private final CurrentUser currentUser;
+    private final java.time.Clock clock;
 
     public TransactionController(TransactionRepository transactions, TransactionService service,
                                  AccountRepository accounts, CategoryRepository categories,
-                                 CurrentUser currentUser) {
+                                 CurrentUser currentUser, java.time.Clock clock) {
         this.transactions = transactions;
         this.service = service;
         this.accounts = accounts;
         this.categories = categories;
         this.currentUser = currentUser;
+        this.clock = clock;
     }
 
     @GetMapping
@@ -56,8 +58,9 @@ public class TransactionController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
 
-        LocalDate start = from == null ? LocalDate.now().withDayOfMonth(1) : from;
-        LocalDate end = to == null ? LocalDate.now() : to;
+        // The configured zone, not the container's UTC — see ClockConfig.
+        LocalDate start = from == null ? LocalDate.now(clock).withDayOfMonth(1) : from;
+        LocalDate end = to == null ? LocalDate.now(clock) : to;
 
         return transactions
             .findInRange(currentUser.id(), start, end, PageRequest.of(page, Math.min(size, 200)))
