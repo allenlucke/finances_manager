@@ -15,8 +15,35 @@ JAVA_HOME ?= $(shell \
 	|| true)
 export JAVA_HOME
 
-.PHONY: help ensure-env up down logs db api web ai test test-api test-web test-ai test-mcp \
+.PHONY: help doctor ensure-env up down logs db api web ai test test-api test-web test-ai test-mcp \
 	e2e e2e-down mcp mcp-token backup restore bundle fmt clean nuke
+
+# Every one of these has cost a wasted run: a JDK Homebrew installed but macOS could not find, an
+# nvm default two majors behind .nvmrc, Docker Desktop not running so Testcontainers failed with a
+# message about sockets, a scratch stack still up from last week. One command, one screen.
+doctor: ## Check the toolchain, the secrets, and which stacks are running
+	@ok() { printf '  \033[32mok\033[0m    %s\n' "$$1"; }; bad() { printf '  \033[31mMISSING\033[0m %s\n' "$$1"; }; \
+	echo "Toolchain"; \
+	if test -n "$(JAVA_HOME)" && test -x "$(JAVA_HOME)/bin/java"; then ok "JDK 25 at $(JAVA_HOME)"; else bad "JDK 25 (brew install openjdk@25)"; fi; \
+	if command -v uv >/dev/null 2>&1; then ok "uv $$(uv --version | awk '{print $$2}')"; else bad "uv (brew install uv)"; fi; \
+	want=$$(cat .nvmrc 2>/dev/null); have=$$(. "$$NVM_DIR/nvm.sh" 2>/dev/null && nvm use >/dev/null 2>&1; node -v 2>/dev/null); \
+	case "$$have" in v$$want.*) ok "node $$have (.nvmrc wants $$want)";; *) bad "node $$want via nvm (have $${have:-none})";; esac; \
+	if docker info >/dev/null 2>&1; then ok "Docker daemon"; else bad "Docker daemon (open -a Docker); the Java suite needs it for Testcontainers"; fi; \
+	echo "Configuration"; \
+	if test -f .env; then ok ".env present"; else bad ".env (make ensure-env)"; fi; \
+	if grep -qE '^ACCOUNT_KEY_SECRET=.+' .env 2>/dev/null; then ok "ACCOUNT_KEY_SECRET set (back .env up with the database)"; else bad "ACCOUNT_KEY_SECRET (make ensure-env)"; fi; \
+	if grep -qE '^LOCAL_API_TOKEN=.+' .env 2>/dev/null; then ok "LOCAL_API_TOKEN set (Claude Code can drive the API)"; else printf '  \033[33m--\033[0m    LOCAL_API_TOKEN blank: the MCP server is off (make mcp-token)\n'; fi; \
+	echo "Stacks"; \
+	if docker info >/dev/null 2>&1; then \
+		dev=$$(docker ps --filter name=finances-manager- --format '{{.Names}} {{.Status}} {{.Ports}}' | sed 's/^/  /'); \
+		e2e=$$(docker ps --filter name=finances-e2e- --format '{{.Names}} {{.Status}} {{.Ports}}' | sed 's/^/  /'); \
+		if test -n "$$dev"; then echo "  dev stack (finances-manager, holds real data):"; echo "$$dev"; else echo "  dev stack: down (make up)"; fi; \
+		if test -n "$$e2e"; then echo "  scratch stack (finances-e2e, throwaway; make e2e-down disposes of it):"; echo "$$e2e"; else echo "  scratch stack: down"; fi; \
+		if echo "$$e2e" | grep -q '0.0.0.0:'; then bad "the scratch stack is published on every interface"; fi; \
+	fi; \
+	echo "Repository"; \
+	if git rev-parse --abbrev-ref @{upstream} >/dev/null 2>&1; then ok "branch has an upstream"; else printf '  \033[33m--\033[0m    branch %s has never been pushed; make bundle writes a copy to backups/\n' "$$(git rev-parse --abbrev-ref HEAD)"; fi; \
+	latest=$$(ls -t backups/repo-*.bundle 2>/dev/null | head -1); if test -n "$$latest"; then ok "latest bundle $$latest"; else printf '  \033[33m--\033[0m    no repository bundle yet (make bundle)\n'; fi
 
 # In-place edits to .env. `sed -i ''` is BSD-only: GNU sed reads the '' as the script and the
 # expression as a file name, fails, and the recipe went on to print "Wrote ..." anyway — so on the

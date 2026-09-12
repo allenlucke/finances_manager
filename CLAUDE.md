@@ -181,6 +181,7 @@ own, and is not part of the compose stack — Claude Code launches it.
 All from the repo root:
 
 ```bash
+make doctor      # toolchain, secrets, and which stacks are running — run this first on a new shell
 make up          # docker compose up: postgres + api + web + ai
 make down        # tear it all down
 make db          # postgres only, for running services natively
