@@ -7,6 +7,7 @@ the Java API is the only client. See docs/ARCHITECTURE.md and docs/SECURITY.md.
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 
@@ -21,6 +22,7 @@ from finances_ai.ingest import (
     parse_positions,
     registered_formats,
 )
+from finances_ai.ingest.common import AccountKeySecretMissing, account_key_secret
 from finances_ai.models import (
     CategorizeRequest,
     CategorizeResponse,
@@ -30,11 +32,28 @@ from finances_ai.models import (
 
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def _require_secrets(_: FastAPI):
+    # Refuse to start rather than derive weaker keys. The account ids the importer links rows by
+    # are HMACs under ACCOUNT_KEY_SECRET; without it the only alternative is a bare hash of the
+    # account number, which is the account number with extra steps. A container that will not
+    # come up is visible in `docker ps`; a key that quietly leaks is not.
+    account_key_secret()
+    yield
+
+
 app = FastAPI(
     title="finances-ai",
     version=__version__,
     description="Statement parsing and categorization for finances_manager",
+    lifespan=_require_secrets,
 )
+
+
+def _unavailable_without_secret(exc: AccountKeySecretMissing) -> HTTPException:
+    logger.error("%s", exc)
+    return HTTPException(status_code=503, detail=str(exc))
 
 
 @app.get("/health")
@@ -65,11 +84,14 @@ async def parse_csv_endpoint(
     """
     content = await file.read()
     try:
+        # Checked before parsing, not only when a file happens to name an account: the answer to
+        # "is this service configured" should not depend on which file was uploaded.
+        account_key_secret()
         result = parse_csv(content, account_ref=account_ref)
     except ParserNotFoundError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    except UnicodeDecodeError as exc:
-        raise HTTPException(status_code=422, detail="File is not valid UTF-8 text") from exc
+    except AccountKeySecretMissing as exc:
+        raise _unavailable_without_secret(exc) from exc
 
     # Row counts only. Never log descriptions, amounts, or account identifiers.
     logger.info(
@@ -97,9 +119,12 @@ async def parse_ofx_endpoint(
     """
     content = await file.read()
     try:
+        account_key_secret()
         result = parse_ofx(content, account_ref=account_ref)
     except OfxParseError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except AccountKeySecretMissing as exc:
+        raise _unavailable_without_secret(exc) from exc
 
     # Row counts only. Never log descriptions, amounts, or account identifiers.
     logger.info(
@@ -124,9 +149,12 @@ async def parse_positions_endpoint(file: UploadFile = File(...)) -> PositionsRes
     """
     content = await file.read()
     try:
+        account_key_secret()
         result = parse_positions(content)
     except PositionsParseError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except AccountKeySecretMissing as exc:
+        raise _unavailable_without_secret(exc) from exc
 
     # Counts only. Never log symbols, values, or account identifiers.
     logger.info(

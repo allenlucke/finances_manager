@@ -43,12 +43,12 @@ class ApiFlowTest extends PostgresIntegrationTest {
     private void setupAndLogin() {
         api.primeCsrf();
         var created = api.postJson("/api/v1/setup", Map.of(
-            "email", "allen@feelingfroggy.llc",
-            "displayName", "Allen",
+            "email", "owner@finances.invalid",
+            "displayName", "Owner",
             "password", "a-long-enough-passphrase"));
         assertThat(created.status()).isEqualTo(201);
 
-        var login = api.login("allen@feelingfroggy.llc", "a-long-enough-passphrase");
+        var login = api.login("owner@finances.invalid", "a-long-enough-passphrase");
         assertThat(login.status()).isEqualTo(204);
     }
 
@@ -107,7 +107,7 @@ class ApiFlowTest extends PostgresIntegrationTest {
         var response = api.get("/api/v1/auth/me");
 
         assertThat(response.status()).isEqualTo(200);
-        assertThat(response.body()).contains("allen@feelingfroggy.llc");
+        assertThat(response.body()).contains("owner@finances.invalid");
         assertThat(response.body()).doesNotContain("password", "passwordHash", "$2a$", "{bcrypt}");
     }
 
@@ -143,7 +143,7 @@ class ApiFlowTest extends PostgresIntegrationTest {
         // Authenticate again on the existing session. A controller-based login does not get
         // formLogin's ChangeSessionIdAuthenticationStrategy for free; without an explicit
         // rotation the id fixed before authentication stays valid after it.
-        assertThat(api.login("allen@feelingfroggy.llc", "a-long-enough-passphrase").status())
+        assertThat(api.login("owner@finances.invalid", "a-long-enough-passphrase").status())
             .isEqualTo(204);
         String second = api.sessionCookie().orElseThrow();
 
@@ -371,7 +371,7 @@ class ApiFlowTest extends PostgresIntegrationTest {
         var fresh = new ApiClient(port);
         fresh.primeCsrf();
 
-        assertThat(fresh.login("allen@feelingfroggy.llc", "not-the-passphrase").status())
+        assertThat(fresh.login("owner@finances.invalid", "not-the-passphrase").status())
             .isEqualTo(401);
     }
 }

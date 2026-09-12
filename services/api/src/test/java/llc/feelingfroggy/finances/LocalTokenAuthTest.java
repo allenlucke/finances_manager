@@ -44,8 +44,8 @@ class LocalTokenAuthTest extends PostgresIntegrationTest {
 
         api = new ApiClient(port);
         api.primeCsrf();
-        api.postJson("/api/v1/setup", Map.of("email", "allen@feelingfroggy.llc",
-            "displayName", "Allen", "password", "a-long-enough-passphrase"));
+        api.postJson("/api/v1/setup", Map.of("email", "owner@finances.invalid",
+            "displayName", "Owner", "password", "a-long-enough-passphrase"));
     }
 
     /** A fresh client with no cookies at all — the state the MCP server is actually in. */
@@ -61,7 +61,7 @@ class LocalTokenAuthTest extends PostgresIntegrationTest {
         var me = mcp.get("/api/v1/auth/me");
 
         assertThat(me.status()).isEqualTo(200);
-        assertThat(me.json().get("email").asText()).isEqualToIgnoringCase("allen@feelingfroggy.llc");
+        assertThat(me.json().get("email").asText()).isEqualToIgnoringCase("owner@finances.invalid");
         // The point of the whole exercise: no login happened and no cookie was stored.
         assertThat(mcp.hasSessionCookie()).isFalse();
     }
@@ -116,7 +116,7 @@ class LocalTokenAuthTest extends PostgresIntegrationTest {
         // The documented concession (D-12/D-17): registering a passkey does not shut out a caller
         // holding this token. Pinned so it is a decision on record rather than a surprise.
         jdbc.update("INSERT INTO user_entities (id, name, display_name) VALUES (?, ?, ?)",
-            "dXNlci1oYW5kbGUtMQ", "allen@feelingfroggy.llc", "Allen");
+            "dXNlci1oYW5kbGUtMQ", "owner@finances.invalid", "Owner");
         jdbc.update("""
             INSERT INTO user_credentials
               (credential_id, user_entity_user_id, public_key, signature_count, uv_initialized,
@@ -130,7 +130,7 @@ class LocalTokenAuthTest extends PostgresIntegrationTest {
         // ceremony rather than ask for the passphrase again.
         var browser = new ApiClient(port);
         browser.primeCsrf();
-        browser.login("allen@feelingfroggy.llc", "a-long-enough-passphrase");
+        browser.login("owner@finances.invalid", "a-long-enough-passphrase");
         var refused = browser.get("/api/v1/accounts");
         assertThat(refused.status()).isEqualTo(401);
         assertThat(refused.body()).contains("factor_required").contains("webauthn");

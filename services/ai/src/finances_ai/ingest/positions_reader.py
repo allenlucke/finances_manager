@@ -30,7 +30,12 @@ import re
 from datetime import date, datetime
 from decimal import InvalidOperation
 
-from finances_ai.ingest.common import account_hash, decode_text, parse_optional_money
+from finances_ai.ingest.common import (
+    account_hash,
+    decode_text,
+    legacy_account_hash,
+    parse_optional_money,
+)
 from finances_ai.models import ParsedPosition, PositionsResult
 
 # Trailing footnote markers on a ticker, e.g. SPAXX** or USD***.
@@ -126,6 +131,7 @@ def _map_position(row: dict[str, str]) -> ParsedPosition:
     return ParsedPosition(
         account_mask=account_number[-4:],
         account_key=account_hash(account_number),
+        legacy_account_key=legacy_account_hash(account_number),
         account_name=row.get("Account name") or None,
         symbol=symbol,
         description=row.get("Description") or None,

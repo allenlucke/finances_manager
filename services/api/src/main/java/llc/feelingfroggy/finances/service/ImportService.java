@@ -110,11 +110,30 @@ public class ImportService {
      *
      * <p>When a row matches by mask alone, the key is written onto the account so every later
      * import matches exactly. The link is learned once rather than re-guessed each time.
+     *
+     * <p>Between the two, for one release: the key as it was computed before 2026-09-12. That
+     * one was an unkeyed hash of the account number, and with the last four beside it the number
+     * came back out in a fifth of a second — so the parser now keys it under a per-install secret.
+     * An account linked under the old value is found by it here, re-keyed to the new one on the
+     * spot, and never matched by the old value again. Remove this branch, the {@code legacyKey}
+     * parameter and the wire field once every linked account has been imported once.
      */
-    private Optional<Account> resolveAccount(Long userId, String accountKey, String accountMask) {
+    private Optional<Account> resolveAccount(Long userId, String accountKey, String legacyKey,
+                                             String accountMask) {
         Optional<Account> byKey = accounts.findByUserIdAndExternalId(userId, accountKey);
         if (byKey.isPresent()) {
             return byKey;
+        }
+
+        if (legacyKey != null && !legacyKey.isBlank() && !legacyKey.equals(accountKey)) {
+            Optional<Account> byLegacyKey = accounts.findByUserIdAndExternalId(userId, legacyKey);
+            if (byLegacyKey.isPresent()) {
+                Account linked = byLegacyKey.get();
+                linked.setExternalId(accountKey);
+                accounts.save(linked);
+                log.info("Re-keyed the import link on account {}", linked.getId());
+                return Optional.of(linked);
+            }
         }
 
         List<Account> byMask = accountMask == null
@@ -190,7 +209,8 @@ public class ImportService {
             // history spans accounts, and applying all of it to one would be silently wrong.
             Account target = account;
             if (row.carriesAccount()) {
-                var resolved = resolveAccount(userId, row.accountKey(), row.accountMask());
+                var resolved = resolveAccount(userId, row.accountKey(), row.legacyAccountKey(),
+                    row.accountMask());
                 if (resolved.isEmpty()) {
                     // Skipped rather than filed against a fallback account. An unimported row is
                     // visible and fixable; a row on the wrong account is neither.
@@ -326,7 +346,8 @@ public class ImportService {
 
         try {
         for (var row : parsed.positions()) {
-            var resolved = resolveAccount(userId, row.accountKey(), row.accountMask());
+            var resolved = resolveAccount(userId, row.accountKey(), row.legacyAccountKey(),
+                row.accountMask());
             if (resolved.isEmpty()) {
                 unlinked.merge(row.accountKey(),
                     new UnlinkedAccount(row.accountKey(), row.accountMask(), row.accountName(), 1),

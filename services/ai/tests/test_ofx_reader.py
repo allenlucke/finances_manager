@@ -109,7 +109,7 @@ def test_accepts_a_string_as_well_as_bytes():
 
 
 def test_identical_entries_differing_only_by_fitid_get_different_keys():
-    """The $2,100 bug, on the OFX path. Three identical same-day transfers were one key."""
+    """The lost-transfers bug, on the OFX path. Three identical same-day transfers were one key."""
     from finances_ai.ingest import parse_ofx
 
     def entry(fitid: str) -> str:

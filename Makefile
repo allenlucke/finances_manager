@@ -15,14 +15,35 @@ JAVA_HOME ?= $(shell \
 	|| true)
 export JAVA_HOME
 
-.PHONY: help up down logs db api web ai test test-api test-web test-ai test-mcp e2e e2e-down \
-	mcp mcp-token backup restore fmt clean nuke
+.PHONY: help ensure-env up down logs db api web ai test test-api test-web test-ai test-mcp \
+	e2e e2e-down mcp mcp-token backup restore fmt clean nuke
+
+# In-place edits to .env. `sed -i ''` is BSD-only: GNU sed reads the '' as the script and the
+# expression as a file name, fails, and the recipe went on to print "Wrote ..." anyway — so on the
+# Linux homelab `make mcp-token` succeeded and wrote nothing. perl behaves the same everywhere.
+EDIT_IN_PLACE := perl -pi -e
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
-up: ## Start the whole stack (postgres + api + web + ai)
+# Secrets the stack cannot run without, generated rather than documented: nobody should have to
+# know they exist. ACCOUNT_KEY_SECRET keys the one-way account ids the importer links rows by
+# (docs/SECURITY.md); the AI service refuses to start without it. It must stay the same for the
+# life of the database, so it is generated once and never rotated here.
+ensure-env: ## Create .env from the example and fill in the generated secrets
 	@test -f .env || cp .env.example .env
+	@if ! grep -qE '^ACCOUNT_KEY_SECRET=.+' .env; then \
+		secret=$$(openssl rand -hex 32) || exit 1; \
+		if grep -q '^ACCOUNT_KEY_SECRET=' .env; then \
+			$(EDIT_IN_PLACE) "s|^ACCOUNT_KEY_SECRET=.*|ACCOUNT_KEY_SECRET=$$secret|" .env; \
+		else \
+			printf '\nACCOUNT_KEY_SECRET=%s\n' "$$secret" >> .env; \
+		fi; \
+		grep -qE '^ACCOUNT_KEY_SECRET=.+' .env || { echo "could not write ACCOUNT_KEY_SECRET to .env"; exit 1; }; \
+		echo "Generated ACCOUNT_KEY_SECRET in .env. Back .env up with the database: an account linked under one secret is not found under another."; \
+	fi
+
+up: ensure-env ## Start the whole stack (postgres + api + web + ai)
 	$(COMPOSE) up --build -d
 	@echo "web  → http://localhost:4200"
 	@echo "api  → http://localhost:8080/actuator/health"
@@ -33,8 +54,7 @@ down: ## Stop the stack
 logs: ## Tail logs from all services
 	$(COMPOSE) logs -f
 
-db: ## Start PostgreSQL only (for running services natively)
-	@test -f .env || cp .env.example .env
+db: ensure-env ## Start PostgreSQL only (for running services natively)
 	$(COMPOSE) up -d db
 
 api: ## Run the Spring Boot API natively on :8080
@@ -43,8 +63,9 @@ api: ## Run the Spring Boot API natively on :8080
 web: ## Run the Angular dev server on :4200
 	cd services/web && npm start
 
-ai: ## Run the FastAPI service on :8000
-	cd services/ai && uv run uvicorn finances_ai.app:app --reload --port 8000
+ai: ensure-env ## Run the FastAPI service on :8000
+	@# The service reads ACCOUNT_KEY_SECRET from its environment, which natively means .env.
+	set -a && . ./.env && set +a && cd services/ai && uv run uvicorn finances_ai.app:app --reload --port 8000
 
 test: test-api test-web test-ai test-mcp ## Run every test suite
 
@@ -75,12 +96,13 @@ mcp-token: ## Generate the local API token for Claude Code and write it to .env
 		echo "LOCAL_API_TOKEN is already set in .env — leaving it alone."; \
 		echo "Delete that line first if you want to rotate it."; \
 	else \
-		token=$$(openssl rand -base64 36 | tr -d '\n'); \
+		token=$$(openssl rand -base64 36 | tr -d '\n') || exit 1; \
 		if grep -q '^LOCAL_API_TOKEN=' .env; then \
-			sed -i '' "s|^LOCAL_API_TOKEN=.*|LOCAL_API_TOKEN=$$token|" .env; \
+			$(EDIT_IN_PLACE) "s|^LOCAL_API_TOKEN=.*|LOCAL_API_TOKEN=$$token|" .env; \
 		else \
 			printf '\nLOCAL_API_TOKEN=%s\n' "$$token" >> .env; \
 		fi; \
+		grep -qE '^LOCAL_API_TOKEN=.+' .env || { echo "could not write LOCAL_API_TOKEN to .env"; exit 1; }; \
 		echo "Wrote LOCAL_API_TOKEN to .env."; \
 		echo "Now run: make up   (the API only reads it at startup)"; \
 	fi
@@ -103,8 +125,15 @@ E2E_WEB_PORT := 4201
 E2E_COMPOSE  := API_PORT=$(E2E_API_PORT) WEB_PORT=$(E2E_WEB_PORT) \
 	docker compose -p $(E2E_PROJECT) -f infra/docker-compose.yml --env-file .env --env-file infra/e2e.env
 
-e2e: ## Browser tests on their own throwaway stack (never touches your dev data)
-	@test -f .env || cp .env.example .env
+e2e: ensure-env ## Browser tests on their own throwaway stack (never touches your dev data)
+	@# A scratch stack with a blank token and an empty database is safe to show to another device
+	@# on the home network, which is what the Cowork brief needs. It is not something to publish
+	@# on every interface: that stayed up for a week once, restarting itself after every reboot.
+	@case "$${BIND_ADDR:-127.0.0.1}" in 0.0.0.0|::|'*') \
+		echo "BIND_ADDR=$$BIND_ADDR would publish the scratch stack on every interface."; \
+		echo "Use this machine's LAN address instead: BIND_ADDR=\$$(ipconfig getifaddr en0) make e2e"; \
+		exit 1;; \
+	esac
 	$(E2E_COMPOSE) up --build -d
 	@. "$$NVM_DIR/nvm.sh" 2>/dev/null && nvm use >/dev/null 2>&1; \
 		cd services/web \
@@ -130,8 +159,12 @@ e2e-down: ## Remove the browser-test stack and its database
 BACKUP_DIR := backups
 DB_EXEC    := $(COMPOSE) exec -T db
 E2E_DB_EXEC := $(E2E_COMPOSE) exec -T db
-TABLES     := app_user ledger_entity institution connection account category import_batch \
-	transaction target statement categorization security holding login_attempt
+# The tables to compare are read from the live database, not listed here. A list drifted: it
+# named 14 tables while the migrations had made 19, and the five it lacked — the passkeys, the
+# sessions, the schema notes — were never counted, so "every table matches" was the list agreeing
+# with itself. Review 2026-09-11 S1.
+LIVE_TABLES = $(DB_EXEC) psql -U $${DATABASE_USER:-finances} -d $${DATABASE_NAME:-finances} -tA \
+	-c "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename"
 
 backup: ## Dump the dev database to backups/finances-<timestamp>.dump
 	@mkdir -p $(BACKUP_DIR)
@@ -151,7 +184,10 @@ restore: ## Restore FILE=backups/x.dump into the scratch stack and verify row co
 	@cat "$(FILE)" | $(E2E_DB_EXEC) pg_restore -U $${DATABASE_USER:-finances} \
 		-d $${DATABASE_NAME:-finances}_restore --no-owner --no-privileges
 	@echo "restored. verifying row counts (live vs restored):"; fail=0; \
-	for t in $(TABLES); do \
+	tables=$$($(LIVE_TABLES)); \
+	test -n "$$tables" || { echo "could not list the live database's tables"; exit 1; }; \
+	echo "  $$(echo $$tables | wc -w | tr -d ' ') tables in the live database"; \
+	for t in $$tables; do \
 		live=$$($(DB_EXEC) psql -U $${DATABASE_USER:-finances} -d $${DATABASE_NAME:-finances} -tA -c "SELECT count(*) FROM $$t"); \
 		got=$$($(E2E_DB_EXEC) psql -U $${DATABASE_USER:-finances} -d $${DATABASE_NAME:-finances}_restore -tA -c "SELECT count(*) FROM $$t"); \
 		if [ "$$live" = "$$got" ]; then printf "  %-16s %6s ok\n" $$t $$got; \

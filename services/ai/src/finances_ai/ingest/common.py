@@ -10,6 +10,8 @@ grow a private copy.
 from __future__ import annotations
 
 import hashlib
+import hmac
+import os
 import re
 from datetime import date
 from decimal import Decimal, InvalidOperation
@@ -51,12 +53,57 @@ def decode_text(content: bytes) -> tuple[str, str | None]:
         )
 
 
+SECRET_VARIABLE = "ACCOUNT_KEY_SECRET"
+
+
+class AccountKeySecretMissing(RuntimeError):
+    """Raised when no per-install secret is configured, rather than falling back to a weaker key."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            f"{SECRET_VARIABLE} is not set. It keys the one-way account ids the importer links "
+            "rows by; `make up` and `make ai` generate one into .env. Refusing to derive a key "
+            "without it: an unkeyed hash of an account number is the account number."
+        )
+
+
+def account_key_secret() -> str:
+    secret = os.environ.get(SECRET_VARIABLE, "").strip()
+    if not secret:
+        raise AccountKeySecretMissing()
+    return secret
+
+
 def account_hash(account_number: str) -> str:
-    """Stable, non-reversible id for an account number.
+    """Stable id for an account number that cannot be turned back into one.
 
     Lets a row be matched to the same account across re-imports without the full number ever being
-    returned or stored (docs/SECURITY.md). Truncated only for readability; collision risk across a
-    handful of personal accounts is not a concern.
+    returned or stored (docs/SECURITY.md). It is an HMAC under a per-install secret, and that is
+    the whole point: the previous version was a bare truncated SHA-256, and an account number is a
+    ten-digit string whose last four sit right beside the key in every response, in the
+    ``account`` table, and in whatever the MCP tools hand to the model. Recovering one took
+    0.22 seconds. Keyed, the same key is stable across re-imports on the same install and means
+    nothing anywhere else.
+
+    32 hex characters (128 bits) — visibly longer than the 16 the old hash produced, which is
+    how ``legacy_account_hash`` and this one are told apart during the re-linking release.
+    """
+    digest = hmac.new(
+        account_key_secret().encode("utf-8"),
+        account_number.strip().encode("utf-8"),
+        hashlib.sha256,
+    )
+    return digest.hexdigest()[:32]
+
+
+def legacy_account_hash(account_number: str) -> str:
+    """The pre-2026-09-12 key: an unsalted, truncated SHA-256 of the number.
+
+    Emitted beside the real key for one release so the API can find an account that was linked
+    under it and re-key the link on the spot. It travels only between the parser and the API and
+    is never stored again. Remove this, ``legacy_account_key`` on the wire models, and the
+    re-linking branch in ``ImportService.resolveAccount`` once every linked account has been
+    imported once under the new key.
     """
     return hashlib.sha256(account_number.strip().encode("utf-8")).hexdigest()[:16]
 
@@ -149,10 +196,10 @@ def dedupe_key(
 
     **When the export carries the institution's own transaction id, that is the identity.** Nothing
     else can distinguish genuinely separate transactions that happen to match on every visible
-    field, and they are not rare: a real month contained three $1,000 transfers to the same payee on
-    the same day, distinguishable only by the bank's Transaction Number. Hashing date, amount and
-    description alone collapsed them into one and silently lost $2,100 — money missing from a
-    ledger, with nothing to show anything had gone wrong.
+    field, and they are not rare: a real month contained three identical transfers to the same payee
+    on the same day, distinguishable only by the bank's Transaction Number. Hashing date, amount and
+    description alone collapsed them into one and silently lost the other two — money missing from
+    a ledger, with nothing to show anything had gone wrong.
 
     Falling back to the hash is for exports that provide no id (a Chase card CSV). It deliberately
     excludes anything that varies between exports of the same period — row order, posted date,

@@ -97,4 +97,23 @@ def test_every_reader_uses_the_one_account_hash():
     assert csv_reader.account_hash is account_hash
     assert positions_reader.account_hash is account_hash
     assert account_hash(" 1234567K8901 ") == account_hash("1234567K8901")
-    assert len(account_hash("1234567K8901")) == 16
+    assert len(account_hash("1234567K8901")) == 32
+
+
+def test_the_account_key_is_keyed_to_the_install(monkeypatch):
+    """The old key was a bare truncated SHA-256 of the number: with the last four beside it, a
+    ten-digit account number came back out in 0.22 seconds. Keyed, the same number produces a
+    different id on every install and nothing at all without the secret."""
+    from finances_ai.ingest.common import AccountKeySecretMissing, legacy_account_hash
+
+    here = account_hash("4417230081")
+    monkeypatch.setenv("ACCOUNT_KEY_SECRET", "another install")
+    assert account_hash("4417230081") != here
+    assert account_hash("4417230081") == account_hash("4417230081")
+
+    monkeypatch.setenv("ACCOUNT_KEY_SECRET", "")
+    with pytest.raises(AccountKeySecretMissing):
+        account_hash("4417230081")
+
+    # The legacy key is exactly what it always was, so the API can find the old links.
+    assert legacy_account_hash("4417230081") == "6a6dd260f74e620e"

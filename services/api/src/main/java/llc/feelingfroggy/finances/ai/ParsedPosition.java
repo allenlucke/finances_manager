@@ -24,8 +24,10 @@ import java.util.Map;
 public record ParsedPosition(
     /** Last four of the account number. The parser never returns the full value. */
     @JsonProperty("account_mask") String accountMask,
-    /** Stable one-way id from the full number, so re-imports match without anyone handling it. */
+    /** Stable keyed id from the full number, so re-imports match without anyone handling it. */
     @JsonProperty("account_key") String accountKey,
+    /** The pre-2026-09-12 unkeyed id, for re-linking only. See ParsedTransaction. */
+    @JsonProperty("legacy_account_key") String legacyAccountKey,
     @JsonProperty("account_name") String accountName,
     String symbol,
     String description,
@@ -38,6 +40,17 @@ public record ParsedPosition(
     @JsonProperty("is_cash") boolean isCash,
     @JsonProperty("account_registration") String accountRegistration,
     Map<String, String> raw) {
+
+    /** The pre-re-keying shape: no legacy key. */
+    public ParsedPosition(String accountMask, String accountKey, String accountName, String symbol,
+                          String description, BigDecimal quantity, BigDecimal lastPrice,
+                          BigDecimal currentValue, BigDecimal costBasisTotal,
+                          BigDecimal averageCostBasis, BigDecimal totalGainLoss, boolean isCash,
+                          String accountRegistration, Map<String, String> raw) {
+        this(accountMask, accountKey, null, accountName, symbol, description, quantity, lastPrice,
+            currentValue, costBasisTotal, averageCostBasis, totalGainLoss, isCash,
+            accountRegistration, raw);
+    }
 
     /** True when this row names its own account. A positions file always does. */
     public boolean carriesAccount() {

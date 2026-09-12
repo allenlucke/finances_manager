@@ -79,6 +79,16 @@ a wrong secret.
 ## Data handling
 
 - Account numbers are stored masked (last four) unless there's a concrete reason for the full value.
+- **The link between an imported row and an account is an HMAC of the account number under
+  `ACCOUNT_KEY_SECRET`**, a per-install secret `make up` generates into `.env`. It used to be a
+  bare truncated SHA-256, and with the last four stored beside it a ten-digit number came back out
+  in a fifth of a second (review 2026-09-11, P7) — from the `account` table, from any response
+  listing unlinked accounts, from whatever the MCP tools hand to the model. Keyed, the id is stable
+  on one install and meaningless anywhere else. The AI service refuses to start without the secret
+  rather than fall back. **The secret is part of the backup**: an account linked under one secret is
+  not found under another, and the only recovery is clearing `account.external_id` so the next
+  import re-links by mask. For one release the parser also sends the old key so existing links are
+  re-keyed on their next import; that field and the branch that reads it come out afterwards.
 - Statement files uploaded for parsing are retained only as long as the import needs them, then
   deleted or moved to encrypted storage. They are the single richest thing an attacker could take.
 - Logs never contain transaction descriptions, balances, or account identifiers at INFO level.

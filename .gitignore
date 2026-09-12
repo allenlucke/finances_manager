@@ -33,8 +33,10 @@
 statements/
 imports/
 data/
-# Database dumps. Real ledger, unencrypted until the deployment half of D-16 is done.
+# Database dumps. Real ledger, unencrypted until the deployment half of D-16 is done. Wherever
+# they land: a hand-run `pg_dump > x.dump` in the repo root was addable.
 backups/
+*.dump
 
 # Synthesized fixtures, allow-listed back in by exact path. Add a path here only after checking
 # the file contains no real figures, no real account digits, and no real names.

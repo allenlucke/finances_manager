@@ -24,7 +24,12 @@ from decimal import Decimal
 
 from ofxtools.Parser import OFXTree
 
-from finances_ai.ingest.common import account_hash, dedupe_key, normalize_description
+from finances_ai.ingest.common import (
+    account_hash,
+    dedupe_key,
+    legacy_account_hash,
+    normalize_description,
+)
 from finances_ai.models import (
     ParsedTransaction,
     ParseResult,
@@ -109,10 +114,11 @@ def parse_ofx(content: str | bytes, account_ref: str = "unknown") -> ParseResult
     )
 
 
-def _statement_account(statement) -> tuple[str, str, str | None] | None:
-    """(mask, key, name) for the account a statement is for, or None when it does not say.
+def _statement_account(statement) -> tuple[str, str, str | None, str] | None:
+    """(mask, key, name, legacy_key) for the account a statement is for, or None when it does not
+    say.
 
-    The full account id is used to derive the key and then dropped — never returned
+    The full account id is used to derive the keys and then dropped — never returned
     (docs/SECURITY.md). OFX carries no account name; the account type is the nearest thing.
     """
     account = getattr(statement, "account", None)
@@ -123,11 +129,11 @@ def _statement_account(statement) -> tuple[str, str, str | None] | None:
     name = str(accttype).title() if accttype else None
     if name is None and type(statement).__name__.startswith("CC"):
         name = "Credit card"
-    return acctid[-4:], account_hash(acctid), name
+    return acctid[-4:], account_hash(acctid), name, legacy_account_hash(acctid)
 
 
 def _map_transaction(
-    entry, account_ref: str, account: tuple[str, str, str | None] | None = None
+    entry, account_ref: str, account: tuple[str, str, str | None, str] | None = None
 ) -> ParsedTransaction:
     amount = Decimal(str(entry.trnamt))
     posted: date = entry.dtposted.date()
@@ -140,7 +146,7 @@ def _map_transaction(
         raise ValueError("Row has neither NAME nor MEMO")
 
     trntype = (getattr(entry, "trntype", "") or "").upper()
-    account_mask, account_key, account_name = account or (None, None, None)
+    account_mask, account_key, account_name, legacy_key = account or (None, None, None, None)
 
     return ParsedTransaction(
         transaction_date=occurred,
@@ -165,6 +171,7 @@ def _map_transaction(
         ),
         account_mask=account_mask,
         account_key=account_key,
+        legacy_account_key=legacy_key,
         account_name=account_name,
         is_probable_transfer=trntype in _TRANSFER_TYPES,
         raw={

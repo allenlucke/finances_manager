@@ -80,7 +80,7 @@ class ImportTest extends PostgresIntegrationTest {
     void seed() throws IOException {
         cleanDatabase(jdbc);
 
-        var user = users.save(new AppUser("allen@feelingfroggy.llc", "Allen", "x"));
+        var user = users.save(new AppUser("owner@finances.invalid", "Owner", "x"));
         userId = user.getId();
         LedgerEntity personal =
             entities.save(new LedgerEntity(userId, "Personal", EntityKind.PERSONAL));

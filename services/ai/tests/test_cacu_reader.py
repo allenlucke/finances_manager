@@ -65,9 +65,9 @@ def test_uses_the_banks_own_transaction_number():
 
 
 def test_identical_transactions_on_the_same_day_stay_separate():
-    """Found on a real export, where it silently lost $2,100.
+    """Found on a real export, where it silently lost four transactions.
 
-    Three $1,000 transfers to the same payee on the same day match on every visible field. Only the
+    Three identical transfers to the same payee on the same day match on every visible field. Only the
     bank's Transaction Number tells them apart, and hashing date/amount/description collapsed them
     into one — money vanishing from a ledger with nothing to indicate anything had happened.
     """

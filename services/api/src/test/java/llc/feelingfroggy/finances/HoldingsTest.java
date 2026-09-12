@@ -50,9 +50,9 @@ class HoldingsTest extends PostgresIntegrationTest {
 
         api = new ApiClient(port);
         api.primeCsrf();
-        api.postJson("/api/v1/setup", Map.of("email", "allen@feelingfroggy.llc",
-            "displayName", "Allen", "password", "a-long-enough-passphrase"));
-        api.login("allen@feelingfroggy.llc", "a-long-enough-passphrase");
+        api.postJson("/api/v1/setup", Map.of("email", "owner@finances.invalid",
+            "displayName", "Owner", "password", "a-long-enough-passphrase"));
+        api.login("owner@finances.invalid", "a-long-enough-passphrase");
 
         userId = jdbc.queryForObject("SELECT id FROM app_user", Long.class);
         long entityId = api.get("/api/v1/entities").json().get(0).get("id").asLong();

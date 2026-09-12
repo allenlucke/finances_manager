@@ -54,6 +54,9 @@ class ParsedTransaction(BaseModel):
     # account. docs/SECURITY.md: the full number is never returned.
     account_mask: str | None = None
     account_key: str | None = None
+    # The pre-2026-09-12 unsalted key, so the API can re-link an account created under it. One
+    # release only; see finances_ai.ingest.common.legacy_account_hash.
+    legacy_account_key: str | None = None
     account_name: str | None = Field(
         default=None,
         description="The institution's own name for the account, when the file states one.",
@@ -120,10 +123,12 @@ class ParsedPosition(BaseModel):
     account_mask: str = Field(description="Last four characters of the account number")
     account_key: str = Field(
         description=(
-            "Stable non-reversible id derived from the full account number. Lets the API match a "
-            "row to the same account on every re-import without ever handling the number itself."
+            "Stable keyed id derived from the full account number. Lets the API match a row to "
+            "the same account on every re-import without ever handling the number itself."
         )
     )
+    # See ParsedTransaction.legacy_account_key.
+    legacy_account_key: str | None = None
     account_name: str | None = None
 
     symbol: str = Field(description="Ticker, with any footnote markers stripped")

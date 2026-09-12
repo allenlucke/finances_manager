@@ -32,7 +32,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class PasskeyListingTest extends PostgresIntegrationTest {
 
     static final String TOKEN = "test-token-that-is-long-enough-to-be-accepted";
-    private static final String EMAIL = "allen@feelingfroggy.llc";
+    private static final String EMAIL = "owner@finances.invalid";
 
     @Autowired private JdbcTemplate jdbc;
     @LocalServerPort private int port;
@@ -45,7 +45,7 @@ class PasskeyListingTest extends PostgresIntegrationTest {
         var setup = new ApiClient(port);
         setup.primeCsrf();
         setup.postJson("/api/v1/setup", Map.of("email", EMAIL,
-            "displayName", "Allen", "password", "a-long-enough-passphrase"));
+            "displayName", "Owner", "password", "a-long-enough-passphrase"));
         api = new ApiClient(port).bearer(TOKEN);
     }
 

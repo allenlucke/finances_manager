@@ -36,8 +36,8 @@ class LocalTokenDisabledTest extends PostgresIntegrationTest {
 
         var api = new ApiClient(port);
         api.primeCsrf();
-        api.postJson("/api/v1/setup", Map.of("email", "allen@feelingfroggy.llc",
-            "displayName", "Allen", "password", "a-long-enough-passphrase"));
+        api.postJson("/api/v1/setup", Map.of("email", "owner@finances.invalid",
+            "displayName", "Owner", "password", "a-long-enough-passphrase"));
     }
 
     @Test
@@ -61,7 +61,7 @@ class LocalTokenDisabledTest extends PostgresIntegrationTest {
     void theNormalPathIsUnaffected() {
         var browser = new ApiClient(port);
         browser.primeCsrf();
-        assertThat(browser.login("allen@feelingfroggy.llc", "a-long-enough-passphrase").status())
+        assertThat(browser.login("owner@finances.invalid", "a-long-enough-passphrase").status())
             .isEqualTo(204);
         assertThat(browser.get("/api/v1/auth/me").status()).isEqualTo(200);
 

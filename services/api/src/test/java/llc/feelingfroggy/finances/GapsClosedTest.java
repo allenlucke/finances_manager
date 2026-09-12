@@ -42,9 +42,9 @@ class GapsClosedTest extends PostgresIntegrationTest {
 
     private void setupAndLogin() {
         api.primeCsrf();
-        api.postJson("/api/v1/setup", Map.of("email", "allen@feelingfroggy.llc",
-            "displayName", "Allen", "password", "a-long-enough-passphrase"));
-        assertThat(api.login("allen@feelingfroggy.llc", "a-long-enough-passphrase").status())
+        api.postJson("/api/v1/setup", Map.of("email", "owner@finances.invalid",
+            "displayName", "Owner", "password", "a-long-enough-passphrase"));
+        assertThat(api.login("owner@finances.invalid", "a-long-enough-passphrase").status())
             .isEqualTo(204);
         personalId = api.get("/api/v1/entities").json().get(0).get("id").asLong();
         cardId = api.postJson("/api/v1/accounts", Map.of("name", "Card",
@@ -173,14 +173,14 @@ class GapsClosedTest extends PostgresIntegrationTest {
         attacker.primeCsrf();
 
         for (int attempt = 0; attempt < 5; attempt++) {
-            assertThat(attacker.login("allen@feelingfroggy.llc", "wrong-" + attempt).status())
+            assertThat(attacker.login("owner@finances.invalid", "wrong-" + attempt).status())
                 .isEqualTo(401);
         }
 
         // Locked: even the correct passphrase is refused while the window is open — and reported
         // as a lockout (429) rather than as bad credentials, so the person knows to wait instead of
         // retrying and extending it.
-        assertThat(attacker.login("allen@feelingfroggy.llc", "a-long-enough-passphrase").status())
+        assertThat(attacker.login("owner@finances.invalid", "a-long-enough-passphrase").status())
             .isEqualTo(429);
 
         Integer failures = jdbc.queryForObject(
@@ -199,10 +199,10 @@ class GapsClosedTest extends PostgresIntegrationTest {
         // insert threw, the failure row was never written, and lockout — which counts rows —
         // never triggered. Five wrong passwords then the right one signed straight in.
         for (int i = 0; i < 5; i++) {
-            assertThat(attacker.login("allen@feelingfroggy.llc", "wrong-passphrase-here").status())
+            assertThat(attacker.login("owner@finances.invalid", "wrong-passphrase-here").status())
                 .isEqualTo(401);
         }
-        assertThat(attacker.login("allen@feelingfroggy.llc", "a-long-enough-passphrase").status())
+        assertThat(attacker.login("owner@finances.invalid", "a-long-enough-passphrase").status())
             .isEqualTo(429);
 
         // And every failure was recorded — the audit row is the whole mechanism. Six, not five:
@@ -221,11 +221,11 @@ class GapsClosedTest extends PostgresIntegrationTest {
         user.primeCsrf();
 
         for (int attempt = 0; attempt < 3; attempt++) {
-            assertThat(user.login("allen@feelingfroggy.llc", "typo-" + attempt).status())
+            assertThat(user.login("owner@finances.invalid", "typo-" + attempt).status())
                 .isEqualTo(401);
         }
 
-        assertThat(user.login("allen@feelingfroggy.llc", "a-long-enough-passphrase").status())
+        assertThat(user.login("owner@finances.invalid", "a-long-enough-passphrase").status())
             .isEqualTo(204);
     }
 
@@ -237,18 +237,18 @@ class GapsClosedTest extends PostgresIntegrationTest {
         user.primeCsrf();
 
         for (int attempt = 0; attempt < 4; attempt++) {
-            user.login("allen@feelingfroggy.llc", "typo-" + attempt);
+            user.login("owner@finances.invalid", "typo-" + attempt);
         }
-        assertThat(user.login("allen@feelingfroggy.llc", "a-long-enough-passphrase").status())
+        assertThat(user.login("owner@finances.invalid", "a-long-enough-passphrase").status())
             .isEqualTo(204);
 
         // Four more failures must not tip it over, because the counter restarted.
         var again = new ApiClient(port);
         again.primeCsrf();
         for (int attempt = 0; attempt < 4; attempt++) {
-            again.login("allen@feelingfroggy.llc", "typo-again-" + attempt);
+            again.login("owner@finances.invalid", "typo-again-" + attempt);
         }
-        assertThat(again.login("allen@feelingfroggy.llc", "a-long-enough-passphrase").status())
+        assertThat(again.login("owner@finances.invalid", "a-long-enough-passphrase").status())
             .isEqualTo(204);
     }
 
@@ -276,7 +276,7 @@ class GapsClosedTest extends PostgresIntegrationTest {
      */
     private void registerPasskeyFor(String username) {
         jdbc.update("INSERT INTO user_entities (id, name, display_name) VALUES (?, ?, ?)",
-            USER_HANDLE, username, "Allen");
+            USER_HANDLE, username, "Owner");
         jdbc.update("""
             INSERT INTO user_credentials
               (credential_id, user_entity_user_id, public_key, signature_count, uv_initialized,
@@ -300,7 +300,7 @@ class GapsClosedTest extends PostgresIntegrationTest {
         setupAndLogin();
         assertThat(api.get("/api/v1/accounts").status()).isEqualTo(200);
 
-        registerPasskeyFor("allen@feelingfroggy.llc");
+        registerPasskeyFor("owner@finances.invalid");
 
         // Same session, no new login: the requirement is derived from the data, so it applies at
         // once. The answer is a status with a machine-readable reason, never a redirect — the SPA
@@ -316,7 +316,7 @@ class GapsClosedTest extends PostgresIntegrationTest {
     @DisplayName("removing the last passkey returns the account to single factor")
     void deletingTheLastPasskeyRestoresAccess() {
         setupAndLogin();
-        registerPasskeyFor("allen@feelingfroggy.llc");
+        registerPasskeyFor("owner@finances.invalid");
         assertThat(api.get("/api/v1/accounts").status()).isEqualTo(401);
 
         // The recovery path when every authenticator is lost.
@@ -363,7 +363,7 @@ class GapsClosedTest extends PostgresIntegrationTest {
     @DisplayName("the passkey list is itself gated behind the second factor")
     void passkeyListIsGated() {
         setupAndLogin();
-        registerPasskeyFor("allen@feelingfroggy.llc");
+        registerPasskeyFor("owner@finances.invalid");
 
         // Protected like everything else: with a passkey registered and not presented, even the
         // passkey list is gated. Letting it through would be a small hole for no benefit.

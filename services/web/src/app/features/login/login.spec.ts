@@ -62,7 +62,7 @@ describe('LoginComponent', () => {
     // through all of that, so this one reads the DOM.
     const page = showSetupForm();
     component['setupForm'].setValue({
-      email: 'allen@feelingfroggy.llc',
+      email: 'owner@finances.invalid',
       displayName: 'Allen',
       password: 'a-long-enough-passphrase',
       confirmPassword: 'a-long-enough-passphrasf',
@@ -77,7 +77,7 @@ describe('LoginComponent', () => {
   it('stays quiet until the confirmation has something in it', () => {
     const page = showSetupForm();
     component['setupForm'].setValue({
-      email: 'allen@feelingfroggy.llc',
+      email: 'owner@finances.invalid',
       displayName: 'Allen',
       password: 'a-long-enough-passphrase',
       confirmPassword: '',
@@ -90,7 +90,7 @@ describe('LoginComponent', () => {
   it('the message goes once the two agree', () => {
     const page = showSetupForm();
     component['setupForm'].setValue({
-      email: 'allen@feelingfroggy.llc',
+      email: 'owner@finances.invalid',
       displayName: 'Allen',
       password: 'a-long-enough-passphrase',
       confirmPassword: 'a-long-enough-passphrasf',
@@ -115,7 +115,7 @@ describe('LoginComponent', () => {
 
   it('refuses to create an account when the two passphrases disagree', () => {
     component['setupForm'].setValue({
-      email: 'allen@feelingfroggy.llc',
+      email: 'owner@finances.invalid',
       displayName: 'Allen',
       password: 'a-long-enough-passphrase',
       confirmPassword: 'a-long-enough-passphrasf',
@@ -130,7 +130,7 @@ describe('LoginComponent', () => {
 
   it('accepts the account when they agree', () => {
     component['setupForm'].setValue({
-      email: 'allen@feelingfroggy.llc',
+      email: 'owner@finances.invalid',
       displayName: 'Allen',
       password: 'a-long-enough-passphrase',
       confirmPassword: 'a-long-enough-passphrase',
@@ -141,7 +141,7 @@ describe('LoginComponent', () => {
 
   it('still requires a passphrase long enough for the server to accept', () => {
     component['setupForm'].setValue({
-      email: 'allen@feelingfroggy.llc',
+      email: 'owner@finances.invalid',
       displayName: 'Allen',
       password: 'short',
       confirmPassword: 'short',
@@ -154,7 +154,7 @@ describe('LoginComponent', () => {
 
   it('calls a lockout a lockout rather than blaming the passphrase', () => {
     component['loginForm'].setValue({
-      username: 'allen@feelingfroggy.llc',
+      username: 'owner@finances.invalid',
       password: 'a-long-enough-passphrase',
     });
     component['submitLogin']();
@@ -167,7 +167,7 @@ describe('LoginComponent', () => {
 
   it('a stale CSRF token is not blamed on the passphrase, and a fresh one is fetched', () => {
     component['loginForm'].setValue({
-      username: 'allen@feelingfroggy.llc',
+      username: 'owner@finances.invalid',
       password: 'a-long-enough-passphrase',
     });
     component['submitLogin']();
@@ -182,7 +182,7 @@ describe('LoginComponent', () => {
 
   it('blames the credentials when that is what went wrong', () => {
     component['loginForm'].setValue({
-      username: 'allen@feelingfroggy.llc',
+      username: 'owner@finances.invalid',
       password: 'wrong',
     });
     component['submitLogin']();

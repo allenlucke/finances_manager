@@ -44,7 +44,7 @@ class AuditDurabilityTest extends PostgresIntegrationTest {
 
         try {
             template.execute(status -> {
-                attempts.record("allen@feelingfroggy.llc", false, "password", "127.0.0.1");
+                attempts.record("owner@finances.invalid", false, "password", "127.0.0.1");
                 // Whatever the caller was doing then fails.
                 throw new IllegalStateException("the surrounding work failed");
             });
@@ -67,7 +67,7 @@ class AuditDurabilityTest extends PostgresIntegrationTest {
         for (int attempt = 0; attempt < 5; attempt++) {
             try {
                 template.execute(status -> {
-                    attempts.record("allen@feelingfroggy.llc", false, "password", "127.0.0.1");
+                    attempts.record("owner@finances.invalid", false, "password", "127.0.0.1");
                     throw new IllegalStateException("rolled back");
                 });
             } catch (IllegalStateException expected) {
@@ -75,21 +75,21 @@ class AuditDurabilityTest extends PostgresIntegrationTest {
             }
         }
 
-        assertThat(attempts.isLocked("allen@feelingfroggy.llc")).isTrue();
+        assertThat(attempts.isLocked("owner@finances.invalid")).isTrue();
     }
 
     @Test
     @DisplayName("a successful login is recorded too, and clears the failure count")
     void successIsRecordedAndResetsTheCount() {
         for (int attempt = 0; attempt < 5; attempt++) {
-            attempts.record("allen@feelingfroggy.llc", false, "password", "127.0.0.1");
+            attempts.record("owner@finances.invalid", false, "password", "127.0.0.1");
         }
-        assertThat(attempts.isLocked("allen@feelingfroggy.llc")).isTrue();
+        assertThat(attempts.isLocked("owner@finances.invalid")).isTrue();
 
-        attempts.record("allen@feelingfroggy.llc", true, "password", "127.0.0.1");
+        attempts.record("owner@finances.invalid", true, "password", "127.0.0.1");
 
         // Counted only since the last success, so signing in clears the slate.
-        assertThat(attempts.isLocked("allen@feelingfroggy.llc")).isFalse();
+        assertThat(attempts.isLocked("owner@finances.invalid")).isFalse();
     }
 
     @Test
@@ -101,17 +101,17 @@ class AuditDurabilityTest extends PostgresIntegrationTest {
 
         // One account being attacked must not lock everyone out.
         assertThat(attempts.isLocked("someone@else.com")).isTrue();
-        assertThat(attempts.isLocked("allen@feelingfroggy.llc")).isFalse();
+        assertThat(attempts.isLocked("owner@finances.invalid")).isFalse();
     }
 
     @Test
     @DisplayName("lockout matching is case-insensitive, like the email index")
     void lockoutIgnoresCase() {
         for (int attempt = 0; attempt < 5; attempt++) {
-            attempts.record("Allen@FeelingFroggy.LLC", false, "password", "127.0.0.1");
+            attempts.record("Owner@Finances.INVALID", false, "password", "127.0.0.1");
         }
 
         // Otherwise changing the capitalisation of your own address would bypass the lock.
-        assertThat(attempts.isLocked("allen@feelingfroggy.llc")).isTrue();
+        assertThat(attempts.isLocked("owner@finances.invalid")).isTrue();
     }
 }

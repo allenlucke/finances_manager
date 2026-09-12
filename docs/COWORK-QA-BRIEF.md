@@ -9,11 +9,11 @@ Refreshed 2026-09-05 after review batches 1–4.
 
 ## The prompt
 
-Paste this. Replace the URL if the app is running somewhere else, or delete that line if it is not
-running at all — the job still works without it.
+Paste this. Fill in the URL — `ipconfig getifaddr en0` prints the address; the repo does not carry
+it — or delete that line if the app is not running at all: the job still works without it.
 
 > You are doing a QA pass on a personal finance app. The repository is here; the app is running at
-> **http://192.168.87.21:4201** with an empty database.
+> **http://<this Mac's LAN address>:4201** with an empty database.
 >
 > **The job in one sentence:** find places where this app shows a wrong number, a confusing state,
 > or a control someone cannot use — and report them. Do not fix anything.
@@ -50,7 +50,7 @@ For a second run, after findings have come back and been fixed. Same shape: shor
 reference itself.
 
 > You are continuing a QA pass on a personal finance app. The repository is here; the app is running
-> at **http://192.168.87.21:4201**. It was rebuilt since your last run, so the database is empty
+> at **http://<this Mac's LAN address>:4201**. It was rebuilt since your last run, so the database is empty
 > again and the account you made is gone — you will land on the setup screen.
 >
 > **The three findings you sent are fixed and verified. Do not report them again:** the passphrase

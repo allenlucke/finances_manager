@@ -99,3 +99,32 @@ def test_categorize_endpoint_says_none_when_no_rule_fired():
     suggestion = response.json()["suggestions"][0]
     assert suggestion["method"] == "none"
     assert suggestion["category"] is None
+
+
+def test_parsing_is_refused_without_the_account_key_secret(monkeypatch):
+    """A weaker key is not a fallback. The service says what is missing and answers 503."""
+    monkeypatch.setenv("ACCOUNT_KEY_SECRET", "")
+    response = client.post(
+        "/parse/csv?account_ref=test",
+        files={
+            "file": (
+                "x.csv",
+                io.BytesIO(b"Date,Description,Amount\n2026-08-14,X,-1.00\n"),
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 503
+    assert "ACCOUNT_KEY_SECRET" in response.json()["detail"]
+
+
+def test_the_service_refuses_to_start_without_the_secret(monkeypatch):
+    from fastapi.testclient import TestClient as Client
+
+    monkeypatch.setenv("ACCOUNT_KEY_SECRET", "")
+    try:
+        with Client(app):
+            raise AssertionError("started without ACCOUNT_KEY_SECRET")
+    except RuntimeError as refused:
+        assert "ACCOUNT_KEY_SECRET" in str(refused)

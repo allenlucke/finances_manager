@@ -256,11 +256,11 @@ Where the three real files now stand:
 
 ### Two bugs found by importing real files (2026-08-27)
 
-**Dedupe silently lost $2,100.** A first import of a real month reported `added=36 skipped=4` — four
-transactions discarded as duplicates on a completely empty database. They were not duplicates: three
-$1,000 transfers to the same payee on the same day, and three $50 transfers on another, identical in
-date, amount and description. Only the bank's Transaction Number distinguished them, and the dedupe
-key ignored it.
+**Dedupe silently lost four transactions.** A first import of a real month reported
+`added=36 skipped=4` — four transactions discarded as duplicates on a completely empty database.
+They were not duplicates: three identical transfers to the same payee on the same day, and three
+more on another, identical in date, amount and description. Only the bank's Transaction Number
+distinguished them, and the dedupe key ignored it.
 
 The key now **uses the institution's own transaction id whenever the export provides one**, falling
 back to the date/amount/description hash only for formats that do not (a Chase card CSV). This is
@@ -338,7 +338,7 @@ which hardcoded his real email address — see the `.invalid` change below.
 
 ### The test suite that took the app hostage (2026-08-28)
 
-The Playwright suite created its account under `allen@feelingfroggy.llc` and left it there. Two
+The Playwright suite created its account under Allen's real email address and left it there. Two
 consequences, both bad:
 
 * Allen found a sign-in screen for an account he had no memory of creating, with a passphrase that

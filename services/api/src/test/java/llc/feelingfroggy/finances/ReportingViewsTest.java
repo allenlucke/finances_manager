@@ -38,7 +38,7 @@ class ReportingViewsTest extends PostgresIntegrationTest {
         cleanDatabase(jdbc);
 
         userId = insert("INSERT INTO app_user (email, display_name, password_hash) "
-            + "VALUES ('allen@feelingfroggy.llc', 'Allen', 'x') RETURNING id");
+            + "VALUES ('owner@finances.invalid', 'Allen', 'x') RETURNING id");
         personalId = insert("INSERT INTO ledger_entity (user_id, name, kind) "
             + "VALUES (" + userId + ", 'Personal', 'personal') RETURNING id");
         businessId = insert("INSERT INTO ledger_entity (user_id, name, kind) "

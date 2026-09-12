@@ -39,6 +39,7 @@ from finances_ai.ingest.common import (
     account_hash,
     decode_text,
     dedupe_key,
+    legacy_account_hash,
     normalize_description,
     parse_money,
     parse_optional_money,
@@ -570,11 +571,13 @@ def _try_date(value: str) -> date | None:
     return _try_any(value, ("%m/%d/%Y", "%Y-%m-%d", "%m/%d/%y"))
 
 
-def _account_from_preamble(preamble: dict[str, str]) -> tuple[str, str, str | None] | None:
+def _account_from_preamble(
+    preamble: dict[str, str],
+) -> tuple[str, str, str | None, str] | None:
     """The account this whole file belongs to, when the metadata names one.
 
-    Returns (mask, key, name). The full number is used to derive the key and then dropped — it is
-    never returned (docs/SECURITY.md).
+    Returns (mask, key, name, legacy_key). The full number is used to derive the keys and then
+    dropped — it is never returned (docs/SECURITY.md).
     """
     number = ""
     for label in _PREAMBLE_NUMBER_LABELS:
@@ -589,14 +592,14 @@ def _account_from_preamble(preamble: dict[str, str]) -> tuple[str, str, str | No
         if preamble.get(label):
             name = preamble[label].strip()
             break
-    return number[-4:], account_hash(number), name
+    return number[-4:], account_hash(number), name, legacy_account_hash(number)
 
 
 def _map_row(
     row: dict[str, str],
     fmt: CsvFormat,
     account_ref: str,
-    file_account: tuple[str, str, str | None] | None,
+    file_account: tuple[str, str, str | None, str] | None,
     date_formats: tuple[str, ...],
 ) -> ParsedTransaction:
     raw_amount = _row_amount(row, fmt)
@@ -641,17 +644,19 @@ def _map_row(
     account_mask = None
     account_key = None
     account_name = None
+    legacy_key = None
     row_account = (
         (row.get(fmt.account_number_column) or "").strip() if fmt.account_number_column else ""
     )
     if row_account:
         account_mask = row_account[-4:]
         account_key = account_hash(row_account)
+        legacy_key = legacy_account_hash(row_account)
         # Fidelity's per-row "Account" column is the account's nickname, beside its number.
         account_name = (row.get("Account") or "").strip() or None
     elif file_account:
         # A single-account file, identified once in its own metadata.
-        account_mask, account_key, account_name = file_account
+        account_mask, account_key, account_name, legacy_key = file_account
 
     return ParsedTransaction(
         transaction_date=txn_date,
@@ -668,6 +673,7 @@ def _map_row(
         ),
         account_mask=account_mask,
         account_key=account_key,
+        legacy_account_key=legacy_key,
         account_name=account_name,
         is_probable_transfer=looks_like_transfer(row_type, fmt),
         is_probable_refund=looks_like_refund(row_type, fmt),

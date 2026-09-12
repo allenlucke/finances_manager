@@ -65,7 +65,7 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
     void seed() {
         cleanDatabase(jdbc);
 
-        userId = users.save(new AppUser("allen@feelingfroggy.llc", "Allen", "x")).getId();
+        userId = users.save(new AppUser("owner@finances.invalid", "Owner", "x")).getId();
         personal = entities.save(new LedgerEntity(userId, "Personal", EntityKind.PERSONAL));
     }
 
@@ -89,6 +89,35 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
 
     private byte[] anyFile() {
         return "parser is mocked".getBytes(StandardCharsets.UTF_8);
+    }
+
+    @Test
+    @DisplayName("an account linked under the old unkeyed hash is found and re-keyed on its next import")
+    void legacyLinksAreReKeyed() {
+        // Review 2026-09-11 P7. The parser's key was a bare truncated SHA-256 of the account
+        // number; now it is an HMAC under a per-install secret, and for one release the parser
+        // sends the old value beside the new one so existing links survive. A link that did not
+        // survive would come back as "create this account", and a second copy of the account.
+        var joint = account("Long Term Investment", "1111");
+        joint.setExternalId("legacy-1111");
+        accounts.save(joint);
+        var row = new ParsedTransaction(LocalDate.of(2026, 8, 24), null, "Deposit", "DEPOSIT",
+            new BigDecimal("100"), "credit", null, "dedupe-1", true, false,
+            "1111", "keyed-1111", "legacy-1111", "Account 1111", Map.of());
+        parserReturns(row);
+
+        var outcome = imports.importStatement(userId, null, anyFile(), "history.csv");
+
+        assertThat(outcome.unlinked()).isEmpty();
+        assertThat(outcome.batch().getAppliedCount()).isEqualTo(1);
+        assertThat(accounts.findById(joint.getId()).orElseThrow().getExternalId())
+            .isEqualTo("keyed-1111");
+
+        // From now on the new key matches directly, and the old value is never consulted: a
+        // second account carrying it would be unlinked, not silently merged.
+        var again = imports.importStatement(userId, null, anyFile(), "history.csv");
+        assertThat(again.batch().getDuplicateCount()).isEqualTo(1);
+        assertThat(again.unlinked()).isEmpty();
     }
 
     @Test

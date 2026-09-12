@@ -53,6 +53,12 @@ services:
       - no-new-privileges:true
     environment:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Keys the one-way account ids the importer links rows by (docs/SECURITY.md). Required, and
+      # compose refuses to start the service without it rather than let the parser fall back to a
+      # bare hash of the account number. `make up` generates one into .env; infra/e2e.env carries a
+      # throwaway for the scratch stack. Back it up with the database: without it, every linked
+      # account has to be re-linked by its last four on its next import.
+      ACCOUNT_KEY_SECRET: ${ACCOUNT_KEY_SECRET:?ACCOUNT_KEY_SECRET is not set - run `make up`, which generates it into .env}
     # Not published to the host by default: the AI service is internal-only.
     # Uncomment for local debugging, and see docs/SECURITY.md before exposing it anywhere else.
     # ports:

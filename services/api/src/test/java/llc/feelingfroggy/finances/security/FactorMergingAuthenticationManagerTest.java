@@ -22,7 +22,7 @@ import org.springframework.security.web.webauthn.authentication.WebAuthnAuthenti
 @DisplayName("Merging factors on second-factor sign-in")
 class FactorMergingAuthenticationManagerTest {
 
-    private static final String EMAIL = "allen@feelingfroggy.llc";
+    private static final String EMAIL = "owner@finances.invalid";
 
     @AfterEach
     void clear() {
@@ -38,7 +38,7 @@ class FactorMergingAuthenticationManagerTest {
     /** What WebAuthnAuthenticationProvider returns: the user's roles plus the WebAuthn factor. */
     private static WebAuthnAuthentication passkeyResult(String name) {
         var user = ImmutablePublicKeyCredentialUserEntity.builder()
-            .id(Bytes.random()).name(name).displayName("Allen").build();
+            .id(Bytes.random()).name(name).displayName("Owner").build();
         return new WebAuthnAuthentication(user, List.of(
             new SimpleGrantedAuthority("ROLE_USER"),
             FactorGrantedAuthority.fromAuthority(FactorGrantedAuthority.WEBAUTHN_AUTHORITY)));

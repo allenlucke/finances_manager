@@ -43,9 +43,27 @@ public record ParsedTransaction(
      */
     @JsonProperty("account_mask") String accountMask,
     @JsonProperty("account_key") String accountKey,
+    /**
+     * The key as the parser computed it before 2026-09-12 — an unkeyed hash of the account
+     * number, which turned out to be the number under a fifth of a second of work. Carried for
+     * one release so an account linked under it is found and re-keyed on its next import; never
+     * stored again. Remove with the re-linking branch in {@code ImportService.resolveAccount}.
+     */
+    @JsonProperty("legacy_account_key") String legacyAccountKey,
     /** The institution's own name for the account, e.g. "Cashback Free Checking". */
     @JsonProperty("account_name") String accountName,
     Map<String, String> raw) {
+
+    /** The pre-re-keying shape: no legacy key. What a test builds when links are not the point. */
+    public ParsedTransaction(LocalDate transactionDate, LocalDate postedDate, String description,
+                             String merchant, BigDecimal amount, String direction, String externalId,
+                             String dedupeKey, boolean isProbableTransfer, boolean isProbableRefund,
+                             String accountMask, String accountKey, String accountName,
+                             Map<String, String> raw) {
+        this(transactionDate, postedDate, description, merchant, amount, direction, externalId,
+            dedupeKey, isProbableTransfer, isProbableRefund, accountMask, accountKey, null,
+            accountName, raw);
+    }
 
     /**
      * A row with no refund signal — the shape every parser produced before the transfer/refund
@@ -56,7 +74,7 @@ public record ParsedTransaction(
                              String dedupeKey, boolean isProbableTransfer, String accountMask,
                              String accountKey, String accountName, Map<String, String> raw) {
         this(transactionDate, postedDate, description, merchant, amount, direction, externalId,
-            dedupeKey, isProbableTransfer, false, accountMask, accountKey, accountName, raw);
+            dedupeKey, isProbableTransfer, false, accountMask, accountKey, null, accountName, raw);
     }
 
     /** True when this row names its own account rather than relying on a nominated one. */
