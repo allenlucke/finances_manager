@@ -198,6 +198,18 @@ class ImportTest extends PostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("the file's own word for each row is kept, not only the hint read from it")
+    void sourceTypeIsKept() {
+        imports.importStatement(userId, card, statementBytes(), "chase.csv");
+
+        var byDescription = jdbc.queryForList(
+            "SELECT description, source_type FROM transaction ORDER BY transaction_date DESC");
+
+        assertThat(byDescription).extracting(row -> row.get("source_type"))
+            .containsExactly("Sale", "Sale", "Payment", "Sale", "Sale", "Return");
+    }
+
+    @Test
     @DisplayName("imported rows carry their provenance")
     void rowsRecordWhereTheyCameFrom() {
         var batch = imports.importStatement(userId, card, statementBytes(), "chase.csv").batch();

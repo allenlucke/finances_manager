@@ -99,6 +99,8 @@ export interface Transaction {
   /** Both legs of one transfer share this. */
   transferGroupId: string | null;
   source: string;
+  /** The file's own word for the row — "Payment", "Return", "XFER". Null for a manual entry. */
+  sourceType: string | null;
 }
 
 /** Spring Data's page envelope, narrowed to the fields the UI uses. */

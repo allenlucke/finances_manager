@@ -137,9 +137,15 @@ then compares row counts, table by table, against the live database. That compar
 an archive that restores cleanly but is missing a table is precisely what "tested restore" is meant
 to catch, and it is invisible unless something counts. First run: 14 tables, all matched.
 
-**What does not exist yet:** encryption of the archive and an off-site copy. Those are the
-deployment half of D-16 and belong with the homelab setup. Until then `backups/` holds an
-unencrypted copy of the ledger and should be treated as such.
+**Encryption and the off-site copy (2026-09-24):** `make backup-key` generates a key outside the
+repository (`BACKUP_KEY_FILE`, default `~/.config/finances/backup.key`); with it present,
+`make backup` encrypts the dump and the `.env` copy into one `.enc` archive with
+`openssl enc -aes-256-cbc -pbkdf2`, removes the plaintext, and copies the archive to
+`BACKUP_COPY_TO` when that is set. Without the key it still backs up, in the clear, and says so
+every time. `make restore` reads either form. The key belongs in a password manager: an archive
+without it is noise. Confidentiality only — CBC has no integrity tag, so a tampered archive is
+detected by the restore verification's row counts rather than by the cipher. `age` would be the
+upgrade if that ever matters. docs/RUNBOOK.md has the schedule and the recovery steps.
 
 ## The AI service
 

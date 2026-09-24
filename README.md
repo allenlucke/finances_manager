@@ -49,6 +49,7 @@ make e2e         # browser tests on a throwaway stack (4201/8081)
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Milestones, with what each one found when it met real data |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Settled choices and why they won |
 | [docs/SECURITY.md](docs/SECURITY.md) | Credentials, real financial data, the automation token, backups |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Deploying on the homelab, backups and restores, rotation, and what to do when something is lost |
 | [docs/REVIEW-2026-09-11.md](docs/REVIEW-2026-09-11.md) | The current review ledger: findings, and which batch closed each |
 | [docs/COWORK-QA-BRIEF.md](docs/COWORK-QA-BRIEF.md) | The brief for an outside QA pass |
 

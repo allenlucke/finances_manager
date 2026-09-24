@@ -247,6 +247,7 @@ public class ImportService {
             transaction.setMerchant(row.merchant());
             transaction.setExternalId(row.externalId());
             transaction.setSource(TxnSource.FILE_IMPORT);
+            transaction.setSourceType(row.sourceType());
             transaction.setImportBatch(batch);
 
             if (row.isProbableTransfer()) {

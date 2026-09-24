@@ -80,6 +80,14 @@ public class Transaction extends UserOwned {
     @Column(name = "transfer_group_id")
     private UUID transferGroupId;
 
+    /**
+     * The source file's own word for this row — "Sale", "Payment", "Return", "XFER" — which is
+     * what the transfer and refund hints were read from. Null for a manual entry. Shown in the
+     * review queue and kept for M3's categorizer (V9).
+     */
+    @Column(name = "source_type", length = 40)
+    private String sourceType;
+
     @Convert(converter = TxnSource.Conv.class)
     @Column(name = "source", nullable = false, length = 20)
     private TxnSource source = TxnSource.MANUAL;
@@ -282,6 +290,15 @@ public class Transaction extends UserOwned {
 
     public UUID getTransferGroupId() {
         return transferGroupId;
+    }
+
+    public String getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(String sourceType) {
+        this.sourceType = sourceType == null || sourceType.isBlank() ? null
+            : sourceType.length() > 40 ? sourceType.substring(0, 40) : sourceType;
     }
 
     public void setTransferGroupId(UUID transferGroupId) {

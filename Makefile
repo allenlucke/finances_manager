@@ -16,7 +16,7 @@ JAVA_HOME ?= $(shell \
 export JAVA_HOME
 
 .PHONY: help doctor ensure-env up down logs db api web ai test test-api test-web test-ai test-mcp \
-	e2e e2e-down mcp mcp-token backup restore bundle fmt clean nuke
+	e2e e2e-down mcp mcp-token backup backup-key restore bundle fmt clean nuke
 
 # Every one of these has cost a wasted run: a JDK Homebrew installed but macOS could not find, an
 # nvm default two majors behind .nvmrc, Docker Desktop not running so Testcontainers failed with a
@@ -196,13 +196,43 @@ E2E_DB_EXEC := $(E2E_COMPOSE) exec -T db
 LIVE_TABLES = $(DB_EXEC) psql -U $${DATABASE_USER:-finances} -d $${DATABASE_NAME:-finances} -tA \
 	-c "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename"
 
-backup: ## Dump the dev database to backups/finances-<timestamp>.dump, with a copy of .env beside it
+# Where the backup encryption key lives, and where finished archives are copied. Both come from
+# .env (BACKUP_KEY_FILE, BACKUP_COPY_TO); the key defaults to a path outside the repository so a
+# `git clean` or a stolen checkout cannot take the key with the archives. Read with grep rather
+# than `include .env`: make would choke on values a shell reads fine.
+env_value = $$(grep -E '^$(1)=' .env 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^"//; s/"$$//')
+BACKUP_KEY_DEFAULT := $(HOME)/.config/finances/backup.key
+OPENSSL_ENC := openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt
+
+backup-key: ## Generate the key that encrypts backups (kept outside the repo; put a copy in a password manager)
+	@key=$(call env_value,BACKUP_KEY_FILE); key=$$(eval echo $${key:-$(BACKUP_KEY_DEFAULT)}); \
+	if test -f "$$key"; then echo "A key already exists at $$key — leaving it alone. Delete it first to make a new one, and know that every archive encrypted with the old one becomes unreadable."; \
+	else mkdir -p "$$(dirname "$$key")" && (umask 077 && openssl rand -base64 48 > "$$key") \
+		&& echo "wrote $$key" \
+		&& echo "Copy it into a password manager now. Without it every encrypted backup is noise; with it and an archive, everything comes back."; fi
+
+# Encrypted when a key exists, plaintext with a loud warning when it does not; copied to
+# BACKUP_COPY_TO when that is set. The dump alone is not a backup: ACCOUNT_KEY_SECRET in .env keys
+# every import link, so .env rides inside the archive (docs/SECURITY.md, docs/RUNBOOK.md).
+backup: ## Dump the dev database to backups/, encrypted and copied off-disk when configured
 	@mkdir -p $(BACKUP_DIR)
-	@stamp=$$(date +%Y%m%d-%H%M%S); f=$(BACKUP_DIR)/finances-$$stamp.dump; \
-		$(DB_EXEC) pg_dump -U $${DATABASE_USER:-finances} -d $${DATABASE_NAME:-finances} -Fc > $$f \
-		&& echo "wrote $$f ($$(du -h $$f | cut -f1))"; \
-		cp .env $(BACKUP_DIR)/env-$$stamp && chmod 600 $(BACKUP_DIR)/env-$$stamp \
-		&& echo "wrote $(BACKUP_DIR)/env-$$stamp — the dump is not enough on its own: ACCOUNT_KEY_SECRET keys every import link (docs/SECURITY.md)"
+	@stamp=$$(date +%Y%m%d-%H%M%S); dump=finances-$$stamp.dump; envcopy=env-$$stamp; \
+	$(DB_EXEC) pg_dump -U $${DATABASE_USER:-finances} -d $${DATABASE_NAME:-finances} -Fc > $(BACKUP_DIR)/$$dump \
+		|| { echo "pg_dump failed; is the dev stack up?"; rm -f $(BACKUP_DIR)/$$dump; exit 1; }; \
+	cp .env $(BACKUP_DIR)/$$envcopy && chmod 600 $(BACKUP_DIR)/$$envcopy; \
+	echo "wrote $(BACKUP_DIR)/$$dump ($$(du -h $(BACKUP_DIR)/$$dump | cut -f1)) and $(BACKUP_DIR)/$$envcopy"; \
+	key=$(call env_value,BACKUP_KEY_FILE); key=$$(eval echo $${key:-$(BACKUP_KEY_DEFAULT)}); \
+	if test -f "$$key"; then \
+		enc=$(BACKUP_DIR)/finances-$$stamp.enc; \
+		tar -c -C $(BACKUP_DIR) $$dump $$envcopy | $(OPENSSL_ENC) -pass file:"$$key" -out $$enc \
+			&& rm -f $(BACKUP_DIR)/$$dump $(BACKUP_DIR)/$$envcopy \
+			&& echo "encrypted to $$enc ($$(du -h $$enc | cut -f1)); plaintext removed"; \
+		dest=$(call env_value,BACKUP_COPY_TO); dest=$$(eval echo $$dest); \
+		if test -n "$$dest"; then mkdir -p "$$dest" && cp $$enc "$$dest/" && echo "copied to $$dest/"; \
+		else echo "BACKUP_COPY_TO is not set in .env: this archive exists on this disk only."; fi; \
+	else \
+		echo "UNENCRYPTED. No key at $$key — run 'make backup-key', then back up again. Until then $(BACKUP_DIR)/ holds the ledger and .env in the clear."; \
+	fi
 
 # The branch has never been pushed, so until it is, this Mac is the only copy of everything since
 # 2026-08-21. A bundle is the whole repository in one file; copy it to another disk. Pushing is
@@ -213,18 +243,30 @@ bundle: ## Write the whole repository, every branch and tag, to backups/repo-<ti
 		git bundle create $$f --all && git bundle verify $$f >/dev/null \
 		&& echo "wrote $$f ($$(du -h $$f | cut -f1)). Restore anywhere with: git clone $$f finances_manager"
 
-restore: ## Restore FILE=backups/x.dump into the scratch stack and verify row counts against dev
-	@test -n "$(FILE)" || { echo "usage: make restore FILE=backups/finances-....dump"; exit 1; }
+# Accepts a plain .dump or an encrypted .enc archive (decrypted to a private temp dir first, and
+# the temp dir removed afterwards). Runs against the scratch project only — DB_EXEC (dev) is used
+# solely to read row counts for the comparison.
+restore: ## Restore FILE=backups/x.dump or x.enc into the scratch stack and verify row counts against dev
+	@test -n "$(FILE)" || { echo "usage: make restore FILE=backups/finances-....dump (or .enc)"; exit 1; }
 	@test -f "$(FILE)" || { echo "no such file: $(FILE)"; exit 1; }
-	$(E2E_COMPOSE) up -d db
-	@until $(E2E_DB_EXEC) pg_isready -q -U $${DATABASE_USER:-finances}; do sleep 1; done
-	@# A clean target: drop and recreate so a stale scratch database cannot mask a missing table.
-	@$(E2E_DB_EXEC) psql -U $${DATABASE_USER:-finances} -d postgres -q \
+	@dump="$(FILE)"; work=""; \
+	case "$(FILE)" in *.enc) \
+		key=$(call env_value,BACKUP_KEY_FILE); key=$$(eval echo $${key:-$(BACKUP_KEY_DEFAULT)}); \
+		test -f "$$key" || { echo "no key at $$key — set BACKUP_KEY_FILE in .env to where the key is, or restore it from your password manager"; exit 1; }; \
+		work=$$(mktemp -d) && chmod 700 "$$work" \
+			&& $(OPENSSL_ENC) -d -pass file:"$$key" -in "$(FILE)" | tar -x -C "$$work" \
+			|| { rm -rf "$$work"; echo "could not decrypt $(FILE): wrong key, or a damaged archive"; exit 1; }; \
+		dump=$$(ls "$$work"/*.dump); echo "decrypted $(FILE); the archive also holds $$(ls "$$work" | grep '^env-' || echo 'no .env')";; \
+	esac; \
+	$(E2E_COMPOSE) up -d db; \
+	until $(E2E_DB_EXEC) pg_isready -q -U $${DATABASE_USER:-finances}; do sleep 1; done; \
+	$(E2E_DB_EXEC) psql -U $${DATABASE_USER:-finances} -d postgres -q \
 		-c "DROP DATABASE IF EXISTS $${DATABASE_NAME:-finances}_restore" \
-		-c "CREATE DATABASE $${DATABASE_NAME:-finances}_restore"
-	@cat "$(FILE)" | $(E2E_DB_EXEC) pg_restore -U $${DATABASE_USER:-finances} \
-		-d $${DATABASE_NAME:-finances}_restore --no-owner --no-privileges
-	@echo "restored. verifying row counts (live vs restored):"; fail=0; \
+		-c "CREATE DATABASE $${DATABASE_NAME:-finances}_restore"; \
+	cat "$$dump" | $(E2E_DB_EXEC) pg_restore -U $${DATABASE_USER:-finances} \
+		-d $${DATABASE_NAME:-finances}_restore --no-owner --no-privileges; \
+	test -z "$$work" || rm -rf "$$work"; \
+	echo "restored. verifying row counts (live vs restored):"; fail=0; \
 	tables=$$($(LIVE_TABLES)); \
 	test -n "$$tables" || { echo "could not list the live database's tables"; exit 1; }; \
 	echo "  $$(echo $$tables | wc -w | tr -d ' ') tables in the live database"; \

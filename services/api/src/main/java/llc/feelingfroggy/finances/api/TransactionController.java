@@ -203,10 +203,12 @@ public class TransactionController {
             .toList();
     }
 
+    /** @param sourceType the file's own word for the row ("Payment", "Return", "XFER"); null when it had none */
     public record TransactionView(Long id, Long accountId, Long categoryId, LocalDate transactionDate,
                                   BigDecimal amount, String direction, BigDecimal signedAmount,
                                   String description, String merchant, boolean transfer,
-                                  Long transferAccountId, String transferGroupId, String source) {
+                                  Long transferAccountId, String transferGroupId, String source,
+                                  String sourceType) {
         static TransactionView of(Transaction t) {
             return new TransactionView(t.getId(), t.getAccount().getId(),
                 t.getCategory() == null ? null : t.getCategory().getId(),
@@ -214,7 +216,7 @@ public class TransactionController {
                 t.getDescription(), t.getMerchant(), t.isTransfer(),
                 t.getTransferAccount() == null ? null : t.getTransferAccount().getId(),
                 t.getTransferGroupId() == null ? null : t.getTransferGroupId().toString(),
-                t.getSource().code());
+                t.getSource().code(), t.getSourceType());
         }
     }
 

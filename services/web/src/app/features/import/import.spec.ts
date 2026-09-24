@@ -149,6 +149,56 @@ describe('ImportComponent', () => {
     expect((failing.nativeElement as HTMLElement).textContent).toContain('Could not load accounts');
   });
 
+  it("shows the file's own word for a row waiting in the review queue", () => {
+    // A "Return" beside a credit says which category to refund; the API kept the hint and threw
+    // the word away until V9.
+    component['reviewPage'].value.set({
+      content: [
+        {
+          id: 1,
+          accountId: 1,
+          categoryId: null,
+          transactionDate: '2026-08-07',
+          amount: 12,
+          direction: 'credit',
+          signedAmount: 12,
+          description: 'KROGER #4521',
+          merchant: 'KROGER',
+          transfer: false,
+          transferAccountId: null,
+          transferGroupId: null,
+          source: 'file_import',
+          sourceType: 'Return',
+        },
+        {
+          id: 2,
+          accountId: 1,
+          categoryId: null,
+          transactionDate: '2026-08-08',
+          amount: 5,
+          direction: 'debit',
+          signedAmount: -5,
+          description: 'COFFEE',
+          merchant: 'COFFEE',
+          transfer: false,
+          transferAccountId: null,
+          transferGroupId: null,
+          source: 'manual',
+          sourceType: null,
+        },
+      ],
+      totalElements: 2,
+      totalPages: 1,
+      number: 0,
+      size: 100,
+    });
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('file says Return');
+    expect(text.match(/file says/g)).toHaveLength(1);
+  });
+
   it('keeps the notes with the import in the history', () => {
     component['batches'].value.set([{ ...applied, warnings: ['line 9: Empty amount'] }]);
     fixture.detectChanges();

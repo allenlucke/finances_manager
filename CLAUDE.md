@@ -192,9 +192,11 @@ make test        # run every test suite
 make e2e         # browser tests on their own throwaway stack (4201/8081)
 make e2e-down    # dispose of that stack
 make mcp-token   # generate LOCAL_API_TOKEN into .env, for Claude Code (D-17)
-make backup      # pg_dump the dev database to backups/, with a copy of .env beside it
+make backup      # dump + .env to backups/, encrypted and copied off-disk when configured
+make backup-key  # generate the backup encryption key (outside the repo; copy it to a password manager)
+make restore FILE=backups/x.enc    # restore into the scratch stack and verify row counts (or a .dump)
 make bundle      # the whole repository as one file in backups/ — copy it to another disk
-make restore FILE=backups/x.dump   # restore into the scratch stack and verify row counts
+
 make nuke        # like clean, but also deletes the dev database volume (asks first)
 make fmt         # format everything
 ```

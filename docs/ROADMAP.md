@@ -419,6 +419,20 @@ The three tiers from D-15: rules, then similarity against his own history, then 
 Corrections captured and fed back. Accuracy measured against a held-out set of his own transactions,
 not vibes.
 
+**Groundwork already in place (2026-09-24), and two rules for whoever wires it:**
+
+* The rules engine returns `method="none"` when no tier had anything to say. **That is a signal to
+  escalate, never a row**: `categorization.method` admits `rule`, `similarity` and `model` by CHECK,
+  and a "suggestion" of nothing would sit in the review queue as if a rule had decided. The
+  persistence path must skip `none`.
+* `transaction.source_type` (V9) keeps the file's own word for each row — Chase's `Payment`,
+  OFX's `XFER`, a brokerage's action. It is what the transfer and refund hints were read from, the
+  review queue shows it ("file says Return"), and it is a free tier-1 feature for the categorizer:
+  the institution's classification, not an inference over the description.
+* The baseline to beat is the real month recorded under M2: 14 of 40 categorized by rules, 9
+  correctly excluded as transfers, 17 to review. Measure against that, on a synthetic twin of that
+  file, before and after each tier.
+
 **Done when:** a month of new transactions comes in and the majority are correctly categorized
 without intervention, and the number is *measured*.
 

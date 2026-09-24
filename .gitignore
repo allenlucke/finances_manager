@@ -37,6 +37,7 @@ data/
 # they land: a hand-run `pg_dump > x.dump` in the repo root was addable.
 backups/
 *.dump
+*.enc
 
 # Synthesized fixtures, allow-listed back in by exact path. Add a path here only after checking
 # the file contains no real figures, no real account digits, and no real names.
