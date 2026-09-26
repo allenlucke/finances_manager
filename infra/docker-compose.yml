@@ -59,6 +59,13 @@ services:
       # throwaway for the scratch stack. Back it up with the database: without it, every linked
       # account has to be re-linked by its last four on its next import.
       ACCOUNT_KEY_SECRET: ${ACCOUNT_KEY_SECRET:?ACCOUNT_KEY_SECRET is not set - run `make up`, which generates it into .env}
+      # Market data (M7a, D-18). `none` by default: the service answers 503 and the API says
+      # "market data is off" rather than serving anything invented. `alpaca` needs the two keys;
+      # this container is the one place they live, and the one outbound connection it makes.
+      MARKET_DATA_PROVIDER: ${MARKET_DATA_PROVIDER:-none}
+      ALPACA_API_KEY: ${ALPACA_API_KEY:-}
+      ALPACA_API_SECRET: ${ALPACA_API_SECRET:-}
+      ALPACA_FEED: ${ALPACA_FEED:-iex}
     # Not published to the host by default: the AI service is internal-only.
     # Uncomment for local debugging, and see docs/SECURITY.md before exposing it anywhere else.
     # ports:
@@ -111,6 +118,12 @@ services:
       # the evening on the 31st in Kansas, UTC is already next month; every default date range
       # the API computes itself was off by a month for those hours.
       APP_TIMEZONE: ${APP_TIMEZONE:-America/Chicago}
+      # Polls the market-data service every five minutes and evaluates alerts (M7a). A poll with
+      # no provider configured is a quiet no-op. NTFY_URL is where a fired alert is pushed; blank
+      # records the firing and shows it on the Markets screen without sending it anywhere.
+      MARKET_REFRESH_SCHEDULED: ${MARKET_REFRESH_SCHEDULED:-true}
+      MARKET_REFRESH_EVERY: ${MARKET_REFRESH_EVERY:-PT5M}
+      NTFY_URL: ${NTFY_URL:-}
     ports:
       # BIND_ADDR defaults to loopback. Docker's default is 0.0.0.0, which publishes to the whole
       # local network — not what "running it locally" implies, and wrong for a service holding

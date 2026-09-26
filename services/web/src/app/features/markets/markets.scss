@@ -1,0 +1,56 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.section {
+  margin-top: 16px;
+}
+
+.status-line {
+  margin: 0 0 12px;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+
+  .symbol {
+    width: 130px;
+  }
+  .rule {
+    width: 190px;
+  }
+  .threshold {
+    width: 130px;
+  }
+  .note {
+    flex: 1 1 180px;
+  }
+}
+
+table {
+  width: 100%;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.as-of {
+  font: var(--mat-sys-body-small);
+}
+
+.failed {
+  color: var(--mat-sys-error);
+}
+
+// The fake-data notice shares the error box's shape but is a caution, not a failure.
+.state-error.fake {
+  border-left-color: var(--mat-sys-tertiary);
+}

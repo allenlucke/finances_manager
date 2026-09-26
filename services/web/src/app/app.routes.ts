@@ -44,6 +44,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/budget/budget').then((m) => m.BudgetComponent),
   },
   {
+    path: 'markets',
+    title: 'Markets · Finances',
+    canActivate: [signedInGuard],
+    loadComponent: () => import('./features/markets/markets').then((m) => m.MarketsComponent),
+  },
+  {
     path: 'import',
     title: 'Import · Finances',
     canActivate: [signedInGuard],

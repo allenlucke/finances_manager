@@ -327,3 +327,40 @@ def test_monthly_totals_uses_the_names_the_api_expects(api):
 
     assert api.last.url.path == "/api/v1/reports/monthly-totals"
     assert dict(api.last.url.params) == {"from": "2026-08-01", "to": "2026-08-31"}
+
+
+def test_watching_a_symbol_posts_it_to_the_watchlist(api):
+    import json
+
+    server.watch_symbol("aapl", note="maybe")
+
+    assert api.last.method == "POST"
+    assert api.last.url.path == "/api/v1/market/watchlist"
+    assert json.loads(api.last.content) == {"symbol": "aapl", "note": "maybe"}
+
+
+def test_a_price_alert_sends_the_threshold_as_a_string_never_a_float(api):
+    import json
+
+    server.set_price_alert("AAPL", "above", "190.50")
+
+    body = json.loads(api.last.content)
+    assert body["threshold"] == "190.50"
+    assert isinstance(body["threshold"], str)
+    assert body["rule"] == "above"
+
+
+def test_refreshing_quotes_is_one_post(api):
+    server.refresh_quotes()
+
+    assert api.last.method == "POST"
+    assert api.last.url.path == "/api/v1/market/quotes/refresh"
+
+
+def test_holdings_at_market_and_alert_events_read_the_market_endpoints(api):
+    server.holdings_at_market()
+    assert api.last.url.path == "/api/v1/market/holdings"
+
+    server.alert_events(size=10)
+    assert api.last.url.path == "/api/v1/market/alerts/events"
+    assert dict(api.last.url.params) == {"size": "10"}

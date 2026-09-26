@@ -174,6 +174,96 @@ export interface ReconciliationRow {
   baseline: 'opening_balance' | 'full_history';
 }
 
+/** Watching the market (M7a). A price is not money: nothing here is summed into a balance. */
+export interface MarketStatus {
+  provider: string;
+  available: boolean;
+  detail: string | null;
+  scheduled: boolean;
+  refreshEvery: string;
+  notifierConfigured: boolean;
+  lastRefreshAt: string | null;
+  lastRefreshOutcome: string | null;
+}
+
+export interface WatchlistEntry {
+  id: number;
+  securityId: number;
+  symbol: string;
+  name: string | null;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface QuoteRow {
+  securityId: number;
+  symbol: string;
+  name: string | null;
+  price: number | null;
+  previousClose: number | null;
+  /** Today's move against the previous close, in percent. Null when unknown. */
+  changePct: number | null;
+  asOf: string | null;
+  /** "alpaca", "fake". A fake quote is a stand-in and is labelled as such on screen. */
+  source: string | null;
+  watched: boolean;
+  held: boolean;
+}
+
+export interface RefreshResult {
+  provider: string;
+  fetched: number;
+  stored: number;
+  warnings: string[];
+  alertsFired: number;
+}
+
+export interface HoldingAtMarket {
+  accountId: number;
+  accountName: string;
+  securityId: number;
+  symbol: string;
+  securityName: string | null;
+  cash: boolean;
+  snapshotAsOf: string;
+  quantity: number | null;
+  snapshotPrice: number | null;
+  /** What the positions file said, on snapshotAsOf. The figure balances and net worth use. */
+  snapshotValue: number;
+  livePrice: number | null;
+  quoteAsOf: string | null;
+  quoteSource: string | null;
+  /** quantity × latest quote; a moment, never the balance. Null without a quote or a quantity. */
+  liveValue: number | null;
+}
+
+export type AlertRule = 'above' | 'below' | 'pct_move';
+
+export interface PriceAlert {
+  id: number;
+  securityId: number;
+  symbol: string;
+  rule: AlertRule;
+  threshold: number;
+  active: boolean;
+  armed: boolean;
+  lastFiredAt: string | null;
+  note: string | null;
+}
+
+export interface AlertEvent {
+  id: number;
+  alertId: number;
+  symbol: string;
+  rule: AlertRule;
+  threshold: number;
+  price: number | null;
+  firedAt: string;
+  message: string;
+  delivered: boolean;
+  deliveryError: string | null;
+}
+
 export interface CreateTransaction {
   accountId: number;
   transactionDate: string;

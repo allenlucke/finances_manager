@@ -139,6 +139,12 @@ own, and is not part of the compose stack — Claude Code launches it.
   was permanent. `_checkpoint_balances` walks each known balance back to a balance-before-everything
   under both orderings; the ordering where every balance agrees is the file's. When nothing
   resolves it, no balance is recorded and the file says so.
+- **A price is not money.** Quotes (M7) have no direction, never enter the ledger, and never change
+  a balance. A holding at its latest quote is shown beside its snapshot value, labelled as a
+  moment; `v_account_balance` and net worth use the snapshot only. A quote from the `fake`
+  provider says so on every row. An alert on a symbol implies quoting that symbol: the first
+  refresh asked only for watched and held symbols, and an alert on anything else could never fire.
+  `MarketTest` pins all of it.
 - **What the parser says reaches the person.** Row warnings ("line 3: unrecognized date …") and
   the 422 verdicts ("No parser matches this file …") were counted into a log line and replaced
   with one fixed sentence, so an import that lost rows looked identical to one that did not, and

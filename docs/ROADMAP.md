@@ -510,7 +510,19 @@ server (`list_holdings`, `import_positions`).
 Whichever vendor wins D-14, behind the `AccountConnector` port built in M2. Automatic sync,
 credential handling per `docs/SECURITY.md`, reconciliation against imported statements.
 
-## M7 — Market data and trade support *(idea, not committed)*
+## M7 — Market data and trade support
+
+**M7a built 2026-09-26 (D-18).** Watching, not trading yet. `watchlist`, `quote`, `price_alert` and
+`alert_event` (V10); the Python service's market-data provider with Alpaca behind it and a labelled
+fake for tests; the API's five-minute poll, its alert edge detector and ntfy delivery; a Markets
+screen with the watchlist, alerts, their history and every holding valued at the latest quote
+beside its snapshot value; MCP tools for all of it. The rule that governs the whole milestone is
+in the schema comment: a price is not money. Nothing here enters the ledger or moves a balance.
+
+**M7b next:** paper orders on Alpaca behind a draft → confirm → submit → fill state machine, a
+daily notional cap, `TRADING_ENABLED` off by default, and a manual ticket for Fidelity.
+
+*The original sketch, kept for what it got right:*
 
 Raised by Allen 2026-08-24, explicitly as a future possibility rather than scope. Recorded so the
 earlier milestones do not accidentally design it out.

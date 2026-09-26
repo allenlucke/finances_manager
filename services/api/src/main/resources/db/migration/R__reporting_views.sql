@@ -325,3 +325,54 @@ CROSS JOIN LATERAL (
                   AND r.transaction_date <= st.period_end), 0)
     END)::NUMERIC(19,4) AS computed_balance
 ) c;
+
+
+-- ---------------------------------------------------------------------------------------------
+-- Market (M7a). A price is not money: nothing here touches the ledger or a balance.
+-- ---------------------------------------------------------------------------------------------
+
+-- The newest quote per security, with today's move against the previous close.
+CREATE OR REPLACE VIEW v_latest_quote AS
+SELECT DISTINCT ON (security_id)
+       id AS quote_id,
+       user_id,
+       security_id,
+       as_of,
+       price,
+       previous_close,
+       source,
+       CASE WHEN previous_close IS NULL OR previous_close = 0 THEN NULL
+            ELSE ((price - previous_close) / previous_close * 100)::NUMERIC(9,4)
+       END AS change_pct
+FROM quote
+ORDER BY security_id, as_of DESC, id DESC;
+
+
+-- Each position in the latest snapshot, valued two ways: as the positions file said, and at the
+-- latest quote. The second is shown BESIDE the first, labelled, and never replaces it in
+-- v_account_balance or net worth — a quote is a moment, a snapshot is what the broker asserted.
+-- Cash rows keep their snapshot value under both headings: a dollar is worth a dollar.
+CREATE OR REPLACE VIEW v_holding_live_value AS
+SELECT h.user_id,
+       h.account_id,
+       a.name          AS account_name,
+       h.security_id,
+       s.symbol,
+       s.name          AS security_name,
+       s.is_cash,
+       h.as_of         AS snapshot_as_of,
+       h.quantity,
+       h.last_price    AS snapshot_price,
+       h.market_value  AS snapshot_value,
+       q.price         AS live_price,
+       q.as_of         AS quote_as_of,
+       q.source        AS quote_source,
+       CASE WHEN s.is_cash THEN h.market_value
+            WHEN h.quantity IS NOT NULL AND q.price IS NOT NULL THEN (h.quantity * q.price)::NUMERIC(19,4)
+            ELSE NULL
+       END             AS live_value
+FROM holding h
+JOIN v_latest_holding_snapshot ls ON ls.account_id = h.account_id AND ls.as_of = h.as_of
+JOIN account a ON a.id = h.account_id
+JOIN security s ON s.id = h.security_id
+LEFT JOIN v_latest_quote q ON q.security_id = h.security_id;

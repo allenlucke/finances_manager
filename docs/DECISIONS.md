@@ -300,3 +300,44 @@ symptom is a 401 that looks exactly like a wrong token.
 *Not built:* account and category deletion. Neither the UI nor the API has ever had it, and adding
 it only for the agent would put the most consequential operation in the least supervised place.
 Say the word and it is a small piece of work.
+
+### D-18 — Watching the market, and what "trading" may mean here
+*Decided 2026-09-26 with Allen, who took the recommendations as given.*
+
+**Fidelity has no API for placing orders.** That is the fact everything else follows from. Reading
+Fidelity positions programmatically is possible through an aggregator (SnapTrade, D-14); placing
+orders there is not, and no amount of architecture changes it.
+
+**Market data: Alpaca, through the Python service.** A free Alpaca account gives the IEX feed and a
+paper-trading account in one signup, which is the whole of what M7 needs to prove itself. The vendor
+key lives in `services/ai` — the one outbound connection that container makes, next to the
+inference key it will hold later — and the Java API asks it over the compose network, so the rule
+that only the API writes to Postgres and the rule that the AI service holds no database credentials
+both stand. `MARKET_DATA_PROVIDER=none` is the default: the screen says market data is off rather
+than the service inventing anything. A `fake` provider exists for tests and a vendorless stack, and
+says so on every quote it produces.
+
+**A price is not money.** Quotes have no direction, never enter the ledger, and never change a
+balance. A holding valued at the latest quote is shown *beside* the value its positions snapshot
+gave it, labelled as a moment; `v_account_balance` and net worth keep using the snapshot, which is
+what the broker asserted. Reversing that would turn net worth into a number that moves every five
+minutes on a fraction of IEX volume.
+
+**Egress.** The homelab box is Tailscale-only *inbound*. Outbound to the vendor and to the
+notification channel is allowed and named in SECURITY.md; nothing else may open a connection out.
+
+**Alerts: ntfy.** A plain HTTP push service with a phone app, self-hostable on the box and reached
+over Tailscale, or the public server with a long random topic. One URL configures it. An alert fires
+once when its condition becomes true and re-arms when it is false again — an edge detector, not a
+threshold check — and a percent-move alert re-arms each trading day. Every firing is recorded
+whether or not it was delivered, with the reason when it was not.
+
+**Trading, when it comes (M7b): propose, confirm, execute, with a ceiling and an off switch.** The
+assistant may draft an order. A person confirms it, echoing the quantity and price back, before
+anything reaches a broker. A daily notional cap and `TRADING_ENABLED=false` by default bound the
+damage a mistake can do. Paper trading first, on Alpaca; a funded account is a configuration change
+that earns itself with a track record. Fidelity stays manual: the app prepares the ticket, Allen
+clicks. Auto-execution within limits is not ruled out; it is not granted until the paper record says
+it should be. Order execution is a different risk class from everything else in this system —
+reading a balance wrong shows a bad number, sending an order wrong loses money irreversibly — and
+that is why it has its own record here rather than inheriting the ledger's trust model.

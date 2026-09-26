@@ -1,0 +1,385 @@
+<div class="page">
+  <div class="page-head">
+    <h1 class="page-title">Markets</h1>
+    <button
+      mat-flat-button
+      type="button"
+      (click)="refresh()"
+      [disabled]="refreshing() || off()"
+      aria-label="Refresh quotes now"
+    >
+      <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">refresh</mat-icon>
+      Refresh quotes
+    </button>
+  </div>
+
+  @if (refreshing()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Refreshing quotes"></mat-progress-bar>
+  }
+
+  <!-- Status first: whether there is any market data at all, and whether it is real. -->
+  @if (status.error()) {
+    <p class="state-error-inline" role="alert">{{ status.error() }}</p>
+  } @else if (status.value(); as status) {
+    @if (!status.available) {
+      <div class="state-error" role="status">
+        <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">cloud_off</mat-icon>
+        <div>
+          <strong>Market data is off.</strong>
+          <div class="muted">
+            {{ status.detail || 'No provider is configured.' }} Watchlists and alerts can be set up
+            now; they come alive when a provider is.
+          </div>
+        </div>
+      </div>
+    } @else {
+      <p class="muted status-line">
+        Quotes from <strong>{{ status.provider }}</strong>
+        @if (status.lastRefreshAt) {
+          · last fetched {{ status.lastRefreshAt | date: 'short' }} ({{
+            status.lastRefreshOutcome
+          }})
+        } @else {
+          · not fetched yet this session
+        }
+        @if (status.scheduled) {
+          · refreshing every {{ status.refreshEvery }}
+        } @else {
+          · not polling on a timer here
+        }
+        @if (!status.notifierConfigured) {
+          · <strong>alerts are recorded but not pushed anywhere</strong> (set NTFY_URL)
+        }
+      </p>
+    }
+    @if (fakeData()) {
+      <div class="state-error fake" role="status">
+        <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">science</mat-icon>
+        <div>
+          <strong>These are fake prices.</strong>
+          <span class="muted">
+            The provider is the deterministic stand-in for a stack with no vendor. Nothing on this
+            screen is market data until MARKET_DATA_PROVIDER names one.
+          </span>
+        </div>
+      </div>
+    }
+  }
+
+  <div class="grid">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title><h2 class="card-title">Watchlist</h2></mat-card-title>
+        <mat-card-subtitle
+          >Latest quote and today's move. Held symbols are quoted too.</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="watchForm" (ngSubmit)="watch()" class="inline-form">
+          <mat-form-field appearance="outline" class="symbol">
+            <mat-label>Symbol</mat-label>
+            <input
+              matInput
+              formControlName="symbol"
+              placeholder="AAPL"
+              autocapitalize="characters"
+            />
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="note">
+            <mat-label>Note</mat-label>
+            <input matInput formControlName="note" placeholder="why it is here" />
+          </mat-form-field>
+          <button mat-stroked-button type="submit" [disabled]="watchForm.invalid || saving()">
+            Watch
+          </button>
+        </form>
+
+        @if (quotes.error()) {
+          <p class="state-error-inline" role="alert">{{ quotes.error() }}</p>
+        } @else if (quotes.isEmpty()) {
+          <p class="muted">Nothing watched yet. Add a symbol, or import a positions file.</p>
+        } @else if (quotes.value()) {
+          <div class="table-scroll">
+            <table mat-table [dataSource]="quoteRows()">
+              <tr mat-header-row *matHeaderRowDef="quoteColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: quoteColumns"></tr>
+
+              <ng-container matColumnDef="symbol">
+                <th mat-header-cell *matHeaderCellDef>Symbol</th>
+                <td mat-cell *matCellDef="let row">
+                  <strong>{{ row.symbol }}</strong>
+                  @if (row.name) {
+                    <span class="muted"> {{ row.name }}</span>
+                  }
+                  @if (row.held) {
+                    <span class="muted"> · held</span>
+                  }
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="price">
+                <th mat-header-cell *matHeaderCellDef class="amount">Last</th>
+                <td mat-cell *matCellDef="let row" class="amount">
+                  {{ row.price === null ? '—' : money(row.price) }}
+                  @if (row.source === 'fake') {
+                    <span class="muted"> fake</span>
+                  }
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="change">
+                <th mat-header-cell *matHeaderCellDef class="amount">Today</th>
+                <td mat-cell *matCellDef="let row" [class]="pctClass(row.changePct)">
+                  {{ pct(row.changePct) }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="asOf">
+                <th mat-header-cell *matHeaderCellDef>As of</th>
+                <td mat-cell *matCellDef="let row" class="muted nowrap">
+                  {{ row.asOf ? (row.asOf | date: 'short') : 'no quote yet' }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row">
+                  @if (row.watched) {
+                    <button
+                      mat-button
+                      type="button"
+                      (click)="unwatch(row)"
+                      [attr.aria-label]="'Stop watching ' + row.symbol"
+                    >
+                      Stop watching
+                    </button>
+                  }
+                </td>
+              </ng-container>
+            </table>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title><h2 class="card-title">Price alerts</h2></mat-card-title>
+        <mat-card-subtitle>
+          Fires once when the condition becomes true, then re-arms when it is false again
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="alertForm" (ngSubmit)="addAlert()" class="inline-form">
+          <mat-form-field appearance="outline" class="symbol">
+            <mat-label>Symbol</mat-label>
+            <input
+              matInput
+              formControlName="symbol"
+              placeholder="AAPL"
+              autocapitalize="characters"
+            />
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="rule">
+            <mat-label>When it</mat-label>
+            <mat-select formControlName="rule">
+              @for (rule of rules; track rule.value) {
+                <mat-option [value]="rule.value">{{ rule.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="threshold">
+            <mat-label>{{
+              alertForm.controls.rule.value === 'pct_move' ? 'Percent' : 'Price'
+            }}</mat-label>
+            <input matInput formControlName="threshold" inputmode="decimal" placeholder="0.00" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="note">
+            <mat-label>Note</mat-label>
+            <input matInput formControlName="note" placeholder="take profit" />
+          </mat-form-field>
+          <button mat-stroked-button type="submit" [disabled]="alertForm.invalid || saving()">
+            Set alert
+          </button>
+        </form>
+
+        @if (alerts.error()) {
+          <p class="state-error-inline" role="alert">{{ alerts.error() }}</p>
+        } @else if (alerts.isEmpty()) {
+          <p class="muted">No alerts yet.</p>
+        } @else if (alerts.value()) {
+          <div class="table-scroll">
+            <table mat-table [dataSource]="alerts.value()!">
+              <tr mat-header-row *matHeaderRowDef="alertColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: alertColumns"></tr>
+
+              <ng-container matColumnDef="symbol">
+                <th mat-header-cell *matHeaderCellDef>Symbol</th>
+                <td mat-cell *matCellDef="let row">
+                  <strong>{{ row.symbol }}</strong>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="rule">
+                <th mat-header-cell *matHeaderCellDef>Condition</th>
+                <td mat-cell *matCellDef="let row">
+                  {{ describe(row) }}
+                  @if (row.note) {
+                    <span class="muted"> · {{ row.note }}</span>
+                  }
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="state">
+                <th mat-header-cell *matHeaderCellDef>State</th>
+                <td mat-cell *matCellDef="let row" class="muted">
+                  @if (!row.active) {
+                    paused
+                  } @else if (row.armed) {
+                    armed
+                  } @else {
+                    fired — re-arms when the condition clears
+                  }
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="lastFired">
+                <th mat-header-cell *matHeaderCellDef>Last fired</th>
+                <td mat-cell *matCellDef="let row" class="muted nowrap">
+                  {{ row.lastFiredAt ? (row.lastFiredAt | date: 'short') : 'never' }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row" class="row-actions">
+                  <mat-slide-toggle
+                    [checked]="row.active"
+                    (change)="toggleAlert(row, $event.checked)"
+                    [attr.aria-label]="(row.active ? 'Pause ' : 'Resume ') + row.symbol + ' alert'"
+                  ></mat-slide-toggle>
+                  <button
+                    mat-icon-button
+                    type="button"
+                    (click)="deleteAlert(row)"
+                    [attr.aria-label]="'Remove ' + row.symbol + ' alert'"
+                  >
+                    <mat-icon aria-hidden="true" fontSet="material-symbols-outlined"
+                      >delete</mat-icon
+                    >
+                  </button>
+                </td>
+              </ng-container>
+            </table>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card class="section">
+    <mat-card-header>
+      <mat-card-title><h2 class="card-title">Holdings at last quote</h2></mat-card-title>
+      <mat-card-subtitle>
+        Two values per position: what the positions file said, and what the latest quote implies.
+        Balances and net worth use the first — a quote is a moment.
+      </mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (holdings.error()) {
+        <p class="state-error-inline" role="alert">{{ holdings.error() }}</p>
+      } @else if (holdings.isEmpty()) {
+        <p class="muted">No holdings yet. Import a positions file to see them here.</p>
+      } @else if (holdings.value()) {
+        <div class="table-scroll">
+          <table mat-table [dataSource]="holdings.value()!">
+            <tr mat-header-row *matHeaderRowDef="holdingColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: holdingColumns"></tr>
+
+            <ng-container matColumnDef="account">
+              <th mat-header-cell *matHeaderCellDef>Account</th>
+              <td mat-cell *matCellDef="let row" class="muted">{{ row.accountName }}</td>
+            </ng-container>
+            <ng-container matColumnDef="symbol">
+              <th mat-header-cell *matHeaderCellDef>Holding</th>
+              <td mat-cell *matCellDef="let row">
+                <strong>{{ row.symbol }}</strong>
+                @if (row.cash) {
+                  <span class="muted"> · cash</span>
+                }
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="quantity">
+              <th mat-header-cell *matHeaderCellDef class="amount">Quantity</th>
+              <td mat-cell *matCellDef="let row" class="amount muted">
+                {{ row.quantity === null ? '—' : row.quantity }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="snapshot">
+              <th mat-header-cell *matHeaderCellDef class="amount">Snapshot value</th>
+              <td mat-cell *matCellDef="let row" class="amount">
+                {{ money(row.snapshotValue) }}
+                <div class="muted as-of">as of {{ row.snapshotAsOf }}</div>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="live">
+              <th mat-header-cell *matHeaderCellDef class="amount">At last quote</th>
+              <td mat-cell *matCellDef="let row" class="amount">
+                {{ row.liveValue === null ? '—' : money(row.liveValue) }}
+                @if (row.quoteSource === 'fake') {
+                  <span class="muted"> fake</span>
+                }
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="quoteAsOf">
+              <th mat-header-cell *matHeaderCellDef>Quote as of</th>
+              <td mat-cell *matCellDef="let row" class="muted nowrap">
+                {{
+                  row.quoteAsOf
+                    ? (row.quoteAsOf | date: 'short')
+                    : row.cash
+                      ? 'n/a'
+                      : 'no quote yet'
+                }}
+              </td>
+            </ng-container>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="section">
+    <mat-card-header>
+      <mat-card-title><h2 class="card-title">Alert history</h2></mat-card-title>
+      <mat-card-subtitle>Every firing, and whether the notification got through</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (events.error()) {
+        <p class="state-error-inline" role="alert">{{ events.error() }}</p>
+      } @else if (events.isEmpty()) {
+        <p class="muted">No alert has fired yet.</p>
+      } @else if (events.value()) {
+        <div class="table-scroll">
+          <table mat-table [dataSource]="events.value()!">
+            <tr mat-header-row *matHeaderRowDef="eventColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: eventColumns"></tr>
+
+            <ng-container matColumnDef="firedAt">
+              <th mat-header-cell *matHeaderCellDef>When</th>
+              <td mat-cell *matCellDef="let row" class="muted nowrap">
+                {{ row.firedAt | date: 'short' }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="message">
+              <th mat-header-cell *matHeaderCellDef>Alert</th>
+              <td mat-cell *matCellDef="let row">{{ row.message }}</td>
+            </ng-container>
+            <ng-container matColumnDef="delivered">
+              <th mat-header-cell *matHeaderCellDef>Delivered</th>
+              <td mat-cell *matCellDef="let row" class="muted">
+                @if (row.delivered) {
+                  yes
+                } @else {
+                  <span class="failed">no</span> — {{ row.deliveryError }}
+                }
+              </td>
+            </ng-container>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

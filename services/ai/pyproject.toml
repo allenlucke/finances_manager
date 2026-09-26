@@ -13,12 +13,14 @@ dependencies = [
     # your sample file and fails on a real export. ofxtools is actively maintained and pulls in no
     # runtime dependencies of its own (everything it lists is an extra).
     "ofxtools>=1.1",
+    # Market data (M7). One vendor call per refresh; httpx was already the dev-time HTTP client and
+    # is the smallest well-maintained choice with a pluggable transport for tests.
+    "httpx>=0.27",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3",
-    "httpx>=0.27",
     "ruff>=0.7",
 ]
 

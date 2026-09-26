@@ -95,10 +95,13 @@ a wrong secret.
 
 ## The AI service specifically
 
-- It gets transaction data, not credentials. It has no database access. It should have no outbound
-  network access except to whatever inference endpoint is configured; today compose gives it no
-  egress control at all, so that is a goal for the homelab setup (an internal-only network, or a
-  proxy) rather than a property it has.
+- It gets transaction data, not credentials for anything of Allen's. It has no database access.
+  Its outbound connections are exactly two kinds, both named here: the market-data vendor
+  (`data.alpaca.markets`, with `ALPACA_API_KEY`/`ALPACA_API_SECRET`, which live in this container
+  and nowhere else) and, later, the inference endpoint. Compose gives it no egress control yet, so
+  "nothing else" is a rule rather than an enforced property; an internal-only network with a proxy
+  is the homelab follow-up. The API's own outbound connection is to the ntfy topic in `NTFY_URL`,
+  carrying a symbol and a price and nothing about accounts or balances.
 - If a hosted LLM is used for categorization or PDF extraction, understand exactly what leaves the
   machine. Sending a full statement to a third-party API is a real decision with a real answer —
   it is not automatically wrong, but it should be deliberate and documented here when made.

@@ -23,11 +23,24 @@ from finances_ai.ingest import (
     registered_formats,
 )
 from finances_ai.ingest.common import AccountKeySecretMissing, account_key_secret
+from finances_ai.market import (
+    BrokerError,
+    BrokerUnavailable,
+    MarketDataError,
+    MarketDataUnavailable,
+    broker_from_env,
+    provider_from_env,
+)
 from finances_ai.models import (
+    BrokerOrder,
+    BrokerStatus,
     CategorizeRequest,
     CategorizeResponse,
+    MarketStatus,
+    OrderRequest,
     ParseResult,
     PositionsResult,
+    QuotesResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -163,6 +176,103 @@ async def parse_positions_endpoint(file: UploadFile = File(...)) -> PositionsRes
         len({position.account_key for position in result.positions}),
         len(result.warnings),
     )
+    return result
+
+
+@app.get("/market/status", response_model=MarketStatus)
+def market_status() -> MarketStatus:
+    """Which market-data provider is configured, if any. Shown on the Markets screen."""
+    try:
+        provider = provider_from_env()
+    except MarketDataUnavailable as exc:
+        return MarketStatus(provider="none", available=False, detail=str(exc))
+    except MarketDataError as exc:
+        return MarketStatus(provider="misconfigured", available=False, detail=str(exc))
+    return MarketStatus(provider=provider.name, available=True)
+
+
+@app.get("/market/quotes", response_model=QuotesResponse)
+def market_quotes(
+    symbols: str = Query(description="Comma-separated tickers, e.g. AAPL,MSFT"),
+) -> QuotesResponse:
+    """Latest price and previous close for each symbol (M7).
+
+    503 with a sentence when no provider is configured — the API reads that as "market data is
+    off", not as a fault — and 502 when the vendor refused or could not be reached. Symbols the
+    vendor does not know come back as warnings, never as silent gaps.
+    """
+    wanted = [s for s in symbols.split(",") if s.strip()]
+    if not wanted:
+        raise HTTPException(status_code=422, detail="No symbols given")
+    if len(wanted) > 200:
+        raise HTTPException(status_code=422, detail="At most 200 symbols per request")
+    try:
+        provider = provider_from_env()
+        quotes, warnings = provider.quotes(wanted)
+    except MarketDataUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except MarketDataError as exc:
+        logger.warning("market data: %s", exc)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    # Counts only, never symbols or prices: a watchlist says what someone is thinking of buying.
+    logger.info("quotes provider=%s asked=%d answered=%d", provider.name, len(wanted), len(quotes))
+    return QuotesResponse(provider=provider.name, quotes=quotes, warnings=warnings)
+
+
+def _broker():
+    try:
+        return broker_from_env()
+    except BrokerUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except BrokerError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.get("/broker/status", response_model=BrokerStatus)
+def broker_status() -> BrokerStatus:
+    """Whether orders can be sent at all, to which broker, and whether the market is open."""
+    try:
+        return broker_from_env().status()
+    except BrokerUnavailable as exc:
+        return BrokerStatus(broker="none", available=False, detail=str(exc))
+    except BrokerError as exc:
+        return BrokerStatus(broker="misconfigured", available=False, detail=str(exc))
+
+
+@app.post("/broker/orders", response_model=BrokerOrder)
+def broker_submit(order: OrderRequest) -> BrokerOrder:
+    """Send an order the API has already confirmed (M7b).
+
+    Nothing here decides whether to send it. The person's confirmation, the daily cap and the kill
+    switch are the API's, checked against its database before this is called. 503 when no broker
+    is configured; 502 with the broker's own sentence when it refused.
+    """
+    try:
+        result = _broker().submit(order)
+    except BrokerError as exc:
+        logger.warning("broker submit refused: %s", exc)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    # The id and the outcome, never the symbol or the size.
+    logger.info("order submitted broker=%s status=%s", result.broker, result.status)
+    return result
+
+
+@app.get("/broker/orders/{broker_order_id}", response_model=BrokerOrder)
+def broker_lookup(broker_order_id: str) -> BrokerOrder:
+    try:
+        return _broker().lookup(broker_order_id)
+    except BrokerError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.delete("/broker/orders/{broker_order_id}", response_model=BrokerOrder)
+def broker_cancel(broker_order_id: str) -> BrokerOrder:
+    try:
+        result = _broker().cancel(broker_order_id)
+    except BrokerError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    logger.info("order cancelled broker=%s status=%s", result.broker, result.status)
     return result
 
 

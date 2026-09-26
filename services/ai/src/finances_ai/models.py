@@ -6,7 +6,7 @@ breaking change on both sides — update the Java DTOs in the same commit.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
 
@@ -174,6 +174,76 @@ class PositionsResult(BaseModel):
     as_of: date | None = None
     positions: list[ParsedPosition]
     warnings: list[str] = Field(default_factory=list)
+
+
+class Quote(BaseModel):
+    """One price for one symbol at one moment (M7).
+
+    A price is money-adjacent, not money: it has no direction and never enters the ledger. Decimal
+    all the same — it multiplies a share count into a market value that does.
+    """
+
+    symbol: str
+    price: Decimal = Field(gt=0, allow_inf_nan=False)
+    previous_close: Decimal | None = Field(default=None, allow_inf_nan=False)
+    as_of: datetime
+    # "alpaca", "fake". Carried through to the row and the screen so a fake price can never be
+    # mistaken for a real one.
+    source: str
+
+
+class QuotesResponse(BaseModel):
+    provider: str
+    quotes: list[Quote]
+    # One per symbol the provider could not price. A missing quote is never silent.
+    warnings: list[str] = Field(default_factory=list)
+
+
+class MarketStatus(BaseModel):
+    provider: str
+    available: bool
+    detail: str | None = None
+
+
+class OrderRequest(BaseModel):
+    """An order the API has already confirmed and now wants sent (M7b).
+
+    Everything that decides whether it SHOULD be sent — the person's confirmation, the daily cap,
+    the kill switch — happened on the API side before this crosses the wire. ``client_order_id`` is
+    the API's own id, so a retry after a timeout cannot place the same order twice.
+    """
+
+    client_order_id: str = Field(min_length=1, max_length=48)
+    symbol: str = Field(pattern=r"^[A-Z][A-Z0-9.\-]{0,15}$")
+    side: str = Field(pattern=r"^(buy|sell)$")
+    quantity: Decimal = Field(gt=0, allow_inf_nan=False)
+    order_type: str = Field(default="market", pattern=r"^(market|limit)$")
+    limit_price: Decimal | None = Field(default=None, gt=0, allow_inf_nan=False)
+    time_in_force: str = Field(default="day", pattern=r"^(day|gtc)$")
+
+
+class BrokerOrder(BaseModel):
+    """What the broker says about an order. Statuses are folded to the API's state machine:
+    accepted, partially_filled, filled, cancelled, rejected, expired."""
+
+    broker: str
+    broker_order_id: str
+    status: str
+    broker_status: str | None = None
+    submitted_at: datetime | None = None
+    filled_at: datetime | None = None
+    filled_quantity: Decimal = Decimal(0)
+    filled_avg_price: Decimal | None = None
+
+
+class BrokerStatus(BaseModel):
+    broker: str
+    available: bool
+    paper: bool = True
+    market_open: bool | None = None
+    buying_power: Decimal | None = None
+    portfolio_value: Decimal | None = None
+    detail: str | None = None
 
 
 class CategorySuggestion(BaseModel):

@@ -286,6 +286,131 @@ def list_deleted_transactions(page: int = 0, size: int = 100) -> Any:
 
 
 # ---------------------------------------------------------------------------------------------
+# Market (M7a). A price is not money: nothing here touches the ledger or a balance.
+# ---------------------------------------------------------------------------------------------
+
+
+@mcp.tool(annotations=READS)
+def market_status() -> Any:
+    """Whether quotes can be had at all: which provider is configured, whether the API polls on a
+    timer, whether a notification channel is set, and when quotes were last fetched."""
+    return _guard(lambda: client().get("/api/v1/market/status"))
+
+
+@mcp.tool(annotations=READS)
+def watchlist() -> Any:
+    """Symbols being watched, held or not."""
+    return _guard(lambda: client().get("/api/v1/market/watchlist"))
+
+
+@mcp.tool(annotations=WRITES)
+def watch_symbol(symbol: str, note: str | None = None) -> Any:
+    """Start watching a ticker. It is quoted on every refresh and can carry price alerts.
+
+    Watching a symbol is not owning it: the watchlist is separate from holdings, which arrive only
+    from a positions import.
+    """
+    return _guard(
+        lambda: client().post("/api/v1/market/watchlist", {"symbol": symbol, "note": note})
+    )
+
+
+@mcp.tool(annotations=REMOVES)
+def unwatch_symbol(watchlist_id: int) -> Any:
+    """Stop watching, by the ``id`` from ``watchlist``. Alerts on the symbol are kept."""
+    result = _guard(lambda: client().delete(f"/api/v1/market/watchlist/{watchlist_id}"))
+    if isinstance(result, dict) and "error" in result:
+        return result
+    return {"unwatched": watchlist_id}
+
+
+@mcp.tool(annotations=READS)
+def quotes() -> Any:
+    """The latest quote for every watched or held symbol, with today's move.
+
+    ``changePct`` is against the previous close. ``source`` says where the price came from; a
+    quote from the ``fake`` provider is a stand-in for a stack with no vendor and must never be
+    presented as a market price. ``asOf`` is the vendor's timestamp for the trade.
+    """
+    return _guard(lambda: client().get("/api/v1/market/quotes"))
+
+
+@mcp.tool(annotations=WRITES)
+def refresh_quotes() -> Any:
+    """Fetch quotes now rather than waiting for the timer, and evaluate every alert against them.
+
+    Returns how many were fetched and stored, the provider's warnings (a symbol it does not know
+    is a warning, never a silent gap), and how many alerts fired. A 503 means no market-data
+    provider is configured — a state, not a fault.
+    """
+    return _guard(lambda: client().post("/api/v1/market/quotes/refresh", {}))
+
+
+@mcp.tool(annotations=READS)
+def holdings_at_market() -> Any:
+    """Every position in the latest snapshots valued two ways: as the positions file said
+    (``snapshotValue``, on ``snapshotAsOf``) and at the latest quote (``liveValue``).
+
+    The second is a moment; the first is what the broker asserted. Account balances and net worth
+    use the snapshot and never the quote — say so if asked why the two differ.
+    """
+    return _guard(lambda: client().get("/api/v1/market/holdings"))
+
+
+@mcp.tool(annotations=READS)
+def list_price_alerts() -> Any:
+    """Every price alert, active or paused, with whether it is currently armed."""
+    return _guard(lambda: client().get("/api/v1/market/alerts"))
+
+
+@mcp.tool(annotations=WRITES)
+def set_price_alert(symbol: str, rule: str, threshold: str, note: str | None = None) -> Any:
+    """Add a price alert on a ticker.
+
+    Args:
+        symbol: the ticker.
+        rule: ``above`` (price crosses above threshold), ``below`` (crosses below), or
+            ``pct_move`` (moved more than threshold percent against the previous close today).
+        threshold: a price for above/below, a percentage for pct_move. As a string, never a float.
+        note: why, for the person reading the list later.
+
+    An alert fires once when its condition becomes true and re-arms when it is false again; a
+    percent-move alert also re-arms each trading day. Firing is pushed to the configured
+    notification channel and always recorded, deliverable or not.
+    """
+    return _guard(
+        lambda: client().post(
+            "/api/v1/market/alerts",
+            {"symbol": symbol, "rule": rule, "threshold": threshold, "note": note},
+        )
+    )
+
+
+@mcp.tool(annotations=WRITES)
+def pause_price_alert(alert_id: int, active: bool) -> Any:
+    """Pause (``active=false``) or resume an alert. Resuming re-arms it."""
+    return _guard(
+        lambda: client().put(f"/api/v1/market/alerts/{alert_id}/active", {"active": active})
+    )
+
+
+@mcp.tool(annotations=REMOVES)
+def delete_price_alert(alert_id: int) -> Any:
+    """Remove an alert and its history of firings."""
+    result = _guard(lambda: client().delete(f"/api/v1/market/alerts/{alert_id}"))
+    if isinstance(result, dict) and "error" in result:
+        return result
+    return {"deleted_alert": alert_id}
+
+
+@mcp.tool(annotations=READS)
+def alert_events(size: int = 50) -> Any:
+    """Recent alert firings, newest first, each with the price that fired it and whether the
+    notification was delivered (and why not, when it was not)."""
+    return _guard(lambda: client().get("/api/v1/market/alerts/events", size=size))
+
+
+# ---------------------------------------------------------------------------------------------
 # Writing
 # ---------------------------------------------------------------------------------------------
 

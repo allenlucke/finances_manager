@@ -86,6 +86,19 @@ public class ApiExceptionHandler {
      * every one of them. The reasons are written for a person and carry nothing sensitive; the
      * first HTTP-level import test is what noticed they were never delivered.
      */
+    /**
+     * Market data being off is a state the person can change, not a fault — so unlike every other
+     * 5xx here it keeps its sentence: it names the variable to set.
+     */
+    @ExceptionHandler(llc.feelingfroggy.finances.ai.MarketDataClient.MarketDataOff.class)
+    ProblemDetail onMarketDataOff(llc.feelingfroggy.finances.ai.MarketDataClient.MarketDataOff off) {
+        var problem = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
+        problem.setTitle("Market data is off");
+        problem.setDetail(off.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     ProblemDetail onRefusal(ResponseStatusException exception) {
         var problem = ProblemDetail.forStatus(exception.getStatusCode());

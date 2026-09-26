@@ -78,6 +78,11 @@ finances:
   ai:
     base-url: ${AI_SERVICE_URL:http://localhost:8000}
     timeout: 30s
+  # Watching the market (M7a, D-18). The poller is off here and on in compose; tests never run it.
+  market:
+    scheduled: ${MARKET_REFRESH_SCHEDULED:false}
+    refresh-every: ${MARKET_REFRESH_EVERY:PT5M}
+    ntfy-url: ${NTFY_URL:}
 
 logging:
   level:

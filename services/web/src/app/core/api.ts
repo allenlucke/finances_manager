@@ -7,8 +7,16 @@ import {
   CategoryKind,
   CreateTransaction,
   Holding,
+  AlertEvent,
+  AlertRule,
+  HoldingAtMarket,
   ImportResult,
+  MarketStatus,
   MonthlyTotalsRow,
+  PriceAlert,
+  QuoteRow,
+  RefreshResult,
+  WatchlistEntry,
   LedgerEntity,
   Me,
   NetWorthRow,
@@ -221,5 +229,62 @@ export class ApiClient {
   /** Removes a reconciliation checkpoint. A real delete: it is metadata, not money. */
   deleteStatement(statementId: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/statements/${statementId}`);
+  }
+
+  // --- market (M7a) ---
+
+  marketStatus(): Observable<MarketStatus> {
+    return this.http.get<MarketStatus>(`${this.base}/market/status`);
+  }
+
+  watchlist(): Observable<WatchlistEntry[]> {
+    return this.http.get<WatchlistEntry[]>(`${this.base}/market/watchlist`);
+  }
+
+  watch(symbol: string, note: string | null): Observable<WatchlistEntry> {
+    return this.http.post<WatchlistEntry>(`${this.base}/market/watchlist`, { symbol, note });
+  }
+
+  unwatch(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/market/watchlist/${id}`);
+  }
+
+  quotes(): Observable<QuoteRow[]> {
+    return this.http.get<QuoteRow[]>(`${this.base}/market/quotes`);
+  }
+
+  refreshQuotes(): Observable<RefreshResult> {
+    return this.http.post<RefreshResult>(`${this.base}/market/quotes/refresh`, {});
+  }
+
+  holdingsAtMarket(): Observable<HoldingAtMarket[]> {
+    return this.http.get<HoldingAtMarket[]>(`${this.base}/market/holdings`);
+  }
+
+  priceAlerts(): Observable<PriceAlert[]> {
+    return this.http.get<PriceAlert[]>(`${this.base}/market/alerts`);
+  }
+
+  /** The threshold travels as a string so it is never rounded by a JS number. */
+  addPriceAlert(body: {
+    symbol: string;
+    rule: AlertRule;
+    threshold: string;
+    note: string | null;
+  }): Observable<PriceAlert> {
+    return this.http.post<PriceAlert>(`${this.base}/market/alerts`, body);
+  }
+
+  setAlertActive(id: number, active: boolean): Observable<PriceAlert> {
+    return this.http.put<PriceAlert>(`${this.base}/market/alerts/${id}/active`, { active });
+  }
+
+  deletePriceAlert(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/market/alerts/${id}`);
+  }
+
+  alertEvents(size = 50): Observable<AlertEvent[]> {
+    const params = new HttpParams().set('size', size);
+    return this.http.get<AlertEvent[]>(`${this.base}/market/alerts/events`, { params });
   }
 }

@@ -27,6 +27,12 @@ stacks are up.
      TLS). Over plain HTTP a Secure cookie is never sent and nobody can sign in.
    * `APP_TIMEZONE` — where the person is. Containers run in UTC.
    * `BACKUP_COPY_TO` — a path off the box's own disk (a mounted drive, a synced folder).
+   * **Market data (M7, D-18), when wanted:** `MARKET_DATA_PROVIDER=alpaca` with
+     `ALPACA_API_KEY` and `ALPACA_API_SECRET` from a free Alpaca account (paper trading, no funding
+     needed). `NTFY_URL` is where price alerts are pushed — a topic on a self-hosted ntfy reachable
+     over Tailscale, or `https://ntfy.sh/<a-long-random-topic>`. Both are outbound connections from
+     the box; the AI container makes the first, the API the second. Leave the provider at `none`
+     and the Markets screen simply says market data is off.
 4. `make backup-key`, then copy the key file into a password manager. Do this before the first
    real import: an archive encrypted without a copy of the key is noise.
 5. `make up`. Flyway applies the schema on first start. `make doctor` should show four healthy
