@@ -167,8 +167,8 @@ e2e: ensure-env ## Browser tests on their own throwaway stack (never touches you
 	$(E2E_COMPOSE) up --build -d
 	@. "$$NVM_DIR/nvm.sh" 2>/dev/null && nvm use >/dev/null 2>&1; \
 		cd services/web \
-		&& E2E_BASE_URL=http://localhost:$(E2E_WEB_PORT) \
-		   E2E_API_URL=http://localhost:$(E2E_API_PORT) \
+		&& E2E_BASE_URL=http://$${BIND_ADDR:-localhost}:$(E2E_WEB_PORT) \
+		   E2E_API_URL=http://$${BIND_ADDR:-localhost}:$(E2E_API_PORT) \
 		   E2E_COMPOSE_PROJECT=$(E2E_PROJECT) \
 		   npx playwright test
 	@echo "(the e2e stack is still up on :$(E2E_WEB_PORT); make e2e-down disposes of it)"
