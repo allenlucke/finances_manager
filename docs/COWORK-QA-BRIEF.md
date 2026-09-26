@@ -3,7 +3,8 @@
 Two things live here: **a short prompt to paste**, and **the reference it points at**. Cowork has
 the repository, so the detail does not belong in the prompt — it reads the reference itself.
 
-Refreshed 2026-09-05 after review batches 1–4.
+Refreshed 2026-09-26 for the Markets screen and orders (M7a, M7b). The third-run prompt below is
+the current one; the first two are kept for the record.
 
 ---
 
@@ -79,6 +80,59 @@ reference itself.
 
 ---
 
+## The third-run prompt (current)
+
+For the run after M7. The scratch stack now has a fake market-data provider and a fake broker, with
+trading switched on, so the whole order path can be walked without anything leaving the machine.
+
+> You are doing a QA pass on a personal finance app. The repository is here; the app is running at
+> **http://<this Mac's LAN address>:4201** with an empty database. You will land on a setup screen:
+> create your own account there, with a made-up passphrase. Never enter real financial data.
+>
+> **The job in one sentence:** find places where this app shows a wrong number, a confusing state,
+> or a control someone cannot use — and report them. Do not fix anything.
+>
+> One person's real money runs through this app, so a wrong number that *looks plausible* is the
+> worst possible outcome. Weight your attention that way.
+>
+> **New since the last run, and the focus of this one:** a **Markets** screen (watchlist with
+> quotes, price alerts, holdings valued at the latest quote) and an **Orders** card on it (draft an
+> order, confirm it by typing the symbol back, watch it go to a paper broker; or a "Fidelity, by
+> hand" ticket you mark placed yourself). On this stack prices come from a deterministic *fake*
+> provider and orders go to a *fake* broker that fills everything; both say so on screen, and
+> nothing leaves the machine. Trading is switched on here so the whole path is reachable.
+>
+> **Start by reading three things in the repo:**
+>
+> - `docs/COWORK-QA-BRIEF.md`, the "Reference" section — nine rules this app must never break (8
+>   and 9 are new), the "Markets and orders" checks, and a list of things that look wrong but are
+>   deliberate.
+> - `docs/DOMAIN.md` — the money model.
+> - `docs/DECISIONS.md`, entry D-18 — why a price is not money and why an order needs a restated
+>   confirmation.
+>
+> **Then do these, in order. Stop and report whenever you have enough; partial is fine.**
+>
+> 1. **Read the Markets and orders UI code against rules 8 and 9.** It is Angular, in
+>    `services/web/src/app/features/markets` (`markets.html/.ts`, `orders-card.html/.ts`). No
+>    running app needed.
+> 2. **Empty states on Markets**, signed in with nothing watched, no alerts, no holdings, no orders.
+>    Look for `Invalid Date`, `NaN`, `undefined`, `null`, `$NaN`, `-$0.00`, an empty table with no
+>    explanation, and controls that look actionable but do nothing.
+> 3. **The flows** under "Markets and orders" in the reference. Screenshot anything wrong.
+> 4. **Every message those screens can show a person** — refusals, empty states, confirmations,
+>    the status lines. Flag any that explains nothing, blames the wrong thing, or would not make
+>    sense three weeks later.
+> 5. **Accessibility and the three widths** on Markets: keyboard only, visible focus, heading
+>    order, contrast, colour never carrying meaning alone, and the tables scrolling inside their
+>    own container at 320px.
+>
+> **Report back, worst first.** For each finding give me: severity (critical / major / minor), where
+> it is (`file.ts:42`, or the steps to see it), what you expected, what actually happens, and a
+> suggested fix in a sentence. A short list of real problems beats a long list of maybes.
+
+---
+
 ## Reference
 
 *This section is for Cowork to read from the repo. It is not meant to be pasted.*
@@ -109,6 +163,18 @@ A violation of any of these is a top-severity finding.
 7. **A failed request is never an empty state.** Every screen has three states: loaded, loading, and
    "could not load" with a sentence. A request that fails must never produce "No accounts yet",
    `$0.00`, or a bare empty table. The dashboard's net worth shows a dash until it truly arrives.
+8. **A price is not money.** A quote never changes an account balance or net worth. A holding's
+   value at the latest quote is shown *beside* the value its positions snapshot gave it, labelled
+   as a moment; Accounts and the dashboard keep using the snapshot. A price from the fake provider
+   is labelled "fake" on the banner and on every row that carries one. Any screen where a quote
+   moves a balance, or where a fake price is unlabelled, is a top-severity finding.
+9. **Nothing reaches a broker without a restated confirmation.** An order is a draft until the
+   person confirms it by typing its symbol back; then the app checks the trading switch and the
+   daily cap, and every refusal is a sentence on screen with the numbers in it. A fill never
+   changes an account balance (what is owned comes from the next positions import). Status words
+   are the person's words: "confirmed, not sent", "accepted by the broker", "filled at $…",
+   "placed at Fidelity". A confirm button that is enabled before the symbol is typed, a refusal
+   that arrives wordless, or a balance that moves after a fill, is a top-severity finding.
 
 ### What to check with the app running
 
@@ -151,6 +217,39 @@ looks actionable but does nothing.
   *updated*. Then rename a text file to `.csv` and upload it — the error must be the parser's own
   words ("No parser matches this file…"), not a generic sentence.
 
+**Markets and orders** (new for the third run; the stack's prices and broker are fake and say so):
+
+- **Empty.** With nothing watched, Markets says so in words, the banner says these are fake
+  prices, and the status line says alerts are recorded but not pushed anywhere.
+- **Watch.** Add `AAPL`, then Refresh quotes. The row shows a price with "fake" beside it, today's
+  move with its sign (`+1.18%`, never colour alone), and an as-of time that is not `Invalid Date`.
+  Stop watching removes it. A made-up symbol like `ZZZQ` also gets a fake price here — deliberate.
+- **Alerts.** Set `AAPL rises above 1`, Refresh quotes: it fires once, the row reads "fired —
+  re-arms when the condition clears", and Alert history shows the firing with "Delivered: no" and
+  the reason naming `NTFY_URL`. Refresh again: it must **not** fire a second time. Pause with the
+  toggle (row reads "paused"), resume, remove. Set a percent alert and check the label says `%`.
+- **Holdings at last quote.** Import `services/ai/tests/positions.csv` through Import → Brokerage
+  positions, then Markets: each holding shows a snapshot value *with its date* and a value at the
+  latest quote, the cash row shows `n/a` for a quote, and **Accounts and the dashboard do not
+  change** when quotes refresh (rule 8).
+- **Orders, the paper path.** The Orders card's status line says trading is on with a
+  `$1,000.00` daily cap. Draft `buy 2 AAPL at market`, paper broker: the row shows "draft", the
+  size ("About") is 2 × the fake price, and it says who proposed it. Press Confirm: the panel
+  restates the order and its cost, and the confirm button stays disabled until you type `AAPL`
+  (case should not matter). Confirm: status becomes "accepted by the broker" with "fake broker"
+  under it. Press Check with broker: "filled at $…". History lists the person, then the broker,
+  with times. Then check **Accounts: nothing moved** (rule 9).
+- **Orders, the cap.** Draft `buy 10 AAPL at market` (about $1,893, over the cap) and confirm it:
+  the refusal is a sentence naming what was already sent today, this order's size and the cap,
+  the row reads "cancelled", and History shows the system cancelling it with the reason.
+- **Orders, by hand.** Draft `sell 3 AAPL`, limit `195`, "Fidelity, by hand": after confirming,
+  the row reads "confirmed — take it to Fidelity", Mark placed asks for an optional fill price,
+  and the row then reads "placed at Fidelity at $195.10". No broker is involved and the cap's
+  "sent today" figure does not change.
+- **Orders, the edges.** A limit order with no price cannot be saved. Cancel on a draft works
+  without a confirmation step (a draft commits to nothing). Keep as draft closes the panel and
+  leaves the row a draft. Refresh the page: everything above is still there.
+
 **Accessibility, as a real requirement.** Keyboard-only through every flow above. Visible focus.
 Labels tied to inputs. One h1 per page, h2 per card, in order. Contrast at WCAG AA. Colour never
 carrying meaning alone — this app uses colour for positive and negative money and for over-budget,
@@ -173,6 +272,20 @@ they must scroll inside their own container and never make the page scroll sidew
 - Account numbers showing only the last four.
 - The app looking plain. It is a tool, not a product.
 - Exactly one user account, with no way to register a second.
+- **On this stack, every price says "fake" and every order says "fake broker".** That is the
+  scratch stack's provider and broker, deliberately labelled. The findings to report are places
+  where the label is *missing*.
+- Trading being on here. A real deployment starts with it off, and the card then says "Trading is
+  off" and names `TRADING_ENABLED`.
+- A made-up symbol getting a price. The fake provider prices anything; the real one reports an
+  unknown symbol as a warning.
+- Alerts "recorded but not pushed anywhere". No notification channel is configured on the
+  scratch stack, and the line says exactly that.
+- A market order for a symbol with no quote yet being refused with "Refresh quotes first, or give
+  a limit price". It cannot be sized without a price.
+- "Confirm again" on a paper order that is confirmed but not sent. That is how it goes once the
+  switch is on.
+- A fill changing nothing on Accounts. What is owned comes from the next positions import (D-18).
 
 ### Ground rules
 
@@ -191,7 +304,9 @@ make e2e               # runs the 12 browser tests, then leaves web on :4201, ap
 
 That stack has its own database and volume, and the suite leaves it empty, so Cowork sees the
 first-run setup screen and creates its own account. Nothing it does can touch yours. `make e2e-down`
-disposes of it.
+disposes of it. Since M7 the scratch stack runs the fake market-data provider and the fake broker
+with trading switched on (`infra/e2e.env`), so the order path can be walked end to end; nothing it
+does leaves the machine.
 
 **If Cowork cannot reach `localhost`** — on 2026-09-05 it could not, while its own browser worked
 fine — publish on this Mac's LAN address instead and give Cowork that URL:
