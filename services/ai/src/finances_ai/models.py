@@ -279,3 +279,134 @@ class CategorizeRequest(BaseModel):
 
 class CategorizeResponse(BaseModel):
     suggestions: list[CategorySuggestion]
+
+
+# --- Strategies and backtests (M7c, D-19) ---------------------------------------------------
+
+TIMEFRAME_PATTERN = r"^(1Min|5Min|15Min|1Hour|1Day)$"
+
+
+class Bar(BaseModel):
+    """One OHLCV bar. Prices are Decimal for the same reason quotes are."""
+
+    ts: datetime
+    open: Decimal = Field(gt=0, allow_inf_nan=False)
+    high: Decimal = Field(gt=0, allow_inf_nan=False)
+    low: Decimal = Field(gt=0, allow_inf_nan=False)
+    close: Decimal = Field(gt=0, allow_inf_nan=False)
+    volume: int = 0
+
+
+class StrategyParam(BaseModel):
+    name: str
+    label: str
+    type: str = Field(pattern=r"^(int|decimal)$")
+    default: Decimal
+    min: Decimal | None = None
+    max: Decimal | None = None
+    description: str
+
+
+class StrategyInfo(BaseModel):
+    kind: str
+    label: str
+    description: str
+    # True when the strategy only makes sense on intraday bars (it is flat by each close).
+    intraday: bool
+    params: list[StrategyParam]
+
+
+class BacktestRequest(BaseModel):
+    """A backtest as the API asks for it. Every assumption is a field, with a default that errs
+    against the strategy: slippage on, commission zero only because most brokers charge none."""
+
+    strategy: str = Field(min_length=1, max_length=40)
+    params: dict[str, Decimal] = Field(default_factory=dict)
+    symbol: str = Field(pattern=r"^[A-Z][A-Z0-9.\-]{0,15}$")
+    timeframe: str = Field(pattern=TIMEFRAME_PATTERN)
+    start: date
+    end: date
+    initial_cash: Decimal = Field(default=Decimal("10000"), gt=0, allow_inf_nan=False)
+    slippage_bps: Decimal = Field(default=Decimal("5"), ge=0, le=500, allow_inf_nan=False)
+    commission_per_order: Decimal = Field(default=Decimal("0"), ge=0, allow_inf_nan=False)
+    # The last part of the period is held back and reported separately: a strategy that only
+    # works on the bars it was tuned on shows itself here.
+    out_of_sample_fraction: Decimal = Field(default=Decimal("0.3"), ge=0, lt=1)
+
+
+class BacktestTrade(BaseModel):
+    entered_at: datetime
+    exited_at: datetime | None = None
+    quantity: int
+    entry_price: Decimal
+    exit_price: Decimal | None = None
+    pnl: Decimal | None = None
+    return_pct: Decimal | None = None
+    reason_in: str
+    reason_out: str | None = None
+    # Opened and closed in the same New York session: what the pattern day trader rule counts.
+    same_day: bool = False
+
+
+class BacktestMetrics(BaseModel):
+    bars: int
+    trades: int
+    total_return_pct: Decimal
+    # Buying at the first bar the strategy could have acted on and holding to the last close, with
+    # the same slippage and commission. Always shown beside the strategy's return.
+    benchmark_return_pct: Decimal
+    max_drawdown_pct: Decimal
+    win_rate_pct: Decimal | None = None
+    profit_factor: Decimal | None = None
+    avg_trade_pct: Decimal | None = None
+    exposure_pct: Decimal
+    # A dimensionless statistic, not money; the one float in this file.
+    sharpe: float | None = None
+    final_equity: Decimal
+    day_trades: int
+
+
+class EquityPoint(BaseModel):
+    ts: datetime
+    equity: Decimal
+
+
+class BacktestResult(BaseModel):
+    provider: str
+    strategy: str
+    params: dict[str, Decimal]
+    symbol: str
+    timeframe: str
+    start: date
+    end: date
+    metrics: BacktestMetrics
+    in_sample: BacktestMetrics | None = None
+    out_of_sample: BacktestMetrics | None = None
+    equity_curve: list[EquityPoint]
+    trades: list[BacktestTrade]
+    # The honesty notes: fake bars, too few trades, buy-and-hold won, in-sample beat out-of-sample,
+    # the pattern day trader rule. Never empty when any of them applies.
+    warnings: list[str] = Field(default_factory=list)
+
+
+class EvaluateRequest(BaseModel):
+    """ "What does this strategy say right now?" — for a live strategy that proposes drafts."""
+
+    strategy: str = Field(min_length=1, max_length=40)
+    params: dict[str, Decimal] = Field(default_factory=dict)
+    symbol: str = Field(pattern=r"^[A-Z][A-Z0-9.\-]{0,15}$")
+    timeframe: str = Field(pattern=TIMEFRAME_PATTERN)
+    position: str = Field(default="flat", pattern=r"^(flat|long)$")
+    lookback_bars: int = Field(default=300, ge=20, le=5000)
+
+
+class EvaluateResult(BaseModel):
+    provider: str
+    symbol: str
+    bars: int
+    as_of: datetime | None = None
+    last_close: Decimal | None = None
+    # buy, sell, or nothing. A signal from one of the last three bars, newest first.
+    action: str | None = None
+    reason: str | None = None
+    warnings: list[str] = Field(default_factory=list)

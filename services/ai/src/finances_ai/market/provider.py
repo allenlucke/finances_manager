@@ -18,17 +18,25 @@ outcome than one that said it had no data.
 
 from __future__ import annotations
 
+import math
 import os
-from datetime import UTC, datetime
+import random
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Protocol
+from zoneinfo import ZoneInfo
 
 import httpx
 
-from finances_ai.models import Quote
+from finances_ai.models import Bar, Quote
 
 PROVIDER_VARIABLE = "MARKET_DATA_PROVIDER"
 ALPACA_DATA_URL = "https://data.alpaca.markets"
+NEW_YORK = ZoneInfo("America/New_York")
+TIMEFRAME_MINUTES = {"1Min": 1, "5Min": 5, "15Min": 15, "1Hour": 60, "1Day": None}
+SESSION_OPEN = time(9, 30)
+SESSION_CLOSE = time(16, 0)
+CENT = Decimal("0.01")
 
 
 class MarketDataError(RuntimeError):
@@ -50,6 +58,30 @@ class Provider(Protocol):
 
     def quotes(self, symbols: list[str]) -> tuple[list[Quote], list[str]]:
         """Quotes for the symbols it could price, and a warning for each one it could not."""
+
+    def bars(self, symbol: str, timeframe: str, start: datetime, end: datetime) -> list[Bar]:
+        """OHLCV history for one symbol, oldest first (M7c). Empty when the vendor has none."""
+
+
+def session_bars(day: date, timeframe: str) -> list[datetime]:
+    """The bar timestamps of one regular New York session, in UTC.
+
+    Intraday bars are stamped at their open, 09:30 onwards, and stop before 16:00; the daily bar
+    is stamped at the close. Weekends are skipped; exchange holidays are not known here, so a
+    fake series has a few sessions a real one would not — harmless for what it is for.
+    """
+    if day.weekday() >= 5:
+        return []
+    minutes = TIMEFRAME_MINUTES[timeframe]
+    if minutes is None:
+        return [datetime.combine(day, SESSION_CLOSE, NEW_YORK).astimezone(UTC)]
+    stamps = []
+    at = datetime.combine(day, SESSION_OPEN, NEW_YORK)
+    close = datetime.combine(day, SESSION_CLOSE, NEW_YORK)
+    while at < close:
+        stamps.append(at.astimezone(UTC))
+        at += timedelta(minutes=minutes)
+    return stamps
 
 
 def _decimal(value: object) -> Decimal | None:
@@ -107,6 +139,47 @@ class FakeProvider:
     def _derived(symbol: str) -> tuple[str, str]:
         cents = sum(ord(ch) for ch in symbol) % 9000 + 1000
         return f"{cents / 100:.2f}", f"{(cents - 37) / 100:.2f}"
+
+    def bars(self, symbol: str, timeframe: str, start: datetime, end: datetime) -> list[Bar]:
+        """A deterministic random walk with a slow swell, so crossovers and breakouts happen.
+
+        Seeded by symbol and timeframe: the same request gives the same bars forever, which is
+        what a test needs and what makes two backtests comparable. Nothing about it resembles any
+        market, and every result built on it says so.
+        """
+        symbol = symbol.strip().upper()
+        rng = random.Random(f"{symbol}:{timeframe}")
+        price = float(self._TABLE.get(symbol, self._derived(symbol))[0])
+        minutes = TIMEFRAME_MINUTES[timeframe]
+        sigma = 0.012 if minutes is None else 0.0009 * math.sqrt(minutes)
+        swell_period = 40 if minutes is None else max(60, 390 // minutes * 3)
+        out: list[Bar] = []
+        day = start.astimezone(NEW_YORK).date()
+        last = end.astimezone(NEW_YORK).date()
+        i = 0
+        while day <= last:
+            for stamp in session_bars(day, timeframe):
+                if stamp < start or stamp > end:
+                    continue
+                move = rng.gauss(0, sigma) + sigma * 0.6 * math.sin(2 * math.pi * i / swell_period)
+                open_ = price
+                close = max(0.5, open_ * (1 + move))
+                high = max(open_, close) * (1 + abs(rng.gauss(0, sigma / 2)))
+                low = min(open_, close) * (1 - abs(rng.gauss(0, sigma / 2)))
+                out.append(
+                    Bar(
+                        ts=stamp,
+                        open=Decimal(str(round(open_, 2))).quantize(CENT),
+                        high=Decimal(str(round(high, 2))).quantize(CENT),
+                        low=Decimal(str(round(max(low, 0.01), 2))).quantize(CENT),
+                        close=Decimal(str(round(close, 2))).quantize(CENT),
+                        volume=rng.randint(1_000, 100_000),
+                    )
+                )
+                price = close
+                i += 1
+            day += timedelta(days=1)
+        return out
 
 
 class AlpacaProvider:
@@ -175,6 +248,61 @@ class AlpacaProvider:
             else:
                 quotes.append(quote)
         return quotes, warnings
+
+    def bars(self, symbol: str, timeframe: str, start: datetime, end: datetime) -> list[Bar]:
+        """``GET /v2/stocks/{symbol}/bars``, paged, split-adjusted, on the configured feed.
+
+        The free tier serves IEX bars: real prices, a fraction of the volume. Pages are followed
+        until the vendor stops handing out a token or a hard cap is reached — a year of minute
+        bars is about a hundred thousand rows, and nothing here needs more than that.
+        """
+        symbol = symbol.strip().upper()
+        params: dict[str, str | int] = {
+            "timeframe": timeframe,
+            "start": start.astimezone(UTC).isoformat().replace("+00:00", "Z"),
+            "end": end.astimezone(UTC).isoformat().replace("+00:00", "Z"),
+            "limit": 10_000,
+            "adjustment": "split",
+            "feed": self._feed,
+            "sort": "asc",
+        }
+        out: list[Bar] = []
+        for _ in range(60):
+            try:
+                response = self._client.get(f"/v2/stocks/{symbol}/bars", params=params)
+            except httpx.HTTPError as exc:
+                raise MarketDataError(
+                    f"Alpaca could not be reached ({type(exc).__name__})"
+                ) from exc
+            if response.status_code in (401, 403):
+                raise MarketDataError("Alpaca refused the API key")
+            if response.status_code == 429:
+                raise MarketDataError("Alpaca rate limit reached; try again in a minute")
+            if response.status_code >= 400:
+                raise MarketDataError(f"Alpaca answered {response.status_code} for {symbol} bars")
+            body = response.json()
+            if not isinstance(body, dict):
+                raise MarketDataError("Alpaca answered something that is not a bar list")
+            for raw in body.get("bars") or []:
+                bar = self._bar(raw)
+                if bar is not None:
+                    out.append(bar)
+            token = body.get("next_page_token")
+            if not token:
+                break
+            params["page_token"] = token
+        return out
+
+    @staticmethod
+    def _bar(raw: dict) -> Bar | None:
+        try:
+            ts = datetime.fromisoformat(str(raw.get("t")).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        o, h, lo, c = (_decimal(raw.get(k)) for k in ("o", "h", "l", "c"))
+        if None in (o, h, lo, c):
+            return None
+        return Bar(ts=ts, open=o, high=h, low=lo, close=c, volume=int(raw.get("v") or 0))
 
     def _from_snapshot(self, symbol: str, snapshot: dict) -> Quote | None:
         trade = snapshot.get("latestTrade") or {}

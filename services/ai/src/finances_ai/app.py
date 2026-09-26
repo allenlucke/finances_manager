@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, time, timedelta
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 
@@ -24,23 +25,36 @@ from finances_ai.ingest import (
 )
 from finances_ai.ingest.common import AccountKeySecretMissing, account_key_secret
 from finances_ai.market import (
+    CATALOG,
+    TIMEFRAME_MINUTES,
+    BacktestError,
     BrokerError,
     BrokerUnavailable,
     MarketDataError,
     MarketDataUnavailable,
+    StrategyError,
     broker_from_env,
+    catalog_entry,
+    evaluate,
     provider_from_env,
+    resolve_params,
+    run_backtest,
 )
 from finances_ai.models import (
+    BacktestRequest,
+    BacktestResult,
     BrokerOrder,
     BrokerStatus,
     CategorizeRequest,
     CategorizeResponse,
+    EvaluateRequest,
+    EvaluateResult,
     MarketStatus,
     OrderRequest,
     ParseResult,
     PositionsResult,
     QuotesResponse,
+    StrategyInfo,
 )
 
 logger = logging.getLogger(__name__)
@@ -282,3 +296,84 @@ def categorize_endpoint(request: CategorizeRequest) -> CategorizeResponse:
     return CategorizeResponse(
         suggestions=categorize(request.transactions, account_type=request.account_type)
     )
+
+
+# --- Strategies and backtests (M7c, D-19) ---------------------------------------------------
+
+
+@app.get("/strategies", response_model=list[StrategyInfo])
+def strategy_catalog() -> list[StrategyInfo]:
+    """The strategies this service knows, with their parameters, defaults and bounds."""
+    return CATALOG
+
+
+def _provider_or_refuse():
+    try:
+        return provider_from_env()
+    except MarketDataUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except MarketDataError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/backtests", response_model=BacktestResult)
+def backtest_endpoint(request: BacktestRequest) -> BacktestResult:
+    """Run a strategy over history and report honestly (docs/DECISIONS.md D-19).
+
+    422 for a request that cannot be run as asked — an unknown strategy, a parameter out of
+    bounds, an intraday strategy on daily bars, too few bars; 503 when no market-data provider is
+    configured; 502 when the vendor refused. The result's ``warnings`` are for the person.
+    """
+    if request.end < request.start:
+        raise HTTPException(status_code=422, detail="The end date is before the start date")
+    try:
+        resolve_params(request.strategy, request.params)
+        info = catalog_entry(request.strategy)
+    except StrategyError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if info.intraday and request.timeframe == "1Day":
+        raise HTTPException(
+            status_code=422,
+            detail=f"{info.label} is an intraday strategy; choose a timeframe under a day.",
+        )
+    provider = _provider_or_refuse()
+    start = datetime.combine(request.start, time.min, UTC)
+    end = datetime.combine(request.end, time.max, UTC)
+    try:
+        bars = provider.bars(request.symbol, request.timeframe, start, end)
+    except MarketDataError as exc:
+        logger.warning("bars: %s", exc)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    try:
+        result = run_backtest(request, bars, provider.name)
+    except (BacktestError, StrategyError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    logger.info(
+        "backtest provider=%s strategy=%s bars=%d trades=%d",
+        provider.name,
+        request.strategy,
+        len(bars),
+        result.metrics.trades,
+    )
+    return result
+
+
+@app.post("/strategies/evaluate", response_model=EvaluateResult)
+def evaluate_endpoint(request: EvaluateRequest) -> EvaluateResult:
+    """What a strategy says about the newest bars. The API turns a signal into a *draft* order
+    for a person to confirm; nothing here trades."""
+    try:
+        resolve_params(request.strategy, request.params)
+    except StrategyError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    provider = _provider_or_refuse()
+    minutes = TIMEFRAME_MINUTES[request.timeframe]
+    # Enough calendar to cover the lookback in session bars, plus nights, weekends and a holiday.
+    sessions = request.lookback_bars if minutes is None else request.lookback_bars * minutes / 390
+    now = datetime.now(UTC)
+    since = now - timedelta(days=sessions * 1.6 + 4)
+    try:
+        bars = provider.bars(request.symbol, request.timeframe, since, now)
+    except MarketDataError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return evaluate(request, bars[-request.lookback_bars :], provider.name)
