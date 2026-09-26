@@ -19,7 +19,12 @@
               <span class="dot" aria-hidden="true"></span>
               <span class="sev-word">{{ item.severity }}</span>
               <span class="text">{{ item.text }}</span>
-              <a mat-button [routerLink]="item.link" [attr.aria-label]="'Go to ' + item.link">Go</a>
+              <a
+                mat-button
+                [routerLink]="item.link"
+                [attr.aria-label]="'Go to ' + screenName(item.link)"
+                >Go</a
+              >
             </li>
           }
         </ul>

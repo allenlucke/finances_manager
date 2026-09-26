@@ -14,7 +14,9 @@ import { EMAIL, PASSPHRASE, goTo, signIn, signOut } from './helpers';
  * TRUNCATE covers the case where this test dies halfway.
  */
 test.describe('Passkeys', () => {
-  test('a passkey can be added, is then required at sign-in, and satisfies the second factor', async ({ page }) => {
+  test('a passkey can be added, is then required at sign-in, and satisfies the second factor', async ({
+    page,
+  }) => {
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('WebAuthn.enable');
     const { authenticatorId } = await cdp.send('WebAuthn.addVirtualAuthenticator', {

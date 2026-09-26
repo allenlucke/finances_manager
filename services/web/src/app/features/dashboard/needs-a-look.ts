@@ -155,6 +155,20 @@ export class NeedsALookComponent {
     });
   }
 
+  /** The screen a link goes to, by name, for the link's accessible label. */
+  protected screenName(link: string): string {
+    const names: Record<string, string> = {
+      '/dashboard': 'Dashboard',
+      '/import': 'Import',
+      '/budget': 'Budget',
+      '/markets': 'Markets',
+      '/cashflow': 'Cash flow',
+      '/strategies': 'Strategies',
+      '/transactions': 'Transactions',
+    };
+    return names[link] ?? link;
+  }
+
   /** "overdue by 3 days", "due today", "due in 12 days". Computed from the date, never guessed. */
   protected when(reminder: Reminder): string {
     const due = new Date(reminder.dueOn + 'T00:00:00');

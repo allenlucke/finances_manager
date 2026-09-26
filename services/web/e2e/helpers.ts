@@ -58,7 +58,9 @@ export async function signOut(page: Page): Promise<void> {
  * destination is what makes the navigation observable.
  */
 export async function goTo(page: Page, link: string, anchor: string): Promise<void> {
-  await page.getByRole('link', { name: link }).click();
+  // exact: the dashboard's needs-a-look card has "Go to Import" links, and a loose match on
+  // "Import" resolved to two elements once that card had something to say.
+  await page.getByRole('link', { name: link, exact: true }).click();
   await expect(page.getByText(anchor).first()).toBeVisible();
 }
 

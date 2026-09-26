@@ -29,7 +29,11 @@ test.describe('Deployed stack', () => {
     // and passkeys silently dead in the only stack that runs on the homelab. Anonymous callers
     // are refused (CSRF, 403) — the assertion is that the refusal came from the API as JSON,
     // not from nginx as a page.
-    for (const path of ['/webauthn/authenticate/options', '/webauthn/register/options', '/login/webauthn']) {
+    for (const path of [
+      '/webauthn/authenticate/options',
+      '/webauthn/register/options',
+      '/login/webauthn',
+    ]) {
       const response = await request.post(path, { data: {} });
       expect(response.status(), path).not.toBe(405);
       expect(response.headers()['content-type'] ?? '', path).toContain('json');
@@ -41,7 +45,9 @@ test.describe('Deployed stack', () => {
     // the point is that it answered at all rather than nginx sending 413.
     const twoMegabytes = 'x'.repeat(2 * 1024 * 1024);
     const response = await request.post('/api/v1/imports', {
-      multipart: { file: { name: 'big.csv', mimeType: 'text/csv', buffer: Buffer.from(twoMegabytes) } },
+      multipart: {
+        file: { name: 'big.csv', mimeType: 'text/csv', buffer: Buffer.from(twoMegabytes) },
+      },
     });
     expect(response.status()).not.toBe(413);
   });
@@ -101,7 +107,9 @@ test.describe('Journey', () => {
     await expect(page.getByText('-$84.31')).toBeVisible();
   });
 
-  test('marking a transaction as a transfer swaps category for a destination account', async ({ page }) => {
+  test('marking a transaction as a transfer swaps category for a destination account', async ({
+    page,
+  }) => {
     await signIn(page);
     await goTo(page, 'Transactions', 'Add a transaction');
 
@@ -122,7 +130,9 @@ test.describe('Journey', () => {
     await expect(page.getByText('Needs a category')).toBeVisible();
   });
 
-  test('a statement can be uploaded, lands in the ledger, and a second upload adds nothing', async ({ page }) => {
+  test('a statement can be uploaded, lands in the ledger, and a second upload adds nothing', async ({
+    page,
+  }) => {
     // The product's primary workflow, and until now the one thing no automated test uploaded.
     // This goes through the real parser in the e2e stack's own AI container, not a stub.
     await signIn(page);
@@ -157,7 +167,6 @@ test.describe('Journey', () => {
     await expect(page.getByRole('link', { name: 'Dashboard' })).toBeHidden();
   });
 });
-
 
 /**
  * A two-row generic export, written fresh with this month's dates.

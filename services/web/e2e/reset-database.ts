@@ -26,15 +26,31 @@ function psql(sql: string): string {
   return execFileSync(
     'docker',
     [
-      'compose', '-p', PROJECT,
-      '-f', '../../infra/docker-compose.yml', '--env-file', '../../.env',
-      'exec', '-T', 'db',
-      'psql', '-U', process.env.DATABASE_USER ?? 'finances',
-      '-d', process.env.DATABASE_NAME ?? 'finances',
-      '-tA', '-v', 'ON_ERROR_STOP=1', '-c', sql,
+      'compose',
+      '-p',
+      PROJECT,
+      '-f',
+      '../../infra/docker-compose.yml',
+      '--env-file',
+      '../../.env',
+      'exec',
+      '-T',
+      'db',
+      'psql',
+      '-U',
+      process.env.DATABASE_USER ?? 'finances',
+      '-d',
+      process.env.DATABASE_NAME ?? 'finances',
+      '-tA',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-c',
+      sql,
     ],
     { stdio: ['ignore', 'pipe', 'pipe'] },
-  ).toString().trim();
+  )
+    .toString()
+    .trim();
 }
 
 /**
