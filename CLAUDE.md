@@ -146,6 +146,11 @@ own, and is not part of the compose stack — Claude Code launches it.
   broker this release knows. A fill is never a ledger row — what is owned comes from the next
   positions import. `TradingTest` and `TradingOffTest` pin the gates; the MCP `confirm_order` tool
   is marked destructive so the client asks before calling it.
+- **What needs a look is one list, read by three things.** (D-20) `DigestService.compose` is the
+  only place the "needs a look" sentences are made; the dashboard card, the MCP tool and the daily
+  push all call it, so a new kind of item is added once and they can never disagree. Items are
+  sentences with the number in them and a link. A run is recorded whether or not it was delivered.
+  `DigestTest` pins the sentences.
 - **A backtest is a claim, and a strategy proposes.** (D-19) The backtester fills on the next
   bar's open, charges slippage and commission, sizes in whole shares, computes buy and hold over
   the same bars with the same costs, holds the last part of the period out of sample, and returns

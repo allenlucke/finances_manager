@@ -661,6 +661,101 @@ def evaluate_strategies() -> Any:
 
 
 # ---------------------------------------------------------------------------------------------
+# The app speaks up (M8, D-20): what needs a look, and reminders.
+# ---------------------------------------------------------------------------------------------
+
+
+@mcp.tool(annotations=READS)
+def needs_a_look() -> Any:
+    """What the app has noticed that needs a person: statements the ledger disagrees with,
+    orders waiting on a decision or refused, reminders coming due, categories over their target
+    this month, accounts nobody has imported for a while, undelivered alerts, strategies that could
+    not be evaluated. Each item is a sentence with the number in it, worst first, and a screen to
+    go to. The same list the daily digest pushes. Start a session here."""
+    return _guard(lambda: client().get("/api/v1/digest/preview"))
+
+
+@mcp.tool(annotations=WRITES)
+def send_digest() -> Any:
+    """Push the needs-a-look list to the person's phone now (ntfy), even if all is quiet. The run
+    is recorded either way; ``sent`` false with ``deliveryError`` says why not."""
+    return _guard(lambda: client().post("/api/v1/digest/send", {}))
+
+
+@mcp.tool(annotations=READS)
+def digest_settings() -> Any:
+    """When the daily digest goes out and what counts as stale: digestEnabled, digestTime (HH:mm
+    in the app's zone), staleAfterDays, draftWaitHours, quietWhenEmpty."""
+    return _guard(lambda: client().get("/api/v1/digest/settings"))
+
+
+@mcp.tool(annotations=WRITES)
+def set_digest_settings(
+    digest_enabled: bool | None = None,
+    digest_time: str | None = None,
+    stale_after_days: int | None = None,
+    draft_wait_hours: int | None = None,
+    quiet_when_empty: bool | None = None,
+) -> Any:
+    """Change the digest's timing or thresholds. Only the fields given change."""
+    body = {
+        "digestEnabled": digest_enabled,
+        "digestTime": digest_time,
+        "staleAfterDays": stale_after_days,
+        "draftWaitHours": draft_wait_hours,
+        "quietWhenEmpty": quiet_when_empty,
+    }
+    return _guard(lambda: client().put("/api/v1/digest/settings", body))
+
+
+@mcp.tool(annotations=READS)
+def list_reminders() -> Any:
+    """Reminders, active first by due date: title, due date, cadence, lead days, amount."""
+    return _guard(lambda: client().get("/api/v1/reminders"))
+
+
+@mcp.tool(annotations=WRITES)
+def add_reminder(
+    title: str,
+    due_on: str,
+    cadence: str = "once",
+    lead_days: int = 3,
+    amount: str | None = None,
+    notes: str | None = None,
+) -> Any:
+    """Add a dated reminder — estimated taxes, an LLC filing, a bill.
+
+    Args:
+        due_on: YYYY-MM-DD.
+        cadence: once, weekly, monthly, quarterly or yearly. Done on a recurring one moves it
+            to its next occurrence.
+        lead_days: how many days before the due date the digest starts mentioning it.
+        amount: optional, as a string.
+    """
+    body = {
+        "title": title,
+        "dueOn": due_on,
+        "cadence": cadence,
+        "leadDays": lead_days,
+        "amount": amount,
+        "notes": notes,
+    }
+    return _guard(lambda: client().post("/api/v1/reminders", body))
+
+
+@mcp.tool(annotations=WRITES)
+def complete_reminder(reminder_id: int) -> Any:
+    """Mark a reminder done. A one-off is finished; a recurring one advances to its next date."""
+    return _guard(lambda: client().post(f"/api/v1/reminders/{reminder_id}/done", {}))
+
+
+@mcp.tool(annotations=REMOVES)
+def delete_reminder(reminder_id: int) -> Any:
+    """Remove a reminder entirely. To stop being nagged for now, complete it instead."""
+    return _guard(lambda: client().delete(f"/api/v1/reminders/{reminder_id}"))
+
+
+# ---------------------------------------------------------------------------------------------
 # Writing
 # ---------------------------------------------------------------------------------------------
 

@@ -37,7 +37,12 @@ describe('DashboardComponent', () => {
 
   /** Answers the five requests the dashboard fires, with defaults for the ones a test ignores. */
   function answerAll(overrides: Partial<Record<string, Answer>> = {}) {
+    // The needs-a-look card is a child; it asks for its data when the template first renders,
+    // and a reload of this screen does not repeat those two requests.
+    fixture.detectChanges();
     const answers: Record<string, Answer> = {
+      '/api/v1/digest/preview': ok([]),
+      '/api/v1/reminders': ok([]),
       '/api/v1/entities': ok([]),
       '/api/v1/reports/net-worth': ok([]),
       '/api/v1/reports/reconciliation': ok([]),
@@ -48,6 +53,11 @@ describe('DashboardComponent', () => {
     };
     for (const [path, answer] of Object.entries(answers)) {
       const pending = backend.match((request) => request.url.startsWith(path));
+      if (
+        pending.length === 0 &&
+        (path.startsWith('/api/v1/digest') || path.startsWith('/api/v1/reminders'))
+      )
+        continue;
       expect(pending.length, path).toBeGreaterThan(0);
       const status = answer.status ?? 200;
       for (const request of pending) {

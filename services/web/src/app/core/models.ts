@@ -562,3 +562,58 @@ export interface StrategyOutcome {
   orderId: number | null;
   note: string;
 }
+
+// --- the app speaks up (M8, D-20) ---
+
+export interface DigestItem {
+  kind:
+    'reconciliation' | 'order' | 'reminder' | 'budget' | 'stale' | 'alerts' | 'strategy' | string;
+  severity: 'high' | 'medium' | 'low';
+  /** A sentence with the number in it. The push and the dashboard show the same one. */
+  text: string;
+  link: string;
+}
+
+export interface DigestRun {
+  id: number;
+  forDate: string;
+  ranAt: string;
+  manual: boolean;
+  items: number;
+  sent: boolean;
+  deliveryError: string | null;
+  body: string;
+}
+
+export interface DigestSettings {
+  digestEnabled: boolean;
+  /** HH:mm in the app's zone. */
+  digestTime: string;
+  staleAfterDays: number;
+  draftWaitHours: number;
+  quietWhenEmpty: boolean;
+}
+
+export type ReminderCadence = 'once' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
+export interface Reminder {
+  id: number;
+  title: string;
+  notes: string | null;
+  dueOn: string;
+  cadence: ReminderCadence;
+  leadDays: number;
+  amount: number | null;
+  active: boolean;
+  lastDoneOn: string | null;
+}
+
+export interface NewReminder {
+  title: string;
+  notes: string | null;
+  dueOn: string;
+  cadence: ReminderCadence;
+  leadDays: number;
+  /** A string, like every amount; null when there is none. */
+  amount: string | null;
+}

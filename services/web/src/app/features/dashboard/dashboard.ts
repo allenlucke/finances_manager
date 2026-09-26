@@ -9,6 +9,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { ApiClient } from '../../core/api';
 import { LoadState } from '../../core/load-state';
+import { NeedsALookComponent } from './needs-a-look';
 import {
   amountClass,
   firstOfThisMonth,
@@ -38,6 +39,7 @@ import {
 @Component({
   selector: 'app-dashboard',
   imports: [
+    NeedsALookComponent,
     MatCardModule,
     MatTableModule,
     MatIconModule,

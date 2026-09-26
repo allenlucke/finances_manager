@@ -1,0 +1,99 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+.items,
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.items {
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    background: var(--mat-sys-outline);
+  }
+  .sev-high .dot {
+    background: var(--mat-sys-error);
+  }
+  .sev-medium .dot {
+    background: var(--mat-sys-tertiary);
+  }
+  // Colour never carries meaning alone: the word is there too, visually small.
+  .sev-word {
+    font: var(--mat-sys-label-small);
+    text-transform: uppercase;
+    color: var(--mat-sys-on-surface-variant);
+    width: 4.5em;
+    flex: 0 0 auto;
+  }
+  .text {
+    flex: 1 1 auto;
+  }
+}
+
+.list .main {
+  flex: 1 1 auto;
+}
+
+.list .done {
+  opacity: 0.75;
+}
+
+.overdue {
+  color: var(--mat-sys-error);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+
+  .title {
+    flex: 1 1 200px;
+  }
+  .date {
+    width: 165px;
+  }
+  .cadence {
+    width: 150px;
+  }
+  .lead {
+    width: 150px;
+  }
+  .amount {
+    width: 130px;
+  }
+}
+
+.small {
+  font: var(--mat-sys-body-small);
+}

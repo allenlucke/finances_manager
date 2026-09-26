@@ -567,6 +567,22 @@ What this means for the work already done:
 * **Market values are prices, not money movements.** They do not belong in `transaction`, and the
   sign convention does not apply to them.
 
+## M8 — The app speaks up (D-20), built 2026-09-26
+
+`reminder`, `notice_preference` and `digest_run` (V13). One list of what needs a look — mismatched
+statements, orders waiting or refused, reminders coming due, categories over target this month,
+accounts nobody has imported for a while, undelivered alerts, strategies that could not be
+evaluated — composed from what the system already knows, worst first, as sentences with the number
+in them and a screen to go to. The dashboard's "Needs a look" card, the MCP `needs_a_look` tool and
+the daily ntfy push all read that one list. The push goes once a day at the person's chosen time,
+stays quiet on a quiet day, and every run is recorded with what it said and whether it got
+through. Reminders live beside the list: once or on a cadence, with a lead time, done advancing a
+recurring one. Eight MCP tools.
+
+**Next for M8:** recurring charges detected from history (subscriptions, bills, paydays) feeding
+both the list and a cash-flow forecast; anomaly flags (duplicate charges, fees, a transaction far
+outside a merchant's usual size); a nightly net-worth snapshot so trends exist.
+
 ## M6 — Insight layer
 Forecasting, anomaly detection ("this bill is 40% higher than usual"), cashflow projection, and a
 natural-language query surface over the ledger. This is the part that needed a decade of fintech

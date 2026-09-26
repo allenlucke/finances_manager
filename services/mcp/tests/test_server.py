@@ -433,3 +433,19 @@ def test_switching_a_strategy_on_is_a_put_and_deleting_is_marked_destructive(api
     assert tools["delete_strategy"].annotations.destructive_hint is True
     assert tools["evaluate_strategies"].annotations.destructive_hint is False
     assert "never trades by itself" in tools["save_strategy"].description
+
+
+def test_a_reminder_is_added_with_its_amount_as_a_string_and_removal_is_destructive(api):
+    import json
+
+    server.add_reminder(
+        "Estimated taxes", "2026-10-15", cadence="quarterly", lead_days=5, amount="1200"
+    )
+
+    body = json.loads(api.last.content)
+    assert api.last.url.path == "/api/v1/reminders" and api.last.method == "POST"
+    assert body["amount"] == "1200" and body["cadence"] == "quarterly" and body["leadDays"] == 5
+    tools = {t.name: t for t in server.mcp._tool_manager.list_tools()}
+    assert tools["delete_reminder"].annotations.destructive_hint is True
+    assert tools["needs_a_look"].annotations.read_only_hint is True
+    assert "Start a session here" in tools["needs_a_look"].description

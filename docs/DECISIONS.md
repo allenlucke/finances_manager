@@ -393,3 +393,29 @@ should be, and when it is, it will be a bounded change to this one step.
 
 **What it is not.** Not tick data (the free feed is IEX volume), not a portfolio optimiser, not a
 promise. Its most valuable output is expected to be "this does not work", said with numbers.
+
+### D-20 — The app speaks up: one list, said once a day
+*Decided 2026-09-26 with Allen, who asked whether there were reminders. There were not.*
+
+**Until now the app only spoke when a price crossed a line.** Everything else it knew — a
+statement the ledger disagreed with, an account nobody had imported for a month, a category over
+its target, an order waiting on a decision — it knew silently, on a screen someone had to open.
+"Complete financial awareness" cannot mean that.
+
+**One list.** `DigestService.compose` produces the list of what needs a look, worst first, as
+sentences with the number in them and a screen to go to. The dashboard card, the MCP tool and the
+daily push all read that one list, so they cannot disagree, and a new kind of item is added in one
+place. Items come only from what the system already knows; nothing is inferred, and nothing here
+writes a ledger row.
+
+**Said once a day.** The push goes through the same ntfy channel as price alerts, at a time the
+person sets (07:30 in the app's zone by default), and only once per day unless asked. A quiet day
+sends nothing by default. Every run is recorded with what it said and whether it got through,
+like an alert firing, so "did it run" and "what did it say" have answers.
+
+**Reminders are the person's half.** A dated thing they asked to be told about, once or on a
+cadence, with a lead time; done on a recurring one moves it to its next occurrence, done early
+included. Amounts are optional and, as everywhere, never floats.
+
+**Thresholds are preferences, not constants.** How long before an account counts as stale, how
+long a draft may wait — these are the person's patience, kept in `notice_preference`.

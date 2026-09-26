@@ -135,6 +135,8 @@ services:
       TRADING_DAILY_CAP: ${TRADING_DAILY_CAP:-1000.00}
       # How often active strategies (M7c) are asked for their opinion. A signal becomes a draft.
       STRATEGY_EVALUATE_EVERY: ${STRATEGY_EVALUATE_EVERY:-PT1M}
+      # The daily digest (M8): what needs a look, pushed once a day at the time set in the app.
+      DIGEST_SCHEDULED: ${DIGEST_SCHEDULED:-true}
     ports:
       # BIND_ADDR defaults to loopback. Docker's default is 0.0.0.0, which publishes to the whole
       # local network — not what "running it locally" implies, and wrong for a service holding

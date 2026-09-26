@@ -122,3 +122,19 @@ The Python service owns the arithmetic; the API owns the record and the only sid
   long (learned from its own filled orders). A new signal becomes a draft through
   `OrderService.propose` — proposed by the assistant, sized by the signal's bar, rationale from
   the strategy — and an ntfy note goes out. From there it is an M7b order: echo, switch, cap.
+
+## The app speaks up (M8, D-20)
+
+`DigestService.compose(userId)` reads the views and tables the system already has —
+`v_statement_reconciliation`, `v_spend_vs_target`, `trade_order`, `reminder`, `statement` and
+`holding` dates, `alert_event`, `strategy` — and returns one list of items: kind, severity, a
+sentence with the number in it, and the screen to go to. Three callers, no other producer:
+
+- `GET /api/v1/digest/preview`, behind the dashboard's Needs-a-look card and the MCP `needs_a_look` tool.
+- `DigestService.send`, which pushes the list through the `Notifier` (ntfy) and records a
+  `digest_run` with the body and the delivery outcome, whether or not anything went out.
+- `DigestScheduler`, every ten minutes behind `finances.digest.scheduled`, which sends once per
+  person per day after their chosen time when the digest is enabled for them.
+
+Reminders (`/api/v1/reminders`) are the person's own dated items and feed the same list once they
+are within their lead time.

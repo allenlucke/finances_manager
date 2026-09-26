@@ -1,0 +1,133 @@
+<div class="grid">
+  <mat-card class="look">
+    <mat-card-header>
+      <mat-card-title><h2 class="card-title">Needs a look</h2></mat-card-title>
+      <mat-card-subtitle>The same list the daily digest sends</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (notice(); as notice) {
+        <p class="state-error-inline" role="alert">{{ notice }}</p>
+      }
+      @if (items.error()) {
+        <p class="state-error-inline" role="alert">{{ items.error() }}</p>
+      } @else if (items.isEmpty()) {
+        <p class="muted">Nothing needs a look.</p>
+      } @else if (items.value(); as list) {
+        <ul class="items">
+          @for (item of list; track item.text) {
+            <li [class]="'sev-' + item.severity">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="sev-word">{{ item.severity }}</span>
+              <span class="text">{{ item.text }}</span>
+              <a mat-button [routerLink]="item.link" [attr.aria-label]="'Go to ' + item.link">Go</a>
+            </li>
+          }
+        </ul>
+      }
+      <div class="toolbar">
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="send()"
+          [disabled]="sending()"
+          aria-label="Send the digest to my phone now"
+        >
+          <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">send</mat-icon>
+          Send to my phone
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="reminders">
+    <mat-card-header>
+      <mat-card-title><h2 class="card-title">Reminders</h2></mat-card-title>
+      <mat-card-subtitle>Dated things you asked to be told about</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="add()" class="inline-form">
+        <mat-form-field appearance="outline" class="title">
+          <mat-label>What</mat-label>
+          <input matInput formControlName="title" placeholder="Estimated taxes" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="date">
+          <mat-label>Due</mat-label>
+          <input matInput type="date" formControlName="dueOn" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="cadence">
+          <mat-label>Repeats</mat-label>
+          <mat-select formControlName="cadence">
+            @for (c of cadences; track c.value) {
+              <mat-option [value]="c.value">{{ c.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="lead">
+          <mat-label>Warn days before</mat-label>
+          <input matInput formControlName="leadDays" inputmode="numeric" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="amount">
+          <mat-label>Amount</mat-label>
+          <input matInput formControlName="amount" inputmode="decimal" placeholder="optional" />
+        </mat-form-field>
+        <button mat-stroked-button type="submit" [disabled]="form.invalid || busy()">Add</button>
+      </form>
+
+      @if (reminders.error()) {
+        <p class="state-error-inline" role="alert">{{ reminders.error() }}</p>
+      } @else if (reminders.isEmpty()) {
+        <p class="muted">No reminders yet.</p>
+      } @else if (reminders.value()) {
+        <ul class="list">
+          @for (r of active(); track r.id) {
+            <li>
+              <div class="main">
+                <strong>{{ r.title }}</strong>
+                @if (r.amount !== null) {
+                  <span class="muted"> · {{ money(r.amount) }}</span>
+                }
+                <div class="muted small" [class]="dueClass(r)">
+                  {{ when(r) }} ({{ r.dueOn }}) · {{ cadenceLabel(r.cadence) }}
+                </div>
+              </div>
+              <button
+                mat-button
+                type="button"
+                (click)="complete(r)"
+                [attr.aria-label]="'Done: ' + r.title"
+              >
+                Done
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                (click)="remove(r)"
+                [attr.aria-label]="'Remove reminder ' + r.title"
+              >
+                <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">delete</mat-icon>
+              </button>
+            </li>
+          }
+          @for (r of done(); track r.id) {
+            <li class="done">
+              <div class="main muted">
+                {{ r.title }} — done
+                @if (r.lastDoneOn) {
+                  on {{ r.lastDoneOn }}
+                }
+              </div>
+              <button
+                mat-icon-button
+                type="button"
+                (click)="remove(r)"
+                [attr.aria-label]="'Remove reminder ' + r.title"
+              >
+                <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">delete</mat-icon>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -92,6 +92,9 @@ finances:
   # switch. A signal becomes a draft order for a person to confirm, never an order.
   strategies:
     evaluate-every: ${STRATEGY_EVALUATE_EVERY:PT1M}
+  # The daily digest (M8). Off here so no test races a push; compose turns it on.
+  digest:
+    scheduled: ${DIGEST_SCHEDULED:false}
 
 logging:
   level:

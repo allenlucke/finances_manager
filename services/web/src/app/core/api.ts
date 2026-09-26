@@ -11,7 +11,12 @@ import {
   AlertRule,
   BacktestRun,
   ConfirmOrder,
+  DigestItem,
+  DigestRun,
+  DigestSettings,
   HoldingAtMarket,
+  NewReminder,
+  Reminder,
   RunBacktest,
   SavedStrategy,
   SaveStrategy,
@@ -384,5 +389,44 @@ export class ApiClient {
 
   deleteBacktest(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/backtests/${id}`);
+  }
+
+  // --- the app speaks up (M8, D-20) ---
+
+  digestPreview(): Observable<DigestItem[]> {
+    return this.http.get<DigestItem[]>(`${this.base}/digest/preview`);
+  }
+
+  sendDigest(): Observable<DigestRun> {
+    return this.http.post<DigestRun>(`${this.base}/digest/send`, {});
+  }
+
+  digestRuns(size = 20): Observable<DigestRun[]> {
+    const params = new HttpParams().set('size', size);
+    return this.http.get<DigestRun[]>(`${this.base}/digest/runs`, { params });
+  }
+
+  digestSettings(): Observable<DigestSettings> {
+    return this.http.get<DigestSettings>(`${this.base}/digest/settings`);
+  }
+
+  saveDigestSettings(body: Partial<DigestSettings>): Observable<DigestSettings> {
+    return this.http.put<DigestSettings>(`${this.base}/digest/settings`, body);
+  }
+
+  reminders(): Observable<Reminder[]> {
+    return this.http.get<Reminder[]>(`${this.base}/reminders`);
+  }
+
+  addReminder(body: NewReminder): Observable<Reminder> {
+    return this.http.post<Reminder>(`${this.base}/reminders`, body);
+  }
+
+  completeReminder(id: number): Observable<Reminder> {
+    return this.http.post<Reminder>(`${this.base}/reminders/${id}/done`, {});
+  }
+
+  deleteReminder(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/reminders/${id}`);
   }
 }
