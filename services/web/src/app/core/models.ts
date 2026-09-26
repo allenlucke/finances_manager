@@ -617,3 +617,55 @@ export interface NewReminder {
   /** A string, like every amount; null when there is none. */
   amount: string | null;
 }
+
+// --- cash flow and net worth history (M9, D-21) ---
+
+export interface NetWorthPoint {
+  asOf: string;
+  /** Null on the combined row. */
+  ledgerEntityId: number | null;
+  netWorth: number;
+  snapshotAccounts: number;
+}
+
+export type RecurringStatus = 'upcoming' | 'on track' | 'missing';
+
+/** A recurring charge found in the ledger, with its evidence. */
+export interface RecurringSeries {
+  key: string;
+  label: string;
+  accountName: string;
+  direction: Direction;
+  cadence: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+  typicalAmount: number;
+  amountVaries: boolean;
+  lastAmount: number;
+  lastDate: string;
+  nextExpected: string | null;
+  occurrences: number;
+  status: RecurringStatus;
+}
+
+export interface ExpectedCharge {
+  date: string;
+  label: string;
+  accountName: string;
+  direction: Direction;
+  amount: number;
+}
+
+export interface CashflowAnomaly {
+  kind: 'duplicate' | 'unusual_amount' | string;
+  severity: 'high' | 'medium' | 'low';
+  text: string;
+  date: string;
+}
+
+export interface CashflowReport {
+  series: RecurringSeries[];
+  upcoming: ExpectedCharge[];
+  anomalies: CashflowAnomaly[];
+  expectedOut: number;
+  expectedIn: number;
+  days: number;
+}

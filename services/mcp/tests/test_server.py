@@ -449,3 +449,12 @@ def test_a_reminder_is_added_with_its_amount_as_a_string_and_removal_is_destruct
     assert tools["delete_reminder"].annotations.destructive_hint is True
     assert tools["needs_a_look"].annotations.read_only_hint is True
     assert "Start a session here" in tools["needs_a_look"].description
+
+
+def test_recurring_charges_ask_for_a_window_and_history_for_days(api):
+    server.recurring_charges(days=60)
+    assert api.last.url.path == "/api/v1/cashflow" and api.last.url.params["days"] == "60"
+
+    server.net_worth_history(days=30)
+    assert api.last.url.path == "/api/v1/reports/net-worth/history"
+    assert api.last.url.params["days"] == "30"

@@ -146,6 +146,12 @@ own, and is not part of the compose stack — Claude Code launches it.
   broker this release knows. A fill is never a ledger row — what is owned comes from the next
   positions import. `TradingTest` and `TradingOffTest` pin the gates; the MCP `confirm_order` tool
   is marked destructive so the client asks before calling it.
+- **Recurring charges are found, with their evidence, never declared.** (D-21) `RecurringService`
+  groups by a normalized merchant and direction and calls three steady occurrences a series; a
+  series always shows how many times, the typical amount and the last date, and a status in words.
+  It is arithmetic over the ledger and lives in the API, not the AI service. An exact same-day
+  duplicate never reaches the ledger (the dedupe rule refuses it), so the duplicate check looks at
+  the next two days. `CashflowTest` pins the sentences.
 - **What needs a look is one list, read by three things.** (D-20) `DigestService.compose` is the
   only place the "needs a look" sentences are made; the dashboard card, the MCP tool and the daily
   push all call it, so a new kind of item is added once and they can never disagree. Items are

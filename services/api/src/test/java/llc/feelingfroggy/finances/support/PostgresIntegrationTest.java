@@ -50,7 +50,7 @@ public abstract class PostgresIntegrationTest {
      */
     protected static void cleanDatabase(JdbcTemplate jdbc) {
         jdbc.execute("""
-            TRUNCATE digest_run, notice_preference, reminder, backtest_run, strategy, trade_order_event, trade_order, alert_event, price_alert, quote, watchlist,
+            TRUNCATE net_worth_snapshot, digest_run, notice_preference, reminder, backtest_run, strategy, trade_order_event, trade_order, alert_event, price_alert, quote, watchlist,
                      categorization, transaction, holding, security, target, statement,
                      import_batch, account, category, ledger_entity, connection, institution,
                      app_user, login_attempt, user_credentials, user_entities,

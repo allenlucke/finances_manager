@@ -579,9 +579,19 @@ stays quiet on a quiet day, and every run is recorded with what it said and whet
 through. Reminders live beside the list: once or on a cadence, with a lead time, done advancing a
 recurring one. Eight MCP tools.
 
-**Next for M8:** recurring charges detected from history (subscriptions, bills, paydays) feeding
-both the list and a cash-flow forecast; anomaly flags (duplicate charges, fees, a transaction far
-outside a merchant's usual size); a nightly net-worth snapshot so trends exist.
+## M9 — The ledger's rhythm (D-21), built 2026-09-26
+
+`net_worth_snapshot` (V14). `RecurringService` finds recurring charges in the last four hundred
+days — normalized merchant plus direction, three or more occurrences at a steady interval — and
+reports each with its evidence and a status (upcoming, on track, missing), projects them over the
+next 30/60/90 days with totals in and out, and flags possible double charges and amounts far from
+usual. The needs-a-look list (M8) carries the missing series, the anomalies and a one-line
+summary of the week ahead. A Cash flow screen, a net-worth trend on the dashboard from daily
+snapshots taken by the housekeeping tick, and three MCP tools.
+
+**Next:** paydays and inflows as their own series with a cash-runway figure ("enough for the next
+N weeks of recurring outflow"); a way to say "this is not recurring" that sticks; per-entity
+tax-year reports for the LLC.
 
 ## M6 — Insight layer
 Forecasting, anomaly detection ("this bill is 40% higher than usual"), cashflow projection, and a

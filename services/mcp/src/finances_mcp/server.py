@@ -756,6 +756,35 @@ def delete_reminder(reminder_id: int) -> Any:
 
 
 # ---------------------------------------------------------------------------------------------
+# Cash flow and net worth history (M9, D-21).
+# ---------------------------------------------------------------------------------------------
+
+
+@mcp.tool(annotations=READS)
+def recurring_charges(days: int = 30) -> Any:
+    """Recurring charges found in the ledger (three or more occurrences at a steady interval),
+    each with its evidence — cadence, typical amount, how many times, last seen, next expected —
+    and a status: upcoming, on track, or missing. Also what is expected in the next ``days`` with
+    totals in and out, and anomalies: possible double charges and amounts far from usual. Nothing
+    is declared by hand; transfers are left out."""
+    return _guard(lambda: client().get("/api/v1/cashflow", days=days))
+
+
+@mcp.tool(annotations=READS)
+def net_worth_history(days: int = 90) -> Any:
+    """What net worth was on each day a snapshot exists, combined (ledgerEntityId null) and per set
+    of books. Snapshots are taken once a day by the housekeeping tick; history starts when that
+    started, not before."""
+    return _guard(lambda: client().get("/api/v1/reports/net-worth/history", days=days))
+
+
+@mcp.tool(annotations=WRITES)
+def snapshot_net_worth() -> Any:
+    """Take today's net worth snapshot now. Taking it twice in a day replaces the first."""
+    return _guard(lambda: client().post("/api/v1/reports/net-worth/snapshot", {}))
+
+
+# ---------------------------------------------------------------------------------------------
 # Writing
 # ---------------------------------------------------------------------------------------------
 

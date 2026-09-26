@@ -45,6 +45,7 @@ describe('DashboardComponent', () => {
       '/api/v1/reminders': ok([]),
       '/api/v1/entities': ok([]),
       '/api/v1/reports/net-worth': ok([]),
+      '/api/v1/reports/net-worth/history': ok([]),
       '/api/v1/reports/reconciliation': ok([]),
       '/api/v1/reports/spend-vs-target': ok([]),
       '/api/v1/reports/monthly-totals': ok([]),
@@ -52,7 +53,9 @@ describe('DashboardComponent', () => {
       ...overrides,
     };
     for (const [path, answer] of Object.entries(answers)) {
-      const pending = backend.match((request) => request.url.startsWith(path));
+      const pending = backend.match(
+        (request) => request.url === path || request.url.startsWith(path + '?'),
+      );
       if (
         pending.length === 0 &&
         (path.startsWith('/api/v1/digest') || path.startsWith('/api/v1/reminders'))
@@ -248,5 +251,27 @@ describe('DashboardComponent', () => {
 
     expect(component['now']().getTime()).toBeGreaterThanOrEqual(before.getTime());
     answerAll();
+  });
+
+  it('draws the net worth trend and says how far it moved since the first snapshot', () => {
+    answerAll({
+      '/api/v1/reports/net-worth/history': ok([
+        { asOf: '2026-06-28', ledgerEntityId: null, netWorth: 1000, snapshotAccounts: 0 },
+        { asOf: '2026-06-28', ledgerEntityId: 1, netWorth: 1000, snapshotAccounts: 0 },
+        { asOf: '2026-09-26', ledgerEntityId: null, netWorth: 1500, snapshotAccounts: 0 },
+        { asOf: '2026-09-26', ledgerEntityId: 1, netWorth: 1500, snapshotAccounts: 0 },
+      ]),
+    });
+    fixture.detectChanges();
+
+    expect(text()).toContain('+$500.00 since 2026-06-28');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.trend polyline')).not.toBeNull();
+  });
+
+  it('with no history yet, says a snapshot is taken daily rather than drawing nothing', () => {
+    answerAll();
+    fixture.detectChanges();
+
+    expect(text()).toContain('No history yet');
   });
 });

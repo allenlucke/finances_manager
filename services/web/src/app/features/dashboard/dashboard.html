@@ -39,6 +39,24 @@
         @if (snapshotNote(); as note) {
           <p class="as-of muted">{{ note }}</p>
         }
+        @if (history.error()) {
+          <p class="as-of state-error-inline" role="alert">{{ history.error() }}</p>
+        } @else if (trendPoints(); as points) {
+          <figure class="trend">
+            <svg
+              viewBox="0 0 100 40"
+              preserveAspectRatio="none"
+              role="img"
+              aria-labelledby="trend-title"
+            >
+              <title id="trend-title">Net worth over the last 90 days: {{ trendNote() }}</title>
+              <polyline [attr.points]="points" fill="none" stroke="currentColor" />
+            </svg>
+            <figcaption class="muted as-of">{{ trendNote() }}</figcaption>
+          </figure>
+        } @else if (history.value()) {
+          <p class="as-of muted">No history yet; a snapshot is taken each day from now on.</p>
+        }
         <div class="entity-split">
           @for (entity of perEntity(); track entity.name) {
             <div class="entity">

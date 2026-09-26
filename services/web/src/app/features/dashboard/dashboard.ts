@@ -23,6 +23,7 @@ import {
   Account,
   LedgerEntity,
   MonthlyTotalsRow,
+  NetWorthPoint,
   NetWorthRow,
   ReconciliationRow,
   SpendRow,
@@ -66,6 +67,35 @@ export class DashboardComponent {
   protected readonly accounts = new LoadState<Account[]>('Could not load accounts.');
   protected readonly entities = new LoadState<LedgerEntity[]>('Could not load the sets of books.');
   protected readonly netWorth = new LoadState<NetWorthRow[]>('Could not load net worth.');
+  protected readonly history = new LoadState<NetWorthPoint[]>(
+    'Could not load the net worth history.',
+  );
+  /** The combined series, oldest first: what net worth was on each day a snapshot was taken. */
+  protected readonly trend = computed(() =>
+    (this.history.value() ?? []).filter((p) => p.ledgerEntityId === null),
+  );
+  protected readonly trendPoints = computed(() => {
+    const points = this.trend();
+    if (points.length < 2) return '';
+    const values = points.map((p) => p.netWorth);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || 1;
+    return values
+      .map(
+        (v, i) =>
+          `${((i / (values.length - 1)) * 100).toFixed(2)},${(40 - ((v - min) / span) * 36 - 2).toFixed(2)}`,
+      )
+      .join(' ');
+  });
+  protected readonly trendNote = computed(() => {
+    const points = this.trend();
+    if (points.length < 2) return null;
+    const first = points[0];
+    const last = points[points.length - 1];
+    const change = last.netWorth - first.netWorth;
+    return `${change >= 0 ? '+' : '-'}${money(Math.abs(change))} since ${first.asOf}`;
+  });
   protected readonly spend = new LoadState<SpendRow[]>('Could not load spending.');
   protected readonly totals = new LoadState<MonthlyTotalsRow[]>(
     "Could not load the month's totals.",
@@ -166,6 +196,7 @@ export class DashboardComponent {
     // dashboard should not take five round trips to appear.
     this.entities.run(this.api.entities());
     this.netWorth.run(this.api.netWorth());
+    this.history.run(this.api.netWorthHistory(90));
     this.reconciliation.run(this.api.reconciliation());
     this.spend.run(this.api.spendVsTarget(this.monthStart(), today(this.now())));
     this.totals.run(this.api.monthlyTotals(this.monthStart(), today(this.now())));

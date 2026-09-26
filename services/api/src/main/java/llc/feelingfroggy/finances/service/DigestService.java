@@ -49,12 +49,15 @@ public class DigestService {
 
     private final JdbcTemplate jdbc;
     private final ReminderRepository reminders;
+    private final RecurringService recurring;
     private final Notifier notifier;
     private final Clock clock;
 
-    public DigestService(JdbcTemplate jdbc, ReminderRepository reminders, Notifier notifier, Clock clock) {
+    public DigestService(JdbcTemplate jdbc, ReminderRepository reminders, RecurringService recurring,
+                         Notifier notifier, Clock clock) {
         this.jdbc = jdbc;
         this.reminders = reminders;
+        this.recurring = recurring;
         this.notifier = notifier;
         this.clock = clock;
     }
@@ -109,6 +112,31 @@ public class DigestService {
         items.addAll(staleAccounts(userId, today, p));
         items.addAll(undeliveredAlerts(userId, now));
         items.addAll(strategiesInTrouble(userId));
+        items.addAll(cashflow(userId));
+        return items;
+    }
+
+    /** What the ledger's rhythm says: a charge that stopped, a duplicate, a spike, the week ahead. */
+    private List<Item> cashflow(Long userId) {
+        var items = new ArrayList<Item>();
+        RecurringService.Report report = recurring.report(userId, 7);
+        for (var a : report.anomalies()) {
+            items.add(new Item(a.kind(), a.severity(), a.text(), "/cashflow"));
+        }
+        for (var s : report.series()) {
+            if ("missing".equals(s.status())) {
+                items.add(new Item("missing_charge", "medium", s.label() + " (" + dollars(s.typicalAmount()) + " "
+                    + s.cadence() + ") has not appeared since " + s.lastDate() + "; expected around "
+                    + s.nextExpected(), "/cashflow"));
+            }
+        }
+        if (!report.upcoming().isEmpty()) {
+            long debits = report.upcoming().stream().filter(e -> "debit".equals(e.direction())).count();
+            if (debits > 0) {
+                items.add(new Item("upcoming", "low", debits + " recurring charge" + (debits == 1 ? "" : "s")
+                    + " expected in the next 7 days, about " + dollars(report.expectedOut()), "/cashflow"));
+            }
+        }
         return items;
     }
 

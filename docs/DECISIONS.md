@@ -419,3 +419,30 @@ included. Amounts are optional and, as everywhere, never floats.
 
 **Thresholds are preferences, not constants.** How long before an account counts as stale, how
 long a draft may wait — these are the person's patience, kept in `notice_preference`.
+
+### D-21 — The ledger's rhythm: recurring charges found, not declared; net worth kept by day
+*Decided 2026-09-26 with Allen, as the next step of "complete financial awareness".*
+
+**Recurring charges are arithmetic over the ledger, and live in the API.** Rows are grouped by a
+normalized merchant and direction; three or more at a steady interval make a series, with a
+cadence read from the median gap and a typical amount from the median. Every series carries its
+evidence — how many times, last seen, typical, whether the amount varies — and a status a person
+can act on: upcoming, on track, or missing. This is statistics anyone can check against the
+transactions, so it belongs beside the reporting views in `services/api`, not in the AI service;
+that boundary is for parsing and for models. If a model ever improves on it, it will replace the
+grouping step and nothing else.
+
+**Nothing is declared and nothing is stored.** The report is computed on request from the last
+four hundred days. A declared list of subscriptions goes stale the week it is written; a found
+list is as current as the last import. The cost is that a merchant whose description changes
+looks like a new series for a while, and that is shown rather than hidden.
+
+**Anomalies are the same reading.** A second charge for the same amount at the same merchant
+within two days is a possible duplicate (an exact same-day duplicate never reaches the ledger — the
+dedupe rule refuses it first). A last amount half again the typical one is flagged. Both feed the
+needs-a-look list (D-20) with the numbers in them.
+
+**Net worth is kept by day.** `v_net_worth` is always "now"; `net_worth_snapshot` is what it said
+on each date, taken once a day by the housekeeping tick and on request, combined and per set of
+books. History, never a balance: the ledger remains the source, and the snapshot table is never
+read for a current figure.

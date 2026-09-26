@@ -138,3 +138,14 @@ sentence with the number in it, and the screen to go to. Three callers, no other
 
 Reminders (`/api/v1/reminders`) are the person's own dated items and feed the same list once they
 are within their lead time.
+
+## The ledger's rhythm (M9, D-21)
+
+`RecurringService.report(userId, days)` reads `v_transaction_resolved` for the last four hundred
+days (transfers and pending rows excluded), groups by account, direction and a normalized
+merchant key, and turns steady groups into series with their evidence and status. It projects
+them over the window into expected charges with totals, and lists anomalies. `GET /api/v1/cashflow`
+serves the Cash flow screen and the MCP `recurring_charges` tool; `DigestService` reads the same
+report for the needs-a-look list. `SnapshotService` writes `net_worth_snapshot` once a day from
+the `DigestScheduler` tick (and on request), and `GET /api/v1/reports/net-worth/history` feeds the
+dashboard's trend.

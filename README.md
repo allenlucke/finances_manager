@@ -60,6 +60,6 @@ make e2e         # browser tests on a throwaway stack (4201/8081)
 positions export, conversational control through Claude Code, a watchlist with price alerts and
 holdings valued at the latest quote, paper orders behind a restated confirmation, a kill switch
 and a daily cap, strategies with an honest backtester that can propose drafts but never trade, and
-a daily digest of what needs a look, with reminders. Two review passes have been worked through;
-the ledger above says what remains. M3 (automatic categorization) and recurring-charge detection
-are next.
+a daily digest of what needs a look with reminders, recurring charges found in the ledger with a
+cash-flow forecast, and net worth kept by day. Two review passes have been worked through; the
+ledger above says what remains. M3 (automatic categorization) is next.

@@ -82,3 +82,20 @@ table {
   margin: 0 0 8px;
   font: var(--mat-sys-body-medium);
 }
+
+.trend {
+  margin: 8px 0 4px;
+
+  svg {
+    display: block;
+    width: 100%;
+    max-width: 480px;
+    height: 56px;
+    color: var(--mat-sys-primary);
+
+    polyline {
+      stroke-width: 2px;
+      vector-effect: non-scaling-stroke;
+    }
+  }
+}

@@ -17,16 +17,24 @@ public class DigestScheduler {
     private static final Logger log = LoggerFactory.getLogger(DigestScheduler.class);
 
     private final DigestService digest;
+    private final SnapshotService snapshots;
     private final AppUserRepository users;
 
-    public DigestScheduler(DigestService digest, AppUserRepository users) {
+    public DigestScheduler(DigestService digest, SnapshotService snapshots, AppUserRepository users) {
         this.digest = digest;
+        this.snapshots = snapshots;
         this.users = users;
     }
 
     @Scheduled(fixedDelayString = "PT10M", initialDelayString = "PT90S")
     public void tick() {
         for (var user : users.findAll()) {
+            // Housekeeping on the same beat: today's net worth, once, so a trend exists (M9).
+            try {
+                snapshots.takeIfMissing(user.getId());
+            } catch (RuntimeException e) {
+                log.warn("net worth snapshot failed: {}", e.getMessage());
+            }
             try {
                 if (digest.dueForAutomaticSend(user.getId())) {
                     var run = digest.send(user.getId(), false);

@@ -50,6 +50,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/markets/markets').then((m) => m.MarketsComponent),
   },
   {
+    path: 'cashflow',
+    title: 'Cash flow · Finances',
+    canActivate: [signedInGuard],
+    loadComponent: () => import('./features/cashflow/cashflow').then((m) => m.CashflowComponent),
+  },
+  {
     path: 'strategies',
     title: 'Strategies · Finances',
     canActivate: [signedInGuard],

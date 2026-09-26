@@ -10,11 +10,13 @@ import {
   AlertEvent,
   AlertRule,
   BacktestRun,
+  CashflowReport,
   ConfirmOrder,
   DigestItem,
   DigestRun,
   DigestSettings,
   HoldingAtMarket,
+  NetWorthPoint,
   NewReminder,
   Reminder,
   RunBacktest,
@@ -428,5 +430,21 @@ export class ApiClient {
 
   deleteReminder(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/reminders/${id}`);
+  }
+
+  // --- cash flow and net worth history (M9, D-21) ---
+
+  cashflow(days = 30): Observable<CashflowReport> {
+    const params = new HttpParams().set('days', days);
+    return this.http.get<CashflowReport>(`${this.base}/cashflow`, { params });
+  }
+
+  netWorthHistory(days = 90): Observable<NetWorthPoint[]> {
+    const params = new HttpParams().set('days', days);
+    return this.http.get<NetWorthPoint[]>(`${this.base}/reports/net-worth/history`, { params });
+  }
+
+  snapshotNetWorth(): Observable<NetWorthPoint[]> {
+    return this.http.post<NetWorthPoint[]>(`${this.base}/reports/net-worth/snapshot`, {});
   }
 }
