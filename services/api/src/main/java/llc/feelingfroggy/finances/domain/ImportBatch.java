@@ -63,6 +63,13 @@ public class ImportBatch {
     @Column(name = "duplicate_count", nullable = false)
     private int duplicateCount;
 
+    /** Rows categorized without a person, and rows left with a suggestion to review (M3a). */
+    @Column(name = "auto_categorized", nullable = false)
+    private int autoCategorized;
+
+    @Column(name = "suggested", nullable = false)
+    private int suggested;
+
     @Column(name = "error")
     private String error;
 
@@ -182,5 +189,18 @@ public class ImportBatch {
 
     public void setCompletedAt(Instant completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public int getAutoCategorized() {
+        return autoCategorized;
+    }
+
+    public int getSuggested() {
+        return suggested;
+    }
+
+    public void setCategorizationCounts(int autoCategorized, int suggested) {
+        this.autoCategorized = autoCategorized;
+        this.suggested = suggested;
     }
 }

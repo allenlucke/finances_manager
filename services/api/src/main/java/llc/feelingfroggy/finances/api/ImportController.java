@@ -164,7 +164,8 @@ public class ImportController {
                                 * the file; an import that lost rows must not look like one that
                                 * did not.
                                 */
-                               List<String> warnings) {
+                               List<String> warnings,
+                               int autoCategorized, int suggested) {
         static ImportResult of(ImportBatch batch, List<ImportService.UnlinkedAccount> unlinked) {
             return new ImportResult(batch.getId(),
                 batch.getAccount() == null ? null : batch.getAccount().getId(),
@@ -172,7 +173,8 @@ public class ImportController {
                 batch.getAppliedCount(), batch.getDuplicateCount(), batch.getError(),
                 batch.getStartedAt(), batch.getCompletedAt(),
                 unlinked.stream().map(UnlinkedAccountView::of).toList(),
-                batch.getWarnings());
+                batch.getWarnings(),
+                batch.getAutoCategorized(), batch.getSuggested());
         }
     }
 

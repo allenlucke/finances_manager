@@ -53,6 +53,8 @@ describe('ImportComponent', () => {
     rowCount: 3,
     appliedCount: 2,
     duplicateCount: 0,
+    autoCategorized: 0,
+    suggested: 0,
     error: null,
     startedAt: '2026-09-12T00:00:00Z',
     completedAt: '2026-09-12T00:00:01Z',
@@ -206,5 +208,126 @@ describe('ImportComponent', () => {
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('1 note(s) from the parser');
     expect(text).toContain('line 9: Empty amount');
+  });
+
+  const page = (rows: unknown[]) => ({
+    content: rows,
+    totalElements: rows.length,
+    totalPages: 1,
+    number: 0,
+    size: 100,
+  });
+  const reviewRow = (suggestion: unknown) => ({
+    id: 7,
+    accountId: 1,
+    categoryId: null,
+    transactionDate: '2026-08-07',
+    amount: 22.99,
+    direction: 'debit',
+    signedAmount: -22.99,
+    description: 'NETFLIX.COM',
+    merchant: 'NETFLIX.COM',
+    transfer: false,
+    transferAccountId: null,
+    transferGroupId: null,
+    source: 'file_import',
+    sourceType: null,
+    suggestion: suggestion,
+  });
+
+  it('shows a suggestion in words and accepts it with one click', () => {
+    component['reviewPage'].value.set(
+      page([
+        reviewRow({
+          categoryId: 5,
+          categoryName: 'Subscriptions',
+          suggestedName: 'Subscriptions',
+          confidence: 0.9,
+          method: 'rule',
+          rationale: 'merchant rule: NETFLIX',
+        }),
+      ]),
+    );
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Suggested: Subscriptions (90%, a rule)');
+    expect(text).toContain('merchant rule: NETFLIX');
+    const accept = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
+      (b) => b.textContent?.includes('Accept'),
+    )!;
+    accept.click();
+
+    const request = backend.expectOne('/api/v1/transactions/7/category');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({ categoryId: 5 });
+    request.flush({});
+    backend.match(() => true).forEach((r) => r.flush([]));
+  });
+
+  it('offers to create a category a rule named that the person does not have', () => {
+    component['reviewPage'].value.set(
+      page([
+        reviewRow({
+          categoryId: null,
+          categoryName: null,
+          suggestedName: 'Subscriptions',
+          confidence: 0.9,
+          method: 'rule',
+          rationale: null,
+        }),
+      ]),
+    );
+    fixture.detectChanges();
+
+    const create = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
+      (b) => b.textContent?.includes('Create "Subscriptions" and apply'),
+    )!;
+    expect(create).toBeDefined();
+    create.click();
+
+    const created = backend.expectOne('/api/v1/categories');
+    expect(created.request.body).toEqual({ name: 'Subscriptions', kind: 'expense' });
+    created.flush({ id: 9, name: 'Subscriptions', kind: 'expense', active: true });
+    const applied = backend.expectOne('/api/v1/transactions/7/category');
+    expect(applied.request.body).toEqual({ categoryId: 9 });
+    applied.flush({});
+    backend.match(() => true).forEach((r) => r.flush([]));
+  });
+
+  it('asking for suggestions posts, and the outcome is said in a sentence', () => {
+    fixture.detectChanges();
+    const button = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
+      (b) => b.textContent?.includes('Suggest categories'),
+    )!;
+    button.click();
+
+    const request = backend.expectOne('/api/v1/transactions/suggest');
+    expect(request.request.method).toBe('POST');
+    request.flush({ considered: 4, suggested: 3, applied: 2, notes: [] });
+    backend.match(() => true).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+
+    expect(document.body.textContent).toContain(
+      '2 of 4 categorized automatically, 1 with a suggestion to review.',
+    );
+  });
+
+  it('says how the suggestions have done, with the denominator', () => {
+    component['stats'].value.set({
+      open: 1,
+      applied: 3,
+      accepted: 1,
+      corrected: 1,
+      rejected: 0,
+      byRule: 4,
+      bySimilarity: 1,
+      precisionPct: 80,
+    });
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('3 applied automatically, 1 accepted, 1 corrected');
+    expect(text).toContain('80% right of 5 judged');
   });
 });

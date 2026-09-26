@@ -467,3 +467,14 @@ def test_year_in_review_passes_only_what_was_given(api):
     server.year_in_review(year=2025, ledger_entity_id=2)
     assert api.last.url.params["year"] == "2025"
     assert api.last.url.params["ledgerEntityId"] == "2"
+
+
+def test_suggesting_categories_posts_and_stats_are_read_only(api):
+    server.suggest_categories()
+    assert api.last.method == "POST" and api.last.url.path == "/api/v1/transactions/suggest"
+
+    server.categorization_stats()
+    assert api.last.method == "GET"
+    assert api.last.url.path == "/api/v1/transactions/categorization-stats"
+    tools = {t.name: t for t in server.mcp._tool_manager.list_tools()}
+    assert tools["categorization_stats"].annotations.read_only_hint is True

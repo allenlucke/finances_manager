@@ -446,3 +446,31 @@ needs-a-look list (D-20) with the numbers in them.
 on each date, taken once a day by the housekeeping tick and on request, combined and per set of
 books. History, never a balance: the ledger remains the source, and the snapshot table is never
 read for a current figure.
+
+### D-22 — Categorization, wired: history first, rules second, every decision kept
+*Decided 2026-09-26 with Allen. D-15 named the tiers; this is how the first two run.*
+
+**The person's own history is the first tier, and it lives in the API.** Earlier rows from the
+same merchant (the recurring detector's key, D-21) that were categorized, and how consistently,
+are the best evidence there is, and they are this database's, not the AI service's. Two agreeing
+rows are the minimum; the confidence climbs with the count and falls with disagreement. The rules
+tier in the Python service answers by category *name*; the API maps the name to the person's
+categories. The higher confidence wins.
+
+**Ninety percent applies; less waits with its reason.** A suggestion at or above 0.90 naming a
+category the person has is applied without waiting, and recorded as `applied` — a fourth
+resolution, distinct from a person's `accepted`, because the accuracy figure must be able to tell
+them apart. Anything lower waits in the review queue with its confidence, tier and rationale. A
+rule naming a category the person does not have waits by name, and the screen offers to create
+it; nothing is invented behind the person's back.
+
+**Every decision resolves its suggestion.** Choosing the suggested category accepts it; choosing
+another corrects it, with the target kept; choosing none rejects it. That record is the training
+set for the third tier and the denominator of the only accuracy figure this system reports:
+(applied + accepted) over everything judged. Reported with its count, never alone.
+
+**Two rules kept from the groundwork.** A suggestion of nothing (`method="none"`) is never a
+row. A suggestion that says "transfer" is ignored here: only the file's own word marks a transfer.
+
+**Not yet.** The third tier (a model, local or hosted) and the measured baseline on a synthetic
+twin of the real month; the roadmap's "done when" still stands.

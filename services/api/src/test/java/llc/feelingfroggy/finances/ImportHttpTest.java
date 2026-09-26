@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import llc.feelingfroggy.finances.ai.AiServiceClient;
+import llc.feelingfroggy.finances.ai.CategorizerClient;
 import llc.feelingfroggy.finances.ai.ParseResult;
 import llc.feelingfroggy.finances.ai.ParsedTransaction;
 import llc.feelingfroggy.finances.support.ApiClient;
@@ -40,6 +41,8 @@ class ImportHttpTest extends PostgresIntegrationTest {
 
     @Autowired private JdbcTemplate jdbc;
     @MockitoBean private AiServiceClient aiService;
+    // No rules tier here: an unmocked categorizer would add its own note to every import's warnings.
+    @MockitoBean private CategorizerClient categorizer;
     @LocalServerPort private int port;
 
     private ApiClient api;

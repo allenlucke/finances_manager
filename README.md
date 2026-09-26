@@ -61,5 +61,6 @@ positions export, conversational control through Claude Code, a watchlist with p
 holdings valued at the latest quote, paper orders behind a restated confirmation, a kill switch
 and a daily cap, strategies with an honest backtester that can propose drafts but never trade, and
 a daily digest of what needs a look with reminders, recurring charges found in the ledger with a
-cash-flow forecast, and net worth kept by day. Two review passes have been worked through; the
-ledger above says what remains. M3 (automatic categorization) is next.
+cash-flow forecast, net worth kept by day, and automatic categorization from the person's own
+history and a rule table, with its accuracy measured. Two review passes have been worked through;
+the ledger above says what remains. The model tier of categorization and the aggregator are next.

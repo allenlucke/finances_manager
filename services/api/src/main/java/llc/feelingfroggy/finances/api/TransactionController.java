@@ -7,11 +7,14 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import llc.feelingfroggy.finances.domain.Categorization;
 import llc.feelingfroggy.finances.domain.Direction;
 import llc.feelingfroggy.finances.domain.Transaction;
 import llc.feelingfroggy.finances.repo.AccountRepository;
+import llc.feelingfroggy.finances.repo.CategorizationRepository;
 import llc.feelingfroggy.finances.repo.CategoryRepository;
 import llc.feelingfroggy.finances.repo.TransactionRepository;
+import llc.feelingfroggy.finances.service.CategorizationService;
 import llc.feelingfroggy.finances.service.TransactionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,16 +42,22 @@ public class TransactionController {
     private final CategoryRepository categories;
     private final CurrentUser currentUser;
     private final java.time.Clock clock;
+    private final CategorizationRepository categorizationRepo;
+    private final CategorizationService categorizationService;
 
     public TransactionController(TransactionRepository transactions, TransactionService service,
                                  AccountRepository accounts, CategoryRepository categories,
-                                 CurrentUser currentUser, java.time.Clock clock) {
+                                 CurrentUser currentUser, java.time.Clock clock,
+                                 CategorizationRepository categorizationRepo,
+                                 CategorizationService categorizationService) {
         this.transactions = transactions;
         this.service = service;
         this.accounts = accounts;
         this.categories = categories;
         this.currentUser = currentUser;
         this.clock = clock;
+        this.categorizationRepo = categorizationRepo;
+        this.categorizationService = categorizationService;
     }
 
     @GetMapping
@@ -67,13 +76,31 @@ public class TransactionController {
             .map(TransactionView::of);
     }
 
-    /** Uncategorized, non-transfer rows awaiting a decision. Empty until M2/M3 produce any. */
+    /** Uncategorized, non-transfer rows awaiting a decision, each with its open suggestion if any. */
     @GetMapping("/review")
     public Page<TransactionView> review(@RequestParam(defaultValue = "0") int page,
                                         @RequestParam(defaultValue = "50") int size) {
-        return transactions
-            .findNeedingReview(currentUser.id(), PageRequest.of(page, Math.min(size, 200)))
-            .map(TransactionView::of);
+        var rows = transactions.findNeedingReview(currentUser.id(), PageRequest.of(page, Math.min(size, 200)));
+        var ids = rows.getContent().stream().map(Transaction::getId).toList();
+        var open = new java.util.HashMap<Long, Categorization>();
+        if (!ids.isEmpty()) {
+            for (var c : categorizationRepo.findOpenForAll(ids)) {
+                open.put(c.getTransaction().getId(), c);
+            }
+        }
+        return rows.map(t -> TransactionView.of(t, SuggestionView.of(open.get(t.getId()))));
+    }
+
+    /** Ask for suggestions on everything waiting in the queue, now. */
+    @PostMapping("/suggest")
+    public CategorizationService.Outcome suggest() {
+        return categorizationService.suggestUncategorized(currentUser.id());
+    }
+
+    /** How the suggestions have done, from what a person decided. */
+    @GetMapping("/categorization-stats")
+    public CategorizationService.Stats categorizationStats() {
+        return categorizationService.stats(currentUser.id());
     }
 
     /**
@@ -123,10 +150,13 @@ public class TransactionController {
         var transaction = transactions.findLive(id, userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        transaction.setCategory(request.categoryId() == null ? null
+        var chosen = request.categoryId() == null ? null
             : categories.findByIdAndUserId(request.categoryId(), userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Unknown category")));
+                    "Unknown category"));
+        transaction.setCategory(chosen);
+        // The person's decision is the training signal: it resolves the suggestion, if there was one.
+        categorizationService.resolved(transaction, chosen);
 
         return TransactionView.of(transactions.save(transaction));
     }
@@ -204,19 +234,36 @@ public class TransactionController {
     }
 
     /** @param sourceType the file's own word for the row ("Payment", "Return", "XFER"); null when it had none */
+    /** An open suggestion on a review row: what, how sure, from which tier, and why. */
+    public record SuggestionView(Long categoryId, String categoryName, String suggestedName,
+                                 BigDecimal confidence, String method, String rationale) {
+        static SuggestionView of(Categorization c) {
+            if (c == null) {
+                return null;
+            }
+            return new SuggestionView(c.getSuggestedCategory() == null ? null : c.getSuggestedCategory().getId(),
+                c.getSuggestedCategory() == null ? null : c.getSuggestedCategory().getName(),
+                c.getSuggestedName(), c.getConfidence(), c.getMethod().code(), c.getRationale());
+        }
+    }
+
     public record TransactionView(Long id, Long accountId, Long categoryId, LocalDate transactionDate,
                                   BigDecimal amount, String direction, BigDecimal signedAmount,
                                   String description, String merchant, boolean transfer,
                                   Long transferAccountId, String transferGroupId, String source,
-                                  String sourceType) {
+                                  String sourceType, SuggestionView suggestion) {
         static TransactionView of(Transaction t) {
+            return of(t, null);
+        }
+
+        static TransactionView of(Transaction t, SuggestionView suggestion) {
             return new TransactionView(t.getId(), t.getAccount().getId(),
                 t.getCategory() == null ? null : t.getCategory().getId(),
                 t.getTransactionDate(), t.getAmount(), t.getDirection().code(), t.signedAmount(),
                 t.getDescription(), t.getMerchant(), t.isTransfer(),
                 t.getTransferAccount() == null ? null : t.getTransferAccount().getId(),
                 t.getTransferGroupId() == null ? null : t.getTransferGroupId().toString(),
-                t.getSource().code(), t.getSourceType());
+                t.getSource().code(), t.getSourceType(), suggestion);
         }
     }
 

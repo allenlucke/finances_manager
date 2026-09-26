@@ -91,3 +91,23 @@ table {
 details.detail summary {
   cursor: pointer;
 }
+
+.review-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.suggestion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.small {
+  font: var(--mat-sys-body-small);
+}

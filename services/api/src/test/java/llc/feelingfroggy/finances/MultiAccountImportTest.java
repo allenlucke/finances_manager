@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import llc.feelingfroggy.finances.ai.AiServiceClient;
+import llc.feelingfroggy.finances.ai.CategorizerClient;
 import llc.feelingfroggy.finances.ai.ParsedTransaction;
 import llc.feelingfroggy.finances.ai.ParseResult;
 import llc.feelingfroggy.finances.domain.Account;
@@ -55,6 +56,7 @@ class MultiAccountImportTest extends PostgresIntegrationTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @MockitoBean private CategorizerClient categorizer;
     @MockitoBean
     private AiServiceClient aiService;
 

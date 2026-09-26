@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import llc.feelingfroggy.finances.ai.AiServiceClient;
+import llc.feelingfroggy.finances.ai.CategorizerClient;
 import llc.feelingfroggy.finances.ai.ParseResult;
 import llc.feelingfroggy.finances.domain.Account;
 import llc.feelingfroggy.finances.domain.AccountType;
@@ -70,6 +71,7 @@ class ImportTest extends PostgresIntegrationTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @MockitoBean private CategorizerClient categorizer;
     @MockitoBean
     private AiServiceClient aiService;
 

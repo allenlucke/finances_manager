@@ -11,6 +11,7 @@ import {
   AlertRule,
   BacktestRun,
   CashflowReport,
+  CategorizationStats,
   ConfirmOrder,
   DigestItem,
   DigestRun,
@@ -24,6 +25,7 @@ import {
   SaveStrategy,
   StrategyInfo,
   StrategyOutcome,
+  SuggestOutcome,
   OrderEvent,
   ProposeOrder,
   TradeOrder,
@@ -152,6 +154,15 @@ export class ApiClient {
   /** Returns every leg written: one for a normal entry, two for a transfer. */
   createTransaction(body: CreateTransaction): Observable<Transaction[]> {
     return this.http.post<Transaction[]>(`${this.base}/transactions`, body);
+  }
+
+  /** Ask for suggestions on everything in the review queue, now. Confident ones are applied. */
+  suggestCategories(): Observable<SuggestOutcome> {
+    return this.http.post<SuggestOutcome>(`${this.base}/transactions/suggest`, {});
+  }
+
+  categorizationStats(): Observable<CategorizationStats> {
+    return this.http.get<CategorizationStats>(`${this.base}/transactions/categorization-stats`);
   }
 
   categorize(id: number, categoryId: number | null): Observable<Transaction> {

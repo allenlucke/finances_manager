@@ -146,6 +146,19 @@ own, and is not part of the compose stack — Claude Code launches it.
   broker this release knows. A fill is never a ledger row — what is owned comes from the next
   positions import. `TradingTest` and `TradingOffTest` pin the gates; the MCP `confirm_order` tool
   is marked destructive so the client asks before calling it.
+- **Every distinct set of mocked beans is its own Spring context, with its own connection pool.**
+  The Java suite grew past a dozen such contexts in one afternoon and the late ones failed with
+  Postgres's "too many clients already", because Hikari's default ten connections each stayed
+  open for the whole run. `PostgresIntegrationTest` caps each pool at four and
+  `src/test/resources/spring.properties` bounds the context cache at six, so old contexts close.
+  A new test class that mocks a new combination costs a context; prefer an existing combination
+  where one fits.
+- **A suggestion is applied at 0.90, waits below it, and every decision resolves it.** (D-22)
+  `CategorizationService` runs the person's history first and the rules second; `applied` is a
+  resolution of its own so precision can tell a machine's call from a person's. A suggestion of
+  nothing is never a row; a suggestion of "transfer" is ignored (only the file's word marks one).
+  A rule naming a category the person lacks waits by name — nothing is created behind their back.
+  The categorizer being down is a note on the import. `AutoCategorizationTest` pins it.
 - **Recurring charges are found, with their evidence, never declared.** (D-21) `RecurringService`
   groups by a normalized merchant and direction and calls three steady occurrences a series; a
   series always shows how many times, the typical amount and the last date, and a status in words.

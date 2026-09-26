@@ -108,6 +108,10 @@
             } @else {
               {{ result.rowCount }} row(s) read — <strong>{{ result.appliedCount }}</strong> added,
               <strong>{{ result.duplicateCount }}</strong> already present.
+              @if (result.autoCategorized || result.suggested) {
+                <strong>{{ result.autoCategorized }}</strong> categorized automatically,
+                <strong>{{ result.suggested }}</strong> with a suggestion to review below.
+              }
             }
           </span>
         </div>
@@ -183,6 +187,29 @@
       </mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
+      <div class="review-tools">
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="suggest()"
+          [disabled]="suggesting()"
+          aria-label="Ask for category suggestions on everything waiting"
+        >
+          <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">auto_awesome</mat-icon>
+          Suggest categories
+        </button>
+        @if (stats.value(); as s) {
+          @if (s.precisionPct !== undefined) {
+            <span class="muted small">
+              So far: {{ s.applied }} applied automatically, {{ s.accepted }} accepted,
+              {{ s.corrected }} corrected
+              @if (s.precisionPct !== null) {
+                — {{ s.precisionPct }}% right of {{ s.applied + s.accepted + s.corrected }} judged
+              }
+            </span>
+          }
+        }
+      </div>
       @if (reviewPage.error()) {
         <p class="state-error-inline" role="alert">{{ reviewPage.error() }}</p>
       } @else if (reviewPage.value() && review().length === 0) {
@@ -217,6 +244,35 @@
             <ng-container matColumnDef="category">
               <th mat-header-cell *matHeaderCellDef>Category</th>
               <td mat-cell *matCellDef="let row">
+                @if (row.suggestion; as s) {
+                  <div class="suggestion">
+                    <span class="muted">Suggested: {{ suggestionText(s) }}</span>
+                    @if (s.categoryId !== null) {
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        (click)="categorize(row, s.categoryId)"
+                        [attr.aria-label]="'Accept ' + s.categoryName + ' for ' + row.description"
+                      >
+                        Accept
+                      </button>
+                    } @else if (s.suggestedName) {
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        (click)="createAndApply(row)"
+                        [attr.aria-label]="
+                          'Create ' + s.suggestedName + ' and apply it to ' + row.description
+                        "
+                      >
+                        Create "{{ s.suggestedName }}" and apply
+                      </button>
+                    }
+                    @if (s.rationale) {
+                      <div class="muted small">{{ s.rationale }}</div>
+                    }
+                  </div>
+                }
                 <mat-select
                   class="inline-select"
                   [value]="null"

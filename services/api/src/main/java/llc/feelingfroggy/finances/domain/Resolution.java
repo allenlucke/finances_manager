@@ -11,7 +11,9 @@ public enum Resolution implements CodedEnum {
 
     ACCEPTED("accepted"),
     CORRECTED("corrected"),
-    REJECTED("rejected");
+    REJECTED("rejected"),
+    /** Applied without a person, because the confidence cleared the bar. Not yet seen by one. */
+    APPLIED("applied");
 
     private final String code;
 

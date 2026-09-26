@@ -436,6 +436,16 @@ not vibes.
 **Done when:** a month of new transactions comes in and the majority are correctly categorized
 without intervention, and the number is *measured*.
 
+**M3a built 2026-09-26 (D-22).** The first two tiers run on every import and on demand: the
+person's own history by merchant key, then the rules in the Python service, the higher confidence
+winning. At 0.90 or better with a category the person has, the suggestion is applied and recorded
+as `applied` (V15); below that, or naming a category they lack, it waits in the review queue with
+its confidence, tier and reason, and the screen offers Accept or "Create X and apply". Every
+decision on a row resolves its suggestion; `GET /api/v1/transactions/categorization-stats` reports
+precision from those decisions with its denominator. The categorizer being down is a note on the
+import, never a failed import. `AutoCategorizationTest` pins all of it; the measured baseline on
+a synthetic twin of the real month is still to do.
+
 ## M4 — Multi-entity + investments
 
 **Started 2026-08-27, from a real Fidelity export.** The parser is built and verified against

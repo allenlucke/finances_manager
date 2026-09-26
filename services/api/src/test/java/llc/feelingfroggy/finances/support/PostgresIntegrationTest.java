@@ -29,6 +29,12 @@ public abstract class PostgresIntegrationTest {
 
     @DynamicPropertySource
     static void datasource(DynamicPropertyRegistry registry) {
+        // Every distinct mock combination is its own cached Spring context with its own pool. With a
+        // dozen of them, Hikari's default ten connections each blew past Postgres's hundred and the
+        // late contexts failed with "too many clients already". Small pools, and a bounded context
+        // cache (src/test/resources/spring.properties), keep the suite inside the limit.
+        registry.add("spring.datasource.hikari.maximum-pool-size", () -> 4);
+        registry.add("spring.datasource.hikari.minimum-idle", () -> 1);
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);

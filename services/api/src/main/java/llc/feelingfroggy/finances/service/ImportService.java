@@ -48,6 +48,7 @@ public class ImportService {
     static final int MAX_WARNINGS = 50;
     static final int MAX_WARNING_LENGTH = 240;
 
+    private final CategorizationService categorizations;
     private final AiServiceClient aiService;
     private final TransactionRepository transactions;
     private final AccountRepository accounts;
@@ -60,7 +61,9 @@ public class ImportService {
     public ImportService(AiServiceClient aiService, TransactionRepository transactions,
                          AccountRepository accounts, ImportBatchRepository batches,
                          ImportBatchRecorder recorder, StatementRepository statements,
-                         SecurityRepository securities, HoldingRepository holdings) {
+                         SecurityRepository securities, HoldingRepository holdings,
+                         CategorizationService categorizations) {
+        this.categorizations = categorizations;
         this.aiService = aiService;
         this.transactions = transactions;
         this.accounts = accounts;
@@ -192,6 +195,7 @@ public class ImportService {
 
         int applied = 0;
         int duplicates = 0;
+        var newRows = new java.util.ArrayList<Transaction>();
 
         // Accounts the file names that this system does not have yet, keyed so each is reported
         // once with the institution's own name — enough for the caller to offer to create them
@@ -265,7 +269,17 @@ public class ImportService {
             }
 
             transactions.save(transaction);
+            newRows.add(transaction);
             applied++;
+        }
+
+        // Suggest categories for what just arrived (M3a): the person's own history first, then
+        // the rules. Confident ones are applied; the rest wait in the review queue with a reason.
+        // The categorizer being down is a note on the import, never a failed import.
+        if (!newRows.isEmpty()) {
+            var outcome = categorizations.suggestFor(userId, newRows);
+            notes.addAll(outcome.notes());
+            batch.setCategorizationCounts(outcome.applied(), outcome.suggested() - outcome.applied());
         }
 
         // A checkpoint belongs to one account. A single-account file's summary goes against the

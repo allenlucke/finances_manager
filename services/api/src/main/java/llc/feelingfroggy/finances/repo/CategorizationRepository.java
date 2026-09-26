@@ -15,4 +15,11 @@ public interface CategorizationRepository extends JpaRepository<Categorization, 
 
     /** Resolved history for a transaction, newest first. */
     List<Categorization> findByTransactionIdOrderByIdDesc(Long transactionId);
+
+    /** The open suggestions for a page of transactions, for the review queue. */
+    @Query("select c from Categorization c left join fetch c.suggestedCategory "
+        + "where c.transaction.id in :ids and c.resolution is null")
+    List<Categorization> findOpenForAll(@Param("ids") java.util.Collection<Long> ids);
+
+    Optional<Categorization> findTopByTransactionIdOrderByIdDesc(Long transactionId);
 }

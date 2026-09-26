@@ -67,6 +67,10 @@ public class Categorization {
     @Column(name = "rationale")
     private String rationale;
 
+    /** The category name a rule proposed when the person has no category by that name yet. */
+    @Column(name = "suggested_name", length = 160)
+    private String suggestedName;
+
     @Convert(converter = Resolution.Conv.class)
     @Column(name = "resolution", length = 20)
     private Resolution resolution;
@@ -94,9 +98,29 @@ public class Categorization {
 
     /** The suggestion was right. */
     public void accept(Instant when) {
+        acceptAs(suggestedCategory, when);
+    }
+
+    /** The suggestion named a category by name and the person created it and chose it. */
+    public void acceptAs(Category category, Instant when) {
         this.resolution = Resolution.ACCEPTED;
+        this.resolvedCategory = category;
+        this.resolvedAt = when;
+    }
+
+    /** Applied without a person: the confidence cleared the bar. A later choice can still correct it. */
+    public void applied(Instant when) {
+        this.resolution = Resolution.APPLIED;
         this.resolvedCategory = suggestedCategory;
         this.resolvedAt = when;
+    }
+
+    public String getSuggestedName() {
+        return suggestedName;
+    }
+
+    public void setSuggestedName(String suggestedName) {
+        this.suggestedName = suggestedName;
     }
 
     /**

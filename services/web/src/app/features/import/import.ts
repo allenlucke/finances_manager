@@ -16,10 +16,12 @@ import { ApiClient } from '../../core/api';
 import { LoadState } from '../../core/load-state';
 import {
   Account,
+  CategorizationStats,
   Category,
   ImportResult,
   LedgerEntity,
   Page,
+  Suggestion,
   Transaction,
 } from '../../core/models';
 import { amountClass, money } from '../../core/money';
@@ -71,6 +73,10 @@ export class ImportComponent {
     'Could not load the review queue.',
   );
   protected readonly review = computed(() => this.reviewPage.value()?.content ?? []);
+  protected readonly stats = new LoadState<CategorizationStats>(
+    'Could not load how the suggestions have done.',
+  );
+  protected readonly suggesting = signal(false);
   protected readonly reviewTotal = computed(() => this.reviewPage.value()?.totalElements ?? 0);
 
   protected readonly linking = signal(false);
@@ -275,11 +281,54 @@ export class ImportComponent {
     });
   }
 
+  /** The rule named a category the person does not have: make it, then apply it. */
+  protected createAndApply(row: Transaction): void {
+    const name = row.suggestion?.suggestedName;
+    if (!name) return;
+    this.api.createCategory({ name, kind: 'expense' }).subscribe({
+      next: (category) => this.categorize(row, category.id),
+      error: () =>
+        this.snackBar.open(`Could not create the category "${name}".`, undefined, {
+          duration: 4000,
+        }),
+    });
+  }
+
+  protected suggest(): void {
+    if (this.suggesting()) return;
+    this.suggesting.set(true);
+    this.api.suggestCategories().subscribe({
+      next: (outcome) => {
+        this.suggesting.set(false);
+        const note = outcome.notes.length ? ` ${outcome.notes[0]}` : '';
+        this.snackBar.open(
+          `${outcome.applied} of ${outcome.considered} categorized automatically, ${
+            outcome.suggested - outcome.applied
+          } with a suggestion to review.${note}`,
+          undefined,
+          { duration: 7000 },
+        );
+        this.reload();
+      },
+      error: () => {
+        this.suggesting.set(false);
+        this.snackBar.open('Could not ask for suggestions.', undefined, { duration: 4000 });
+      },
+    });
+  }
+
+  protected suggestionText(s: Suggestion): string {
+    const who =
+      s.method === 'similarity' ? 'your history' : s.method === 'rule' ? 'a rule' : 'the model';
+    return `${s.categoryName ?? s.suggestedName} (${Math.round(s.confidence * 100)}%, ${who})`;
+  }
+
   private reload(): void {
     this.batches.run(this.api.imports());
     // The queue is only ever uncategorized, non-transfer rows: an uncategorized transfer is
     // correct, not pending.
     this.reviewPage.run(this.api.needsReview(0, 100));
+    this.stats.run(this.api.categorizationStats());
   }
 }
 

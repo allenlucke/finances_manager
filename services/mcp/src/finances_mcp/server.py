@@ -798,6 +798,28 @@ def snapshot_net_worth() -> Any:
 
 
 # ---------------------------------------------------------------------------------------------
+# Automatic categorization (M3a, D-22).
+# ---------------------------------------------------------------------------------------------
+
+
+@mcp.tool(annotations=WRITES)
+def suggest_categories() -> Any:
+    """Ask for category suggestions on everything in the review queue, now. The person's own
+    history is tried first, then the rules; a suggestion at 90% or better with a category they
+    have is APPLIED, the rest wait in the queue with a reason (see ``review_queue``, whose rows
+    now carry ``suggestion``). Returns how many were considered, suggested and applied."""
+    return _guard(lambda: client().post("/api/v1/transactions/suggest", {}))
+
+
+@mcp.tool(annotations=READS)
+def categorization_stats() -> Any:
+    """How the suggestions have done, measured from what the person decided: open, applied,
+    accepted, corrected, rejected, by tier, and precision — (applied + accepted) over everything
+    judged. Quote the precision with its denominator; a few rows are not a track record."""
+    return _guard(lambda: client().get("/api/v1/transactions/categorization-stats"))
+
+
+# ---------------------------------------------------------------------------------------------
 # Writing
 # ---------------------------------------------------------------------------------------------
 

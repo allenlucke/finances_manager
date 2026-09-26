@@ -101,6 +101,38 @@ export interface Transaction {
   source: string;
   /** The file's own word for the row — "Payment", "Return", "XFER". Null for a manual entry. */
   sourceType: string | null;
+  /** On a review row: the open suggestion, if any (M3a). */
+  suggestion?: Suggestion | null;
+}
+
+/** What the categorizer proposed for a row, how sure it was, from which tier, and why. */
+export interface Suggestion {
+  /** Null when the rule named a category the person does not have yet; see suggestedName. */
+  categoryId: number | null;
+  categoryName: string | null;
+  suggestedName: string | null;
+  confidence: number;
+  method: 'rule' | 'similarity' | 'model';
+  rationale: string | null;
+}
+
+export interface SuggestOutcome {
+  considered: number;
+  suggested: number;
+  applied: number;
+  notes: string[];
+}
+
+export interface CategorizationStats {
+  open: number;
+  applied: number;
+  accepted: number;
+  corrected: number;
+  rejected: number;
+  byRule: number;
+  bySimilarity: number;
+  /** (applied + accepted) / (applied + accepted + corrected); null until something was judged. */
+  precisionPct: number | null;
 }
 
 /** Spring Data's page envelope, narrowed to the fields the UI uses. */
@@ -285,6 +317,9 @@ export interface ImportResult {
   appliedCount: number;
   /** Rows already present and skipped — a re-import is mostly these. */
   duplicateCount: number;
+  /** Rows categorized without a person (M3a), and rows left with a suggestion to review. */
+  autoCategorized: number;
+  suggested: number;
   error: string | null;
   startedAt: string;
   completedAt: string | null;
