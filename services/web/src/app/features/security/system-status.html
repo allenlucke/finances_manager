@@ -1,0 +1,34 @@
+<mat-card class="system">
+  <mat-card-header>
+    <mat-card-title><h2 class="card-title">System</h2></mat-card-title>
+    <mat-card-subtitle
+      >Whether the machinery behind the screens is alive, from the inside</mat-card-subtitle
+    >
+  </mat-card-header>
+  <mat-card-content>
+    @if (status.error()) {
+      <p class="state-error-inline" role="alert">{{ status.error() }}</p>
+    } @else if (status.value(); as s) {
+      <p class="muted small">
+        As of {{ s.now | date: 'medium' }}, zone {{ s.zone }}.
+        <button mat-button type="button" (click)="reload()" aria-label="Check again">
+          Check again
+        </button>
+      </p>
+      <dl class="facts">
+        @for (row of rows(s); track row.label) {
+          <div class="fact" [class]="'state-' + row.state">
+            <dt>
+              <span class="dot" aria-hidden="true"></span>
+              <span class="sr-only"
+                >{{ row.state === 'ok' ? 'ok' : row.state === 'off' ? 'off' : 'attention' }}:</span
+              >
+              {{ row.label }}
+            </dt>
+            <dd>{{ row.text }}</dd>
+          </div>
+        }
+      </dl>
+    }
+  </mat-card-content>
+</mat-card>

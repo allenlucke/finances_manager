@@ -202,6 +202,33 @@ public class ReportController {
             uncategorizedOut, uncategorizedIn, uncategorizedCount, categories);
     }
 
+    /** The same year as a file: one row per category, then the summary lines. */
+    @GetMapping("/year.csv")
+    public org.springframework.http.ResponseEntity<String> yearCsv(
+            @RequestParam(required = false) Integer year, @RequestParam(required = false) Long ledgerEntityId) {
+        YearReview review = year(year, ledgerEntityId);
+        var out = new StringBuilder("kind,category,rows,amount\n");
+        for (CategoryYear c : review.categories()) {
+            out.append(c.kind()).append(',').append(csv(c.name())).append(',').append(c.count()).append(',')
+                .append(c.amount().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString()).append('\n');
+        }
+        out.append("summary,income,,").append(review.income().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString()).append('\n');
+        out.append("summary,expenses,,").append(review.expenses().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString()).append('\n');
+        out.append("summary,net,,").append(review.net().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString()).append('\n');
+        out.append("summary,uncategorized out,").append(review.uncategorizedCount()).append(',')
+            .append(review.uncategorizedOut().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString()).append('\n');
+        String scope = review.entityName() == null ? "all" : review.entityName().replaceAll("[^A-Za-z0-9]+", "-");
+        return org.springframework.http.ResponseEntity.ok()
+            .header("Content-Disposition", "attachment; filename=\"year-" + review.year() + "-" + scope + ".csv\"")
+            .contentType(org.springframework.http.MediaType.parseMediaType("text/csv; charset=utf-8"))
+            .body(out.toString());
+    }
+
+    private static String csv(String value) {
+        String v = value == null ? "" : value;
+        return v.contains(",") || v.contains("\"") || v.contains("\n") ? "\"" + v.replace("\"", "\"\"") + "\"" : v;
+    }
+
     /** @param amount income as received; for an expense category, spend as a positive figure */
     public record CategoryYear(Long categoryId, String name, String kind, BigDecimal amount, int count) {
     }

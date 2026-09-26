@@ -149,3 +149,24 @@ serves the Cash flow screen and the MCP `recurring_charges` tool; `DigestService
 report for the needs-a-look list. `SnapshotService` writes `net_worth_snapshot` once a day from
 the `DigestScheduler` tick (and on request), and `GET /api/v1/reports/net-worth/history` feeds the
 dashboard's trend.
+
+## Categorization (M3a, D-22)
+
+`CategorizationService.suggestFor` runs after every import's rows are saved and on demand for the
+review queue. Tier one is the person's own history: categorized rows from the last two years,
+grouped by the recurring detector's merchant key; two agreeing rows are the minimum, and the
+confidence rises with the count and falls with disagreement. Tier two is the rules table in the
+Python service, asked over `POST /categorize` by `CategorizerClient` and answering by category
+*name*, which the API maps to the person's categories. The higher confidence wins. At 0.90 with a
+category the person has, the row is categorized and the `categorization` row is `applied`; below
+that, or naming a category they lack, the suggestion waits on the review row with its reason.
+`TransactionController.categorize` resolves the suggestion with the person's decision, and
+`categorization-stats` reports precision from those decisions. The categorizer being down is a
+note on the import, never a failed import.
+
+## The system's account of itself
+
+`GET /api/v1/system/status` gathers what `make doctor` prints from the outside — the AI service's
+health, the market-data provider and the last refresh, the broker and the trading switch, the
+digest's schedule and last run, the last net-worth snapshot, the live strategies, the notification
+channel — for the System card on Sign-in security and the MCP `system_status` tool.

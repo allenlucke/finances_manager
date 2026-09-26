@@ -31,7 +31,7 @@ describe('SecurityComponent', () => {
   afterEach(() => {
     // The notification card is a child; its one request is not this spec's concern.
     backend
-      .match((r) => r.url.startsWith('/api/v1/digest'))
+      .match((r) => r.url.startsWith('/api/v1/digest') || r.url.startsWith('/api/v1/system'))
       .forEach((r) => r.flush(null, { status: 500, statusText: 'Error' }));
     backend.verify();
   });

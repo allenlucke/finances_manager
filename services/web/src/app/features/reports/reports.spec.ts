@@ -105,4 +105,21 @@ describe('ReportsComponent', () => {
     expect(text()).toContain('Could not load the year');
     expect(text()).not.toContain('$0.00');
   });
+
+  it('offers the year as a CSV link for the chosen scope', () => {
+    flushEntities();
+    flushYear(review);
+    fixture.detectChanges();
+
+    const link = (fixture.nativeElement as HTMLElement).querySelector(
+      'a[download]',
+    ) as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe(`/api/v1/reports/year.csv?year=${year}`);
+    component['setEntity'](1);
+    backend.expectOne((r) => r.url === '/api/v1/reports/year').flush(review);
+    fixture.detectChanges();
+    expect(link.getAttribute('href')).toBe(
+      `/api/v1/reports/year.csv?year=${year}&ledgerEntityId=1`,
+    );
+  });
 });

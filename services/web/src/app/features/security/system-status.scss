@@ -1,0 +1,55 @@
+.system {
+  margin-top: 16px;
+}
+
+.facts {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) 1fr;
+  gap: 8px;
+  align-items: baseline;
+
+  dt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--mat-sys-on-surface-variant);
+  }
+  dd {
+    margin: 0;
+  }
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--mat-sys-outline);
+  flex: 0 0 auto;
+}
+
+.state-ok .dot {
+  background: var(--mat-sys-primary);
+}
+
+.state-warn .dot {
+  background: var(--mat-sys-error);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.small {
+  font: var(--mat-sys-body-small);
+}

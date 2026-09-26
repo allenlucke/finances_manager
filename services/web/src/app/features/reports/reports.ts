@@ -72,6 +72,10 @@ export class ReportsComponent {
     this.reload();
   }
 
+  protected csvHref(): string {
+    return this.api.yearCsvHref(this.year(), this.entityId());
+  }
+
   protected scope(): string {
     const r = this.review.value();
     return r?.entityName ?? 'all sets of books';

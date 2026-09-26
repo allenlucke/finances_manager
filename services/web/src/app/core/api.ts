@@ -26,6 +26,7 @@ import {
   StrategyInfo,
   StrategyOutcome,
   SuggestOutcome,
+  SystemStatus,
   OrderEvent,
   ProposeOrder,
   TradeOrder,
@@ -468,6 +469,16 @@ export class ApiClient {
 
   snapshotNetWorth(): Observable<NetWorthPoint[]> {
     return this.http.post<NetWorthPoint[]>(`${this.base}/reports/net-worth/snapshot`, {});
+  }
+
+  systemStatus(): Observable<SystemStatus> {
+    return this.http.get<SystemStatus>(`${this.base}/system/status`);
+  }
+
+  /** The year as a file, for a spreadsheet or an accountant. A link, not a fetch: the browser saves it. */
+  yearCsvHref(year: number, ledgerEntityId: number | null): string {
+    const entity = ledgerEntityId === null ? '' : `&ledgerEntityId=${ledgerEntityId}`;
+    return `${this.base}/reports/year.csv?year=${year}${entity}`;
   }
 
   yearReview(year: number, ledgerEntityId: number | null): Observable<YearReview> {

@@ -33,6 +33,12 @@ doctor: ## Check the toolchain, the secrets, and which stacks are running
 	if test -f .env; then ok ".env present"; else bad ".env (make ensure-env)"; fi; \
 	if grep -qE '^ACCOUNT_KEY_SECRET=.+' .env 2>/dev/null; then ok "ACCOUNT_KEY_SECRET set (back .env up with the database)"; else bad "ACCOUNT_KEY_SECRET (make ensure-env)"; fi; \
 	if grep -qE '^LOCAL_API_TOKEN=.+' .env 2>/dev/null; then ok "LOCAL_API_TOKEN set (Claude Code can drive the API)"; else printf '  \033[33m--\033[0m    LOCAL_API_TOKEN blank: the MCP server is off (make mcp-token)\n'; fi; \
+	setting() { v=$$(grep -E "^$$1=" .env 2>/dev/null | head -1 | cut -d= -f2-); printf '  \033[36m%-6s\033[0m %s=%s %s\n' "$$3" "$$1" "$${v:-$$2}" "$$4"; }; \
+	setting MARKET_DATA_PROVIDER none "$$(grep -qE '^MARKET_DATA_PROVIDER=(alpaca|fake)' .env 2>/dev/null && echo on || echo off)" "(quotes, alerts, backtests need alpaca or fake)"; \
+	setting TRADING_BROKER none "$$(grep -qE '^TRADING_BROKER=(alpaca_paper|fake)' .env 2>/dev/null && echo on || echo off)" "(paper orders need alpaca_paper)"; \
+	setting TRADING_ENABLED false "$$(grep -qE '^TRADING_ENABLED=true' .env 2>/dev/null && echo ON || echo off)" "(the kill switch; off keeps confirmations and sends nothing)"; \
+	setting NTFY_URL '' "$$(grep -qE '^NTFY_URL=.+' .env 2>/dev/null && echo on || echo off)" "(alerts and the digest are recorded but not pushed without it)"; \
+	setting DIGEST_SCHEDULED true "$$(grep -qE '^DIGEST_SCHEDULED=false' .env 2>/dev/null && echo off || echo on)" "(the daily needs-a-look push)"; \
 	echo "Stacks"; \
 	if docker info >/dev/null 2>&1; then \
 		dev=$$(docker ps --filter name=finances-manager- --format '{{.Names}} {{.Status}} {{.Ports}}' | sed 's/^/  /'); \

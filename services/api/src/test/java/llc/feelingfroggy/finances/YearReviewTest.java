@@ -91,6 +91,12 @@ class YearReviewTest extends PostgresIntegrationTest {
         assertThat(groceriesRow.get("count").asInt()).isEqualTo(3);
         assertThat(review.toString()).doesNotContain("Software");
 
+        var csv = api.get("/api/v1/reports/year.csv?year=" + year + "&ledgerEntityId=" + personal);
+        assertThat(csv.status()).isEqualTo(200);
+        assertThat(csv.body()).startsWith("kind,category,rows,amount\n");
+        assertThat(csv.body()).contains("expense,Groceries,3,180.50\n").contains("income,Salary,1,3000.00\n");
+        assertThat(csv.body()).contains("summary,net,,2819.50\n").contains("summary,uncategorized out,1,45.00\n");
+
         var everything = api.get("/api/v1/reports/year?year=" + year).json();
         assertThat(new BigDecimal(everything.get("expenses").asText())).isEqualByComparingTo("480.50");
         assertThat(everything.get("entityName").isNull()).isTrue();

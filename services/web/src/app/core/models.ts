@@ -736,3 +736,26 @@ export interface YearReview {
   uncategorizedCount: number;
   categories: CategoryYear[];
 }
+
+// --- the machinery's account of itself ---
+
+export interface SystemStatus {
+  now: string;
+  zone: string;
+  /** "ok", "unreachable", or whatever the service said. */
+  aiService: string;
+  marketData: { provider: string; available: boolean; detail: string | null };
+  marketScheduled: boolean;
+  marketRefreshEvery: string;
+  lastMarketRefresh: string | null;
+  lastMarketRefreshOutcome: string | null;
+  broker: TradingStatus['broker'];
+  tradingEnabled: boolean;
+  tradingDailyCap: number;
+  digestScheduled: boolean;
+  lastDigest: DigestRun | null;
+  lastSnapshot: string | null;
+  activeStrategies: number;
+  strategyEvaluateEvery: string;
+  notifierConfigured: boolean;
+}

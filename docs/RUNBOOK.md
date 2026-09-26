@@ -151,7 +151,9 @@ Only a single-sided row can be un-marked; a two-legged manual transfer is remove
 
 ## 6. When it looks wrong
 
-* `make doctor` first, then `make logs`.
+* `make doctor` first (it now prints the market, trading, notification and digest settings), then
+  `make logs`. From a phone, Sign-in security → System says the same things from inside the API:
+  what is off, unreachable or has never run.
 * Every 4xx arriving as **401** — the error dispatch is being skipped by a filter. CLAUDE.md.
 * An import failing with the parser's own sentence is a normal outcome; one failing with "could
   not be parsed" and nothing else means the AI container is down or unhealthy. `docker ps`.

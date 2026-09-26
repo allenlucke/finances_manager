@@ -47,6 +47,12 @@ public class SnapshotService {
         }
     }
 
+    /** The newest snapshot date, or null before the first one. */
+    public LocalDate latestAsOf(Long userId) {
+        return jdbc.query("SELECT max(as_of) AS d FROM net_worth_snapshot WHERE user_id = ?",
+            rs -> rs.next() ? rs.getObject("d", LocalDate.class) : null, userId);
+    }
+
     public List<Point> history(Long userId, int days) {
         LocalDate since = LocalDate.now(clock).minusDays(Math.min(Math.max(days, 1), 3660));
         return jdbc.query("""

@@ -491,3 +491,8 @@ def test_muting_a_series_sends_its_key_and_the_verdict(api):
         "label": "PLANET FITNESS",
         "muted": True,
     }
+
+
+def test_system_status_is_a_read(api):
+    server.system_status()
+    assert api.last.method == "GET" and api.last.url.path == "/api/v1/system/status"

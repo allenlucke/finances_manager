@@ -11,6 +11,7 @@ import { MatTableModule } from '@angular/material/table';
 import { ApiClient } from '../../core/api';
 import { Passkeys, RegisteredPasskey, passkeyFailureMessage } from '../../core/passkeys';
 import { NotificationSettingsComponent } from './notification-settings';
+import { SystemStatusComponent } from './system-status';
 
 /**
  * Passkey management.
@@ -24,6 +25,7 @@ import { NotificationSettingsComponent } from './notification-settings';
   selector: 'app-security',
   imports: [
     NotificationSettingsComponent,
+    SystemStatusComponent,
     DatePipe,
     ReactiveFormsModule,
     MatCardModule,

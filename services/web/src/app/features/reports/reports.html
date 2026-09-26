@@ -2,6 +2,13 @@
   <div class="page-head">
     <h1 class="page-title">Year in review</h1>
     <div class="pickers">
+      <a
+        mat-stroked-button
+        [href]="csvHref()"
+        download
+        aria-label="Download this year as a CSV file"
+        >CSV</a
+      >
       <mat-form-field appearance="outline" class="pick">
         <mat-label>Year</mat-label>
         <mat-select [ngModel]="year()" (ngModelChange)="setYear($event)">

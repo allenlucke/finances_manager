@@ -666,6 +666,16 @@ def evaluate_strategies() -> Any:
 
 
 @mcp.tool(annotations=READS)
+def system_status() -> Any:
+    """Whether the machinery behind the app is alive: the AI service, the market-data provider
+    and when quotes were last fetched, the broker and the trading switch, whether the digest is
+    scheduled and when it last went out, the last net-worth snapshot, the live strategies, and
+    whether a notification channel exists. Honest about what is off, unreachable or never run.
+    Check this before diagnosing anything else."""
+    return _guard(lambda: client().get("/api/v1/system/status"))
+
+
+@mcp.tool(annotations=READS)
 def needs_a_look() -> Any:
     """What the app has noticed that needs a person: statements the ledger disagrees with,
     orders waiting on a decision or refused, reminders coming due, categories over their target
