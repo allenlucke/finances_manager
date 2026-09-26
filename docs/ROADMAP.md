@@ -443,8 +443,12 @@ as `applied` (V15); below that, or naming a category they lack, it waits in the 
 its confidence, tier and reason, and the screen offers Accept or "Create X and apply". Every
 decision on a row resolves its suggestion; `GET /api/v1/transactions/categorization-stats` reports
 precision from those decisions with its denominator. The categorizer being down is a note on the
-import, never a failed import. `AutoCategorizationTest` pins all of it; the measured baseline on
-a synthetic twin of the real month is still to do.
+import, never a failed import. `AutoCategorizationTest` pins all of it. **Measured** (rules tier
+alone, `services/ai/tests/test_rules_coverage.py`, 2026-09-26): 4 of 4 rows on the OFX sample, 4
+of 5 on the card twin (`SOME NEW MERCHANT LLC` is the miss), 2 of 5 on the checking twin (payroll,
+a Wal-Mart refund and a transfer worded as one are the misses). Those floors fail a test if a rule
+change loses coverage. The real month's baseline — 14 of 40 by rules — has no synthetic twin yet;
+the history tier is what closes that gap in use, and `categorization-stats` reports it.
 
 ## M4 — Multi-entity + investments
 
