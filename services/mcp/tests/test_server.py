@@ -364,3 +364,43 @@ def test_holdings_at_market_and_alert_events_read_the_market_endpoints(api):
     server.alert_events(size=10)
     assert api.last.url.path == "/api/v1/market/alerts/events"
     assert dict(api.last.url.params) == {"size": "10"}
+
+
+def test_a_proposed_order_is_recorded_as_the_assistants_and_sends_strings(api):
+    import json
+
+    server.propose_order(
+        "AAPL", "buy", "2", order_type="limit", limit_price="185.50", rationale="dip"
+    )
+
+    body = json.loads(api.last.content)
+    assert api.last.url.path == "/api/v1/orders"
+    assert body["proposedBy"] == "assistant"
+    assert body["quantity"] == "2" and body["limitPrice"] == "185.50"
+    assert isinstance(body["quantity"], str)
+
+
+def test_confirming_restates_the_order_and_names_the_assistant_as_actor(api):
+    import json
+
+    server.confirm_order(7, "AAPL", "buy", "2", limit_price="185.50")
+
+    assert api.last.method == "POST"
+    assert api.last.url.path == "/api/v1/orders/7/confirm"
+    body = json.loads(api.last.content)
+    assert body == {
+        "symbol": "AAPL",
+        "side": "buy",
+        "quantity": "2",
+        "limitPrice": "185.50",
+        "actor": "assistant",
+    }
+
+
+def test_the_confirm_tool_is_marked_destructive_so_the_client_asks_first():
+    from mcp.server.mcpserver import MCPServer  # noqa: F401 — the import documents the contract
+
+    tool = next(t for t in server.mcp._tool_manager.list_tools() if t.name == "confirm_order")
+    assert tool.annotations.destructive_hint is True
+    proposed = next(t for t in server.mcp._tool_manager.list_tools() if t.name == "propose_order")
+    assert proposed.annotations.destructive_hint is False

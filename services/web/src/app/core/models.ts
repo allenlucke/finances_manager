@@ -308,3 +308,104 @@ export interface UnlinkedAccount {
   name: string | null;
   transactionCount: number;
 }
+
+// --- orders (M7b, D-18) ---
+
+export type OrderVenue = 'paper' | 'manual';
+export type OrderSide = 'buy' | 'sell';
+export type OrderType = 'market' | 'limit';
+export type OrderStatus =
+  | 'draft'
+  | 'confirmed'
+  | 'submitted'
+  | 'accepted'
+  | 'partially_filled'
+  | 'filled'
+  | 'placed_manually'
+  | 'cancelled'
+  | 'rejected'
+  | 'expired'
+  | 'failed';
+
+/**
+ * An order from proposal to fill. Nothing here is a ledger row: a fill changes what is owned, and
+ * what is owned is learned from the next positions import.
+ */
+export interface TradeOrder {
+  id: number;
+  symbol: string;
+  venue: OrderVenue;
+  side: OrderSide;
+  quantity: number;
+  orderType: OrderType;
+  limitPrice: number | null;
+  timeInForce: 'day' | 'gtc';
+  status: OrderStatus;
+  proposedBy: 'person' | 'assistant';
+  rationale: string | null;
+  /** The quote the draft was sized against, when it was a market order. */
+  referencePrice: number | null;
+  /** quantity × (limit price or reference price): what the cap measures and the person confirms. */
+  notionalEstimate: number;
+  broker: string | null;
+  brokerOrderId: string | null;
+  brokerStatus: string | null;
+  filledQuantity: number;
+  filledAvgPrice: number | null;
+  createdAt: string;
+  confirmedAt: string | null;
+  submittedAt: string | null;
+  filledAt: string | null;
+  closedAt: string | null;
+  lastError: string | null;
+  /** "buy 2 AAPL at market (paper)" — the sentence a confirmation restates. */
+  description: string;
+}
+
+export interface ProposeOrder {
+  symbol: string;
+  venue: OrderVenue;
+  side: OrderSide;
+  /** Strings all the way to the server, like every amount in this app. */
+  quantity: string;
+  orderType: OrderType;
+  limitPrice: string | null;
+  timeInForce: 'day' | 'gtc';
+  proposedBy: 'person';
+  rationale: string | null;
+}
+
+/** The echo that confirms a draft. It must be the draft's own symbol, side, quantity and limit. */
+export interface ConfirmOrder {
+  symbol: string;
+  side: OrderSide;
+  quantity: string;
+  limitPrice: string | null;
+}
+
+export interface OrderEvent {
+  id: number;
+  at: string;
+  fromStatus: OrderStatus | null;
+  toStatus: OrderStatus;
+  actor: 'person' | 'assistant' | 'system' | 'broker';
+  note: string | null;
+}
+
+export interface TradingStatus {
+  /** The kill switch, TRADING_ENABLED. Off means a confirmed paper order is kept, not sent. */
+  enabled: boolean;
+  dailyNotionalCap: number;
+  usedToday: number;
+  remainingToday: number;
+  broker: {
+    broker: string;
+    available: boolean;
+    /** Always true from this release's brokers; shown as an alarm if it is ever false. */
+    paper: boolean;
+    marketOpen: boolean | null;
+    buyingPower: number | null;
+    portfolioValue: number | null;
+    detail: string | null;
+  };
+}

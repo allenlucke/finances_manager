@@ -83,6 +83,11 @@ finances:
     scheduled: ${MARKET_REFRESH_SCHEDULED:false}
     refresh-every: ${MARKET_REFRESH_EVERY:PT5M}
     ntfy-url: ${NTFY_URL:}
+  # Order execution (M7b, D-18). Off by default everywhere; a confirmed paper order is refused with
+  # a sentence naming the switch. The cap bounds a day's confirmed paper orders in dollars.
+  trading:
+    enabled: ${TRADING_ENABLED:false}
+    daily-notional-cap: ${TRADING_DAILY_CAP:1000.00}
 
 logging:
   level:

@@ -1,0 +1,292 @@
+<mat-card class="section orders">
+  <mat-card-header>
+    <mat-card-title><h2 class="card-title">Orders</h2></mat-card-title>
+    <mat-card-subtitle>
+      A draft goes nowhere until you confirm it by restating it. Paper orders go to the paper
+      broker; a Fidelity ticket is carried by hand.
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    @if (status.error()) {
+      <p class="state-error-inline" role="alert">{{ status.error() }}</p>
+    } @else if (status.value(); as s) {
+      @if (!s.enabled) {
+        <div class="state-error off" role="status">
+          <mat-icon aria-hidden="true" fontSet="material-symbols-outlined"
+            >power_settings_new</mat-icon
+          >
+          <div>
+            <strong>Trading is off.</strong>
+            <span class="muted">
+              TRADING_ENABLED is false, so drafts and confirmations are kept and nothing is sent to
+              a broker. Fidelity tickets work as usual.
+            </span>
+          </div>
+        </div>
+      } @else {
+        <p class="muted status-line">
+          Trading is <strong>on</strong> · paper cap {{ money(s.dailyNotionalCap) }} a day,
+          {{ money(s.usedToday) }} sent today, <strong>{{ money(s.remainingToday) }} left</strong>
+          @if (!s.broker.available) {
+            · <strong>no broker</strong> ({{ s.broker.detail || 'TRADING_BROKER is none' }})
+          } @else {
+            · broker {{ s.broker.broker }}
+            @if (s.broker.marketOpen === true) {
+              , market open
+            } @else if (s.broker.marketOpen === false) {
+              , market closed
+            }
+            @if (s.broker.buyingPower !== null) {
+              , buying power {{ money(s.broker.buyingPower) }}
+            }
+          }
+        </p>
+      }
+      @if (s.broker.available && !s.broker.paper) {
+        <div class="state-error" role="alert">
+          <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">warning</mat-icon>
+          <div>
+            <strong>This broker is not a paper account.</strong>
+            <span class="muted">
+              Stop. This release knows only the paper endpoint; a broker that says otherwise is a
+              misconfiguration. Nothing should be confirmed until it is fixed.
+            </span>
+          </div>
+        </div>
+      }
+    }
+
+    <form [formGroup]="proposeForm" (ngSubmit)="propose()" class="inline-form propose">
+      <mat-form-field appearance="outline" class="side">
+        <mat-label>Side</mat-label>
+        <mat-select formControlName="side">
+          <mat-option value="buy">Buy</mat-option>
+          <mat-option value="sell">Sell</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="quantity">
+        <mat-label>Shares</mat-label>
+        <input matInput formControlName="quantity" inputmode="decimal" placeholder="1" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="symbol">
+        <mat-label>Symbol</mat-label>
+        <input matInput formControlName="symbol" placeholder="AAPL" autocapitalize="characters" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="type">
+        <mat-label>At</mat-label>
+        <mat-select formControlName="orderType">
+          <mat-option value="market">market</mat-option>
+          <mat-option value="limit">a limit of</mat-option>
+        </mat-select>
+      </mat-form-field>
+      @if (proposeForm.controls.orderType.value === 'limit') {
+        <mat-form-field appearance="outline" class="limit">
+          <mat-label>Limit price</mat-label>
+          <input matInput formControlName="limitPrice" inputmode="decimal" placeholder="0.00" />
+        </mat-form-field>
+      }
+      <mat-form-field appearance="outline" class="venue">
+        <mat-label>Where</mat-label>
+        <mat-select formControlName="venue">
+          <mat-option value="paper">paper broker</mat-option>
+          <mat-option value="manual">Fidelity, by hand</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="note">
+        <mat-label>Why</mat-label>
+        <input matInput formControlName="rationale" placeholder="the reason, for the record" />
+      </mat-form-field>
+      <button mat-stroked-button type="submit" [disabled]="proposeDisabled()">Save draft</button>
+    </form>
+
+    @if (notice(); as notice) {
+      <p class="state-error-inline" role="alert">{{ notice }}</p>
+    }
+
+    @if (confirming(); as order) {
+      <div class="panel" role="region" aria-label="Confirm order">
+        <p>
+          <strong>{{ order.description }}</strong
+          >, about {{ money(order.notionalEstimate) }}.
+          @if (order.venue === 'paper') {
+            It goes to the paper broker as soon as you confirm.
+          } @else {
+            It is a ticket for Fidelity; nothing is sent from here.
+          }
+          @if (order.rationale) {
+            <span class="muted"> Reason given: {{ order.rationale }}.</span>
+          }
+        </p>
+        <form [formGroup]="confirmForm" (ngSubmit)="sendConfirm()" class="inline-form">
+          <mat-form-field appearance="outline" class="symbol">
+            <mat-label>Type {{ order.symbol }} to confirm</mat-label>
+            <input matInput formControlName="echo" autocapitalize="characters" autofocus />
+          </mat-form-field>
+          <button mat-flat-button type="submit" [disabled]="!echoMatches(order) || busy()">
+            Confirm {{ order.side }}
+          </button>
+          <button mat-button type="button" (click)="confirming.set(null)">Keep as draft</button>
+        </form>
+      </div>
+    }
+
+    @if (placing(); as order) {
+      <div class="panel" role="region" aria-label="Mark order placed">
+        <p>
+          Placed <strong>{{ order.description }}</strong> at Fidelity? Record the fill price if you
+          have it.
+        </p>
+        <form [formGroup]="placedForm" (ngSubmit)="markPlaced()" class="inline-form">
+          <mat-form-field appearance="outline" class="limit">
+            <mat-label>Fill price (optional)</mat-label>
+            <input matInput formControlName="fillPrice" inputmode="decimal" placeholder="0.00" />
+          </mat-form-field>
+          <button mat-flat-button type="submit" [disabled]="fillPrice.invalid || busy()">
+            Placed at Fidelity
+          </button>
+          <button mat-button type="button" (click)="placing.set(null)">Not yet</button>
+        </form>
+      </div>
+    }
+
+    <div class="toolbar">
+      <button
+        mat-button
+        type="button"
+        (click)="sync()"
+        [disabled]="syncing() || !status.value()?.broker?.available"
+        aria-label="Ask the broker about open orders now"
+      >
+        <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">sync</mat-icon>
+        Check with broker
+      </button>
+    </div>
+
+    @if (orders.error()) {
+      <p class="state-error-inline" role="alert">{{ orders.error() }}</p>
+    } @else if (orders.isEmpty()) {
+      <p class="muted">No orders yet. A draft is the first step, and it commits to nothing.</p>
+    } @else if (orders.value()) {
+      <div class="table-scroll">
+        <table mat-table [dataSource]="orders.value()!">
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns" [class.done]="isTerminal(row)"></tr>
+
+          <ng-container matColumnDef="when">
+            <th mat-header-cell *matHeaderCellDef>When</th>
+            <td mat-cell *matCellDef="let row" class="muted nowrap">
+              {{ row.createdAt | date: 'short' }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="order">
+            <th mat-header-cell *matHeaderCellDef>Order</th>
+            <td mat-cell *matCellDef="let row">
+              <strong>{{ row.description }}</strong>
+              <div class="muted small">
+                proposed by the {{ row.proposedBy }}
+                @if (row.rationale) {
+                  · {{ row.rationale }}
+                }
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="notional">
+            <th mat-header-cell *matHeaderCellDef class="amount">About</th>
+            <td mat-cell *matCellDef="let row" class="amount">
+              {{ money(row.notionalEstimate) }}
+              @if (row.referencePrice !== null && row.orderType === 'market') {
+                <div class="muted small">at {{ money(row.referencePrice) }}</div>
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let row">
+              <span [class.failed]="row.status === 'failed' || row.status === 'rejected'">
+                {{ statusLabel(row) }}
+              </span>
+              @if (row.lastError) {
+                <div class="muted small">{{ row.lastError }}</div>
+              }
+              @if (row.broker === 'fake') {
+                <div class="muted small">fake broker</div>
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let row" class="row-actions">
+              @if (canConfirm(row)) {
+                <button
+                  mat-flat-button
+                  type="button"
+                  (click)="beginConfirm(row)"
+                  [attr.aria-label]="'Confirm ' + row.description"
+                >
+                  {{ row.status === 'draft' ? 'Confirm' : 'Confirm again' }}
+                </button>
+              }
+              @if (canPlace(row)) {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  (click)="beginPlaced(row)"
+                  [attr.aria-label]="'Mark placed: ' + row.description"
+                >
+                  Mark placed
+                </button>
+              }
+              @if (canCancel(row)) {
+                <button
+                  mat-button
+                  type="button"
+                  (click)="cancel(row)"
+                  [disabled]="busy()"
+                  [attr.aria-label]="'Cancel ' + row.description"
+                >
+                  Cancel
+                </button>
+              }
+              <button
+                mat-button
+                type="button"
+                (click)="showHistory(row)"
+                [attr.aria-label]="'History of ' + row.description"
+              >
+                History
+              </button>
+            </td>
+          </ng-container>
+        </table>
+      </div>
+    }
+
+    @if (historyFor(); as order) {
+      <div class="panel history" role="region" aria-label="Order history">
+        <p class="muted">
+          History of <strong>{{ order.description }}</strong>
+        </p>
+        @if (events.error()) {
+          <p class="state-error-inline" role="alert">{{ events.error() }}</p>
+        } @else if (events.value(); as list) {
+          <ol>
+            @for (event of list; track event.id) {
+              <li>
+                <span class="muted nowrap">{{ event.at | date: 'short' }}</span> — the
+                {{ event.actor }}:
+                @if (event.fromStatus) {
+                  {{ event.fromStatus }} → {{ event.toStatus }}
+                } @else {
+                  {{ event.toStatus }}
+                }
+                @if (event.note) {
+                  <span class="muted"> · {{ event.note }}</span>
+                }
+              </li>
+            }
+          </ol>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

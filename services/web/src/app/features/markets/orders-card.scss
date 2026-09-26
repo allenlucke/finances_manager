@@ -1,0 +1,77 @@
+.status-line {
+  margin: 0 0 12px;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+
+  .side,
+  .type {
+    width: 130px;
+  }
+  .quantity,
+  .symbol,
+  .limit {
+    width: 130px;
+  }
+  .venue {
+    width: 170px;
+  }
+  .note {
+    flex: 1 1 200px;
+  }
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.panel {
+  border-left: 3px solid var(--mat-sys-primary);
+  padding: 8px 12px;
+  margin: 8px 0 12px;
+  background: var(--mat-sys-surface-container-low);
+
+  p {
+    margin: 0 0 8px;
+  }
+  ol {
+    margin: 0;
+    padding-left: 20px;
+  }
+}
+
+table {
+  width: 100%;
+}
+
+tr.done {
+  opacity: 0.7;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.small {
+  font: var(--mat-sys-body-small);
+}
+
+.failed {
+  color: var(--mat-sys-error);
+}
+
+.row-actions {
+  white-space: nowrap;
+}
+
+// The off notice shares the error box's shape: it is the expected state, but the person must see it.
+.state-error.off {
+  border-left-color: var(--mat-sys-tertiary);
+}

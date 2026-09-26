@@ -139,6 +139,13 @@ own, and is not part of the compose stack — Claude Code launches it.
   was permanent. `_checkpoint_balances` walks each known balance back to a balance-before-everything
   under both orderings; the ordering where every balance agrees is the file's. When nothing
   resolves it, no balance is recorded and the file says so.
+- **An order is proposed, confirmed by restating it, and bounded.** Nothing reaches a broker
+  without a confirmation that echoes the draft's symbol, side, quantity and limit exactly; then the
+  kill switch (`TRADING_ENABLED`, off by default) and the daily notional cap each refuse with a
+  sentence. Every transition is a `trade_order_event` with an actor. The paper endpoint is the only
+  broker this release knows. A fill is never a ledger row — what is owned comes from the next
+  positions import. `TradingTest` and `TradingOffTest` pin the gates; the MCP `confirm_order` tool
+  is marked destructive so the client asks before calling it.
 - **A price is not money.** Quotes (M7) have no direction, never enter the ledger, and never change
   a balance. A holding at its latest quote is shown beside its snapshot value, labelled as a
   moment; `v_account_balance` and net worth use the snapshot only. A quote from the `fake`

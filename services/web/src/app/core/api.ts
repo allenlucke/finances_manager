@@ -9,7 +9,12 @@ import {
   Holding,
   AlertEvent,
   AlertRule,
+  ConfirmOrder,
   HoldingAtMarket,
+  OrderEvent,
+  ProposeOrder,
+  TradeOrder,
+  TradingStatus,
   ImportResult,
   MarketStatus,
   MonthlyTotalsRow,
@@ -286,5 +291,48 @@ export class ApiClient {
   alertEvents(size = 50): Observable<AlertEvent[]> {
     const params = new HttpParams().set('size', size);
     return this.http.get<AlertEvent[]>(`${this.base}/market/alerts/events`, { params });
+  }
+
+  // --- orders (M7b, D-18) ---
+
+  tradingStatus(): Observable<TradingStatus> {
+    return this.http.get<TradingStatus>(`${this.base}/orders/status`);
+  }
+
+  recentOrders(size = 50): Observable<TradeOrder[]> {
+    const params = new HttpParams().set('size', size);
+    return this.http.get<TradeOrder[]>(`${this.base}/orders`, { params });
+  }
+
+  /** A draft. Nothing is sent. */
+  proposeOrder(body: ProposeOrder): Observable<TradeOrder> {
+    return this.http.post<TradeOrder>(`${this.base}/orders`, body);
+  }
+
+  /** The gate: an echo of the draft, then the switch, then the cap, then the broker. */
+  confirmOrder(id: number, echo: ConfirmOrder): Observable<TradeOrder> {
+    return this.http.post<TradeOrder>(`${this.base}/orders/${id}/confirm`, {
+      ...echo,
+      actor: 'person',
+    });
+  }
+
+  cancelOrder(id: number): Observable<TradeOrder> {
+    return this.http.post<TradeOrder>(`${this.base}/orders/${id}/cancel`, { actor: 'person' });
+  }
+
+  markOrderPlaced(id: number, fillPrice: string | null): Observable<TradeOrder> {
+    return this.http.post<TradeOrder>(`${this.base}/orders/${id}/placed`, {
+      fillPrice,
+      actor: 'person',
+    });
+  }
+
+  syncOrders(): Observable<{ changed: number }> {
+    return this.http.post<{ changed: number }>(`${this.base}/orders/sync`, {});
+  }
+
+  orderEvents(id: number): Observable<OrderEvent[]> {
+    return this.http.get<OrderEvent[]>(`${this.base}/orders/${id}/events`);
   }
 }

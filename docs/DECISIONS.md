@@ -341,3 +341,16 @@ clicks. Auto-execution within limits is not ruled out; it is not granted until t
 it should be. Order execution is a different risk class from everything else in this system —
 reading a balance wrong shows a bad number, sending an order wrong loses money irreversibly — and
 that is why it has its own record here rather than inheriting the ledger's trust model.
+
+**Built (M7b, 2026-09-26).** `trade_order` and `trade_order_event` (V11). The confirmation is an
+echo of the draft — symbol, side, quantity and limit must match exactly, and in the browser the
+person types the symbol back — and after it come the switch and the cap, each refusing with a
+sentence. A refusal is an outcome, not a fault: the order's state after it (confirmed but not sent,
+cancelled by the cap, failed at the broker) is kept, so `OrderService.confirm` does not roll back on
+a domain refusal. The cap counts what reached the broker today, sized at the limit price or the
+quote the draft was made against; a confirmed-but-unsent order may be confirmed again once the
+switch is on. Our own `client_order_id` travels to the broker, so a retry cannot place an order
+twice. The Python service knows `alpaca_paper` and refuses any base URL that is not the paper host;
+`alpaca` and `alpaca_live` are not configuration values. The MCP `confirm_order` tool carries the
+destructive hint so the client asks before calling it, and its description says the person confirms,
+not the assistant, unless told to in so many words.

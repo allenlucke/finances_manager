@@ -33,6 +33,10 @@ stacks are up.
      over Tailscale, or `https://ntfy.sh/<a-long-random-topic>`. Both are outbound connections from
      the box; the AI container makes the first, the API the second. Leave the provider at `none`
      and the Markets screen simply says market data is off.
+   * **Orders (M7b), when wanted:** `TRADING_BROKER=alpaca_paper` (same keys; the paper endpoint is
+     the only one this release knows), then `TRADING_ENABLED=true` only when you mean it, and
+     `TRADING_DAILY_CAP` at a figure you would not mind losing to a mistake. With the switch off,
+     drafts and confirmations still work and are kept; nothing is sent.
 4. `make backup-key`, then copy the key file into a password manager. Do this before the first
    real import: an archive encrypted without a copy of the key is noise.
 5. `make up`. Flyway applies the schema on first start. `make doctor` should show four healthy

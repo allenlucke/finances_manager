@@ -76,3 +76,28 @@ be rewritten without the other noticing.
    exists for it; M3 fills it).
 
 Steps 3–5 are the whole product. The rest is CRUD.
+
+## Request flow: an order (M7b, D-18)
+
+Order execution is the one path in this system where a wrong request loses money irreversibly, so
+it has its own record and its own gates rather than the ledger's trust model.
+
+1. **Propose.** A person on the Markets screen, or the assistant through the MCP `propose_order`
+   tool, drafts an order: symbol, side, quantity, market or limit, paper or manual, and a reason.
+   The API sizes it against the latest stored quote (or the limit price) and records a `trade_order`
+   in `draft` with a `trade_order_event` naming who proposed it. Nothing is sent.
+2. **Confirm by restating.** `POST /api/v1/orders/{id}/confirm` carries an echo — symbol, side,
+   quantity, limit — that must match the draft exactly; the browser has the person type the symbol
+   back, the MCP tool is marked destructive so the client asks first. A mismatch is a 422 that
+   quotes the draft. A manual order stops here, `confirmed`, waiting to be carried to Fidelity.
+3. **The switch, then the cap.** `TRADING_ENABLED=false` (the default) keeps the confirmation and
+   refuses to send, naming the variable. `TRADING_DAILY_CAP` is checked against what reached the
+   broker today; over it, the order is cancelled with the figures on record. Both refusals commit —
+   the state after a refusal is the evidence of it.
+4. **The wire.** `BrokerClient` posts to the Python service's `/broker/orders` with our own
+   `client_order_id`, so a retry after a timeout cannot place the order twice. The Python side holds
+   the Alpaca keys and knows only the paper host. The broker's answer is folded into the state
+   machine and recorded as a `broker` event.
+5. **Sync.** Every market-refresh tick, and on demand, open orders are looked up and their fills,
+   cancellations and rejections recorded. A fill changes nothing in the ledger: what is owned is
+   learned from the next positions import, as it always was.

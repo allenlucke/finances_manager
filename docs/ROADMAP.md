@@ -519,8 +519,18 @@ screen with the watchlist, alerts, their history and every holding valued at the
 beside its snapshot value; MCP tools for all of it. The rule that governs the whole milestone is
 in the schema comment: a price is not money. Nothing here enters the ledger or moves a balance.
 
-**M7b next:** paper orders on Alpaca behind a draft → confirm → submit → fill state machine, a
-daily notional cap, `TRADING_ENABLED` off by default, and a manual ticket for Fidelity.
+**M7b built 2026-09-26.** `trade_order` and `trade_order_event` (V11): draft → confirmed →
+submitted → accepted → filled, with cancelled, rejected, expired, failed and placed_manually as the
+ways out, and every transition an event with an actor. The confirmation is an echo of the draft;
+then the kill switch (`TRADING_ENABLED`, off by default), then the daily notional cap
+(`TRADING_DAILY_CAP`), then the broker — Alpaca's paper endpoint through the Python service, and
+only that endpoint. A manual ticket stops at confirmed, goes to Fidelity in the person's hands, and
+is marked placed with its fill. The orders card on the Markets screen and seven MCP tools, whose
+`confirm_order` is marked destructive so the client asks first. Nothing here is a ledger row.
+
+**M7c, not started:** auto-execution within limits, once the paper record earns it (D-18); a
+funded account as a configuration change; rules that propose (a moving-average crossover, an
+earnings date) rather than only alert.
 
 *The original sketch, kept for what it got right:*
 

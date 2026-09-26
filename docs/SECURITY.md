@@ -96,9 +96,11 @@ a wrong secret.
 ## The AI service specifically
 
 - It gets transaction data, not credentials for anything of Allen's. It has no database access.
-  Its outbound connections are exactly two kinds, both named here: the market-data vendor
+  Its outbound connections are exactly three kinds, all named here: the market-data vendor
   (`data.alpaca.markets`, with `ALPACA_API_KEY`/`ALPACA_API_SECRET`, which live in this container
-  and nowhere else) and, later, the inference endpoint. Compose gives it no egress control yet, so
+  and nowhere else), the paper broker (`paper-api.alpaca.markets`, only when
+  `TRADING_BROKER=alpaca_paper`; the code refuses any other Alpaca host, and the live endpoint is
+  not a configuration value in this release) and, later, the inference endpoint. Compose gives it no egress control yet, so
   "nothing else" is a rule rather than an enforced property; an internal-only network with a proxy
   is the homelab follow-up. The API's own outbound connection is to the ntfy topic in `NTFY_URL`,
   carrying a symbol and a price and nothing about accounts or balances.

@@ -25,11 +25,13 @@ public class MarketRefreshScheduler {
     private static final Logger log = LoggerFactory.getLogger(MarketRefreshScheduler.class);
 
     private final MarketService market;
+    private final OrderService orders;
     private final AppUserRepository users;
     private boolean saidOff;
 
-    public MarketRefreshScheduler(MarketService market, AppUserRepository users) {
+    public MarketRefreshScheduler(MarketService market, OrderService orders, AppUserRepository users) {
         this.market = market;
+        this.orders = orders;
         this.users = users;
     }
 
@@ -46,6 +48,12 @@ public class MarketRefreshScheduler {
                 }
             } catch (RuntimeException e) {
                 log.warn("market refresh failed: {}", e.getMessage());
+            }
+            // Open orders learn their fate on the same beat. With no broker this is a no-op.
+            try {
+                orders.sync(user.getId());
+            } catch (RuntimeException e) {
+                log.warn("order sync failed: {}", e.getMessage());
             }
         }
     }

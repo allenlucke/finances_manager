@@ -40,8 +40,26 @@ describe('MarketsComponent', () => {
     held: false,
   };
 
+  const tradingOff = {
+    enabled: false,
+    dailyNotionalCap: 1000,
+    usedToday: 0,
+    remainingToday: 1000,
+    broker: {
+      broker: 'none',
+      available: false,
+      paper: true,
+      marketOpen: null,
+      buyingPower: null,
+      portfolioValue: null,
+      detail: "TRADING_BROKER is 'none'.",
+    },
+  };
+
   type Answer = { body: unknown; status?: number };
   function answerAll(overrides: Partial<Record<string, Answer>> = {}) {
+    // The orders card is a child; it asks for its data when the template first renders.
+    fixture.detectChanges();
     const answers: Record<string, Answer> = {
       '/api/v1/market/status': { body: liveStatus },
       '/api/v1/market/watchlist': { body: [] },
@@ -49,10 +67,14 @@ describe('MarketsComponent', () => {
       '/api/v1/market/holdings': { body: [] },
       '/api/v1/market/alerts/events': { body: [] },
       '/api/v1/market/alerts': { body: [] },
+      '/api/v1/orders/status': { body: tradingOff },
+      '/api/v1/orders': { body: [] },
       ...overrides,
     };
     for (const [path, answer] of Object.entries(answers)) {
       const pending = backend.match((r) => r.url === path || r.url.startsWith(path + '?'));
+      // The card's own requests are only issued once; a reload of this screen does not repeat them.
+      if (pending.length === 0 && path.startsWith('/api/v1/orders')) continue;
       expect(pending.length, path).toBeGreaterThan(0);
       const status = answer.status ?? 200;
       for (const request of pending) {

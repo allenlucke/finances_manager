@@ -14,6 +14,7 @@ import { MatTableModule } from '@angular/material/table';
 import { ApiClient } from '../../core/api';
 import { LoadState } from '../../core/load-state';
 import { amountClass, money } from '../../core/money';
+import { OrdersCardComponent } from './orders-card';
 import {
   AlertEvent,
   AlertRule,
@@ -46,6 +47,7 @@ import {
     MatIconModule,
     MatProgressBarModule,
     MatSlideToggleModule,
+    OrdersCardComponent,
   ],
   templateUrl: './markets.html',
   styleUrl: './markets.scss',

@@ -411,6 +411,117 @@ def alert_events(size: int = 50) -> Any:
 
 
 # ---------------------------------------------------------------------------------------------
+# Orders (M7b, D-18). Propose, then confirm by restating — and only with the person's explicit
+# go-ahead in the conversation. Nothing here is a ledger row.
+# ---------------------------------------------------------------------------------------------
+
+
+@mcp.tool(annotations=READS)
+def trading_status() -> Any:
+    """Whether orders can be sent: the kill switch, the daily cap and what today has used of it,
+    and what the broker says about itself (paper or not, market open, buying power)."""
+    return _guard(lambda: client().get("/api/v1/orders/status"))
+
+
+@mcp.tool(annotations=READS)
+def list_orders(size: int = 50) -> Any:
+    """Recent orders, newest first, with status, sizing, broker ids and fills."""
+    return _guard(lambda: client().get("/api/v1/orders", size=size))
+
+
+@mcp.tool(annotations=WRITES)
+def propose_order(
+    symbol: str,
+    side: str,
+    quantity: str,
+    order_type: str = "market",
+    limit_price: str | None = None,
+    venue: str = "paper",
+    rationale: str | None = None,
+) -> Any:
+    """Draft an order. Nothing is sent: a draft is sized against the latest quote (or the limit
+    price) and waits for a confirmation that restates it.
+
+    Args:
+        symbol: the ticker.
+        side: ``buy`` or ``sell``.
+        quantity: shares, as a string — never a float.
+        order_type: ``market`` or ``limit``.
+        limit_price: required for a limit order, as a string.
+        venue: ``paper`` sends to the paper broker on confirmation; ``manual`` is a ticket the
+            person places at Fidelity by hand and marks placed afterwards.
+        rationale: why. It is recorded on the order and read by the person before confirming.
+
+    The proposer is recorded as the assistant. Say what you proposed and why, then stop: the
+    person confirms, not you, unless they have told you in so many words to confirm on their behalf.
+    """
+    body = {
+        "symbol": symbol,
+        "side": side,
+        "quantity": quantity,
+        "orderType": order_type,
+        "limitPrice": limit_price,
+        "venue": venue,
+        "proposedBy": "assistant",
+        "rationale": rationale,
+    }
+    return _guard(lambda: client().post("/api/v1/orders", body))
+
+
+@mcp.tool(annotations=REMOVES)
+def confirm_order(
+    order_id: int, symbol: str, side: str, quantity: str, limit_price: str | None = None
+) -> Any:
+    """Confirm a draft by restating it exactly — symbol, side, quantity, and the limit price if it
+    has one. A restatement that does not match the draft confirms nothing.
+
+    THIS SENDS A REAL ORDER to the paper broker (or marks a manual ticket confirmed) when trading
+    is on. Call it only when the person has explicitly told you to confirm this specific order.
+    After the restatement come two more gates you do not control: the kill switch
+    (TRADING_ENABLED) and the daily notional cap; either refuses with a sentence.
+    """
+    body = {
+        "symbol": symbol,
+        "side": side,
+        "quantity": quantity,
+        "limitPrice": limit_price,
+        "actor": "assistant",
+    }
+    return _guard(lambda: client().post(f"/api/v1/orders/{order_id}/confirm", body))
+
+
+@mcp.tool(annotations=REMOVES)
+def cancel_order(order_id: int) -> Any:
+    """Cancel a draft here, or an open order at the broker."""
+    return _guard(
+        lambda: client().post(f"/api/v1/orders/{order_id}/cancel", {"actor": "assistant"})
+    )
+
+
+@mcp.tool(annotations=WRITES)
+def mark_order_placed(order_id: int, fill_price: str | None = None) -> Any:
+    """Record that a manual ticket was placed at Fidelity by hand, with the fill price if known.
+    Only the person knows this happened; call it when they say so."""
+    return _guard(
+        lambda: client().post(
+            f"/api/v1/orders/{order_id}/placed", {"fillPrice": fill_price, "actor": "assistant"}
+        )
+    )
+
+
+@mcp.tool(annotations=WRITES)
+def sync_orders() -> Any:
+    """Ask the broker about every open order now rather than waiting for the timer."""
+    return _guard(lambda: client().post("/api/v1/orders/sync", {}))
+
+
+@mcp.tool(annotations=READS)
+def order_events(order_id: int) -> Any:
+    """The audit trail of one order: who moved it from what to what, and why."""
+    return _guard(lambda: client().get(f"/api/v1/orders/{order_id}/events"))
+
+
+# ---------------------------------------------------------------------------------------------
 # Writing
 # ---------------------------------------------------------------------------------------------
 
