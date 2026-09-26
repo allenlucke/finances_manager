@@ -404,3 +404,32 @@ def test_the_confirm_tool_is_marked_destructive_so_the_client_asks_first():
     assert tool.annotations.destructive_hint is True
     proposed = next(t for t in server.mcp._tool_manager.list_tools() if t.name == "propose_order")
     assert proposed.annotations.destructive_hint is False
+
+
+def test_a_backtest_request_sends_strings_and_fills_defaults(api):
+    import json
+
+    server.run_backtest(
+        "sma_cross", "AAPL", "1Day", "2026-01-05", "2026-09-25", params={"fast": "5"}
+    )
+
+    body = json.loads(api.last.content)
+    assert api.last.url.path == "/api/v1/backtests" and api.last.method == "POST"
+    assert body["params"] == {"fast": "5"}
+    assert body["initialCash"] == "10000" and body["slippageBps"] == "5"
+    assert body["outOfSampleFraction"] == "0.3"
+    assert isinstance(body["initialCash"], str)
+
+
+def test_switching_a_strategy_on_is_a_put_and_deleting_is_marked_destructive(api):
+    import json
+
+    server.set_strategy_active(4, True)
+
+    assert api.last.method == "PUT"
+    assert api.last.url.path == "/api/v1/strategies/4/active"
+    assert json.loads(api.last.content) == {"active": True}
+    tools = {t.name: t for t in server.mcp._tool_manager.list_tools()}
+    assert tools["delete_strategy"].annotations.destructive_hint is True
+    assert tools["evaluate_strategies"].annotations.destructive_hint is False
+    assert "never trades by itself" in tools["save_strategy"].description

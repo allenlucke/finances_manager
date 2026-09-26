@@ -354,3 +354,42 @@ twice. The Python service knows `alpaca_paper` and refuses any base URL that is 
 `alpaca` and `alpaca_live` are not configuration values. The MCP `confirm_order` tool carries the
 destructive hint so the client asks before calling it, and its description says the person confirms,
 not the assistant, unless told to in so many words.
+
+### D-19 — Strategies and backtests: a backtest is a claim, and a strategy proposes
+*Decided 2026-09-26 with Allen ("go to town on all your ideas"), building on D-18.*
+
+**Why build this at all.** Allen may want to day trade, and it will not be at Fidelity (D-18).
+Before any money follows a rule, the rule should have to earn it in front of a system built to
+disbelieve it. That is what this milestone is: an honest backtester, and a way to run a rule live
+that can only *propose*.
+
+**A backtest is a claim.** The backtester is built to be hard on itself, and every choice below is
+a choice against flattering the strategy. A signal decided on one bar fills at the *next* bar's
+open, never the close it saw. Every fill pays slippage and commission; zero slippage is allowed
+and named as a lie. Positions are whole shares, all-in. Buy and hold over the same bars, with the
+same costs, is computed every time and shown beside the strategy's return; a result screen or an
+MCP answer that shows one without the other is wrong. The last part of the period is held out and
+scored separately, so a rule tuned to the first part shows itself. Same-session round trips are
+counted and the FINRA pattern day trader rule is named when there are any. Fewer than thirty
+closed trades is called noise. Fake bars say so in the first line. All of this arrives as a list
+of warnings the person is meant to read before the numbers, and the screen puts it there.
+
+**A strategy is a pure function over bars,** in the Python service, with indicators computed once
+per series. The same code runs in the backtester and against the newest bars live, so what was
+tested is what runs. Four to start: buy and hold (the baseline), a moving-average crossover, RSI
+mean reversion, and an opening-range breakout that is flat by every close — the day trader's
+classic, and the one that exercises the intraday path. Money and indicators are Decimal; the
+Sharpe ratio is the one float, a dimensionless statistic.
+
+**Live, a strategy proposes.** An active strategy is asked for its opinion on a timer (one minute
+by default, behind the market scheduler's switch). A new signal becomes a **draft** order through
+the M7b pipeline — proposed by the assistant, the strategy's reason as the rationale, sized by the
+bar the signal came from — and the person is told through ntfy. Confirming it is the person's
+act, with the same echo, switch and cap as any other order. One draft at a time per strategy;
+while one is pending the strategy waits, and a signal from a bar already proposed on is not
+proposed again. The strategy learns it is long from its own filled orders, not from a guess. Auto-
+execution within limits remains what D-18 said it was: not granted until the paper record says it
+should be, and when it is, it will be a bounded change to this one step.
+
+**What it is not.** Not tick data (the free feed is IEX volume), not a portfolio optimiser, not a
+promise. Its most valuable output is expected to be "this does not work", said with numbers.

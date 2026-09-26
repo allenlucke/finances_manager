@@ -58,6 +58,7 @@ make e2e         # browser tests on a throwaway stack (4201/8081)
 **M1 through M2.5 built; M4 partly; M7a and M7b built.** The budgeting core, statement import
 (CSV, OFX/QFX) with idempotent re-import and reconciliation checkpoints, passkeys, holdings from a
 positions export, conversational control through Claude Code, a watchlist with price alerts and
-holdings valued at the latest quote, and paper orders behind a restated confirmation, a kill switch
-and a daily cap. Two review passes have been worked through; the ledger above says what remains.
-M3 (automatic categorization) is next.
+holdings valued at the latest quote, paper orders behind a restated confirmation, a kill switch
+and a daily cap, and strategies with an honest backtester that can propose drafts but never trade.
+Two review passes have been worked through; the ledger above says what remains. M3 (automatic
+categorization) is next.

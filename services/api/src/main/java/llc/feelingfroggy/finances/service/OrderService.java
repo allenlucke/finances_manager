@@ -56,21 +56,28 @@ public class OrderService {
         this.clock = clock;
     }
 
+    /**
+     * @param referencePrice a price to size a market order by when the caller has a fresher one
+     *     than the stored quote — a strategy's last bar close. Null means use the latest quote.
+     */
     public record Proposal(String symbol, String venue, String side, BigDecimal quantity,
                            String orderType, BigDecimal limitPrice, String timeInForce,
-                           String proposedBy, String rationale) {
+                           String proposedBy, String rationale, Long strategyId,
+                           BigDecimal referencePrice) {
     }
 
     /** A draft: sized against the latest quote (or the limit price), committed to nothing. */
     @Transactional
     public TradeOrder propose(Long userId, Proposal p) {
         Security security = market.securityFor(userId, p.symbol());
-        BigDecimal reference = quotes.findTopBySecurityIdOrderByAsOfDescIdDesc(security.getId())
-            .map(q -> q.getPrice()).orElse(null);
+        BigDecimal reference = p.referencePrice() != null ? p.referencePrice()
+            : quotes.findTopBySecurityIdOrderByAsOfDescIdDesc(security.getId())
+                .map(q -> q.getPrice()).orElse(null);
         var order = new TradeOrder(userId, security, p.venue(), p.side(), p.quantity(),
             p.orderType() == null ? "market" : p.orderType(), p.limitPrice(),
             p.timeInForce() == null ? "day" : p.timeInForce(),
             p.proposedBy() == null ? "person" : p.proposedBy(), p.rationale(), reference);
+        order.setStrategyId(p.strategyId());
         orders.save(order);
         record(order, null, "draft", order.getProposedBy(), p.rationale());
         return order;

@@ -67,7 +67,7 @@ public class OrderController {
         return OrderView.of(service.propose(currentUser.id(), new OrderService.Proposal(
             request.symbol(), request.venue() == null ? "paper" : request.venue(), request.side(),
             request.quantity(), request.orderType(), request.limitPrice(), request.timeInForce(),
-            request.proposedBy(), request.rationale())));
+            request.proposedBy(), request.rationale(), null, null)));
     }
 
     /** The echo is the confirmation: symbol, side, quantity and limit must be the draft's. */

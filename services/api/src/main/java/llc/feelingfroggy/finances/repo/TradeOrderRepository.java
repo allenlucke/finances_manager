@@ -23,6 +23,10 @@ public interface TradeOrderRepository extends JpaRepository<TradeOrder, Long> {
         + "and o.status in ('submitted', 'accepted', 'partially_filled') and o.brokerOrderId is not null")
     List<TradeOrder> findOpenAtBroker(@Param("userId") Long userId);
 
+    /** The newest order a strategy proposed in any of the given states (M7c). */
+    Optional<TradeOrder> findTopByStrategyIdAndStatusInOrderByIdDesc(Long strategyId,
+                                                                    java.util.Collection<String> statuses);
+
     /** What the paper orders sent since a moment add up to — the figure the daily cap is checked against. */
     @Query("select coalesce(sum(o.notionalEstimate), 0) from TradeOrder o where o.userId = :userId "
         + "and o.venue = 'paper' and o.status in :statuses and o.submittedAt >= :since")

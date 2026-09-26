@@ -528,9 +528,20 @@ only that endpoint. A manual ticket stops at confirmed, goes to Fidelity in the 
 is marked placed with its fill. The orders card on the Markets screen and seven MCP tools, whose
 `confirm_order` is marked destructive so the client asks first. Nothing here is a ledger row.
 
-**M7c, not started:** auto-execution within limits, once the paper record earns it (D-18); a
-funded account as a configuration change; rules that propose (a moving-average crossover, an
-earnings date) rather than only alert.
+**M7c built 2026-09-26 (D-19).** Strategies as pure functions over bars in the Python service —
+buy and hold, moving-average crossover, RSI mean reversion, opening-range breakout — and a
+backtester built to be hard on itself: next-bar fills, slippage and commission, whole shares, buy
+and hold beside every result, an out-of-sample tail, same-session round trips counted, and a list
+of warnings the person reads before the numbers. `strategy` and `backtest_run` (V12) keep the
+rules and the claims whole; `trade_order.strategy_id` says which rule proposed an order. A live
+strategy is asked on a timer and turns a new signal into a *draft* through the M7b pipeline, with
+a notification; it never sends. A Strategies screen (form from the catalog, the result with its
+doubts first, an equity curve, the in-sample/out-of-sample halves, past runs, saved strategies
+with a live switch) and nine MCP tools.
+
+**M7d, not started:** auto-execution within limits, once the paper record earns it (D-18); a
+funded account as a configuration change; more rules (breakout with volume, an earnings-date
+filter), short entries, per-strategy risk limits.
 
 *The original sketch, kept for what it got right:*
 

@@ -37,6 +37,10 @@ stacks are up.
      the only one this release knows), then `TRADING_ENABLED=true` only when you mean it, and
      `TRADING_DAILY_CAP` at a figure you would not mind losing to a mistake. With the switch off,
      drafts and confirmations still work and are kept; nothing is sent.
+   * **Strategies (M7c):** nothing to configure beyond market data. Backtests fetch bars from the
+     configured provider on demand (a year of minute bars is a few seconds). A strategy switched
+     on is asked every `STRATEGY_EVALUATE_EVERY` (one minute) while `MARKET_REFRESH_SCHEDULED` is
+     on, and a signal becomes a draft order plus an ntfy note; the draft waits for you.
 4. `make backup-key`, then copy the key file into a password manager. Do this before the first
    real import: an archive encrypted without a copy of the key is noise.
 5. `make up`. Flyway applies the schema on first start. `make doctor` should show four healthy

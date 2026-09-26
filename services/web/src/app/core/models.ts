@@ -409,3 +409,156 @@ export interface TradingStatus {
     detail: string | null;
   };
 }
+
+// --- strategies and backtests (M7c, D-19) ---
+
+export type Timeframe = '1Min' | '5Min' | '15Min' | '1Hour' | '1Day';
+export const TIMEFRAMES: Timeframe[] = ['1Min', '5Min', '15Min', '1Hour', '1Day'];
+
+export interface StrategyParamSpec {
+  name: string;
+  label: string;
+  type: 'int' | 'decimal';
+  description: string;
+  /** Decimals as strings, as everywhere. */
+  default: string;
+  min: string | null;
+  max: string | null;
+}
+
+export interface StrategyInfo {
+  kind: string;
+  label: string;
+  description: string;
+  /** Needs intraday bars; refuses a daily timeframe. */
+  intraday: boolean;
+  params: StrategyParamSpec[];
+}
+
+/** A saved rule. Active means it proposes drafts on a timer; it never trades by itself. */
+export interface SavedStrategy {
+  id: number;
+  name: string;
+  kind: string;
+  params: Record<string, string>;
+  symbol: string;
+  timeframe: Timeframe;
+  quantity: number;
+  active: boolean;
+  notes: string | null;
+  lastEvaluatedAt: string | null;
+  lastEvaluation: string | null;
+  lastSignalAt: string | null;
+  lastSignal: string | null;
+  createdAt: string;
+}
+
+export interface SaveStrategy {
+  name: string;
+  kind: string;
+  params: Record<string, string>;
+  symbol: string;
+  timeframe: Timeframe;
+  quantity: string;
+  notes: string | null;
+}
+
+/** The Python service's metrics, decimals as strings; sharpe is the one float. */
+export interface BacktestMetrics {
+  bars: number;
+  trades: number;
+  total_return_pct: string;
+  benchmark_return_pct: string;
+  max_drawdown_pct: string;
+  win_rate_pct: string | null;
+  profit_factor: string | null;
+  avg_trade_pct: string | null;
+  exposure_pct: string;
+  sharpe: number | null;
+  final_equity: string;
+  day_trades: number;
+}
+
+export interface BacktestTradeRow {
+  entered_at: string;
+  exited_at: string | null;
+  quantity: number;
+  entry_price: string;
+  exit_price: string | null;
+  pnl: string | null;
+  return_pct: string | null;
+  reason_in: string;
+  reason_out: string | null;
+  same_day: boolean;
+}
+
+export interface BacktestResultBody {
+  provider: string;
+  strategy: string;
+  params: Record<string, string>;
+  symbol: string;
+  timeframe: Timeframe;
+  start: string;
+  end: string;
+  metrics: BacktestMetrics;
+  in_sample: BacktestMetrics | null;
+  out_of_sample: BacktestMetrics | null;
+  equity_curve: { ts: string; equity: string }[];
+  trades: BacktestTradeRow[];
+  /** The honesty notes. Shown before any number. */
+  warnings: string[];
+}
+
+export interface BacktestRun {
+  id: number;
+  strategyId: number | null;
+  kind: string;
+  params: Record<string, string>;
+  symbol: string;
+  timeframe: Timeframe;
+  start: string;
+  end: string;
+  initialCash: number;
+  slippageBps: number;
+  commission: number;
+  outOfSampleFraction: number;
+  provider: string;
+  bars: number;
+  trades: number;
+  dayTrades: number;
+  totalReturnPct: number;
+  benchmarkReturnPct: number;
+  maxDrawdownPct: number;
+  sharpe: number | null;
+  finalEquity: number;
+  inSampleReturnPct: number | null;
+  outOfSampleReturnPct: number | null;
+  warnings: string[];
+  createdAt: string;
+  /** Only on a single run; the list carries null. */
+  result: BacktestResultBody | null;
+}
+
+export interface RunBacktest {
+  kind: string;
+  params: Record<string, string>;
+  symbol: string;
+  timeframe: Timeframe;
+  start: string;
+  end: string;
+  initialCash: string;
+  slippageBps: string;
+  commission: string;
+  outOfSampleFraction: string;
+  strategyId: number | null;
+}
+
+export interface StrategyOutcome {
+  strategyId: number;
+  name: string;
+  symbol: string;
+  action: string | null;
+  reason: string | null;
+  orderId: number | null;
+  note: string;
+}

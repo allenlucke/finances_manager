@@ -101,3 +101,24 @@ it has its own record and its own gates rather than the ledger's trust model.
 5. **Sync.** Every market-refresh tick, and on demand, open orders are looked up and their fills,
    cancellations and rejections recorded. A fill changes nothing in the ledger: what is owned is
    learned from the next positions import, as it always was.
+
+## Strategies and backtests (M7c, D-19)
+
+The Python service owns the arithmetic; the API owns the record and the only side effect.
+
+- **Bars** come from the market-data provider seam (`services/ai/.../market/provider.py`):
+  Alpaca's paged bars endpoint on the IEX feed, or the fake provider's deterministic random walk.
+  Nothing is stored; a backtest fetches what it needs.
+- **Strategies** (`market/strategies.py`) are pure: `prepare(bars)` computes indicators once,
+  `on_bar(index, position)` returns buy, sell or nothing having seen bars up to `index`. The
+  catalog (`GET /strategies`) describes each one's parameters with defaults and bounds, and the
+  web form and the MCP tools are built from it.
+- **The backtester** (`market/backtest.py`, `POST /backtests`) simulates with next-bar fills,
+  costs, whole shares, a buy-and-hold benchmark, an out-of-sample tail, and returns metrics, the
+  equity curve, every trade with its reasons, and the warnings. The API stores the result whole
+  in `backtest_run` with a summary beside it for lists, and never recomputes it.
+- **Live** (`POST /strategies/evaluate`, `StrategyService.evaluateAll`, `StrategyScheduler`):
+  the API asks each active strategy for its opinion on the newest bars, passing whether it is
+  long (learned from its own filled orders). A new signal becomes a draft through
+  `OrderService.propose` — proposed by the assistant, sized by the signal's bar, rationale from
+  the strategy — and an ntfy note goes out. From there it is an M7b order: echo, switch, cap.

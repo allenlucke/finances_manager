@@ -88,6 +88,10 @@ finances:
   trading:
     enabled: ${TRADING_ENABLED:false}
     daily-notional-cap: ${TRADING_DAILY_CAP:1000.00}
+  # Live strategies (M7c) are asked for their opinion on this beat, behind the market scheduler's
+  # switch. A signal becomes a draft order for a person to confirm, never an order.
+  strategies:
+    evaluate-every: ${STRATEGY_EVALUATE_EVERY:PT1M}
 
 logging:
   level:

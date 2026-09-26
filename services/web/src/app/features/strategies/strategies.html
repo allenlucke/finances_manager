@@ -1,0 +1,537 @@
+<div class="page">
+  <div class="page-head">
+    <h1 class="page-title">Strategies</h1>
+    <button
+      mat-stroked-button
+      type="button"
+      (click)="evaluate()"
+      [disabled]="busy() || off()"
+      aria-label="Ask every active strategy for its opinion now"
+    >
+      <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">psychology</mat-icon>
+      Evaluate now
+    </button>
+  </div>
+
+  @if (running()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Running the backtest"></mat-progress-bar>
+  }
+
+  @if (market.error()) {
+    <p class="state-error-inline" role="alert">{{ market.error() }}</p>
+  } @else if (market.value(); as status) {
+    @if (!status.available) {
+      <div class="state-error" role="status">
+        <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">cloud_off</mat-icon>
+        <div>
+          <strong>Market data is off.</strong>
+          <span class="muted">
+            {{ status.detail || 'No provider is configured.' }} A backtest needs bars; strategies
+            can be saved but not run or evaluated.
+          </span>
+        </div>
+      </div>
+    } @else if (fake()) {
+      <div class="state-error fake" role="status">
+        <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">science</mat-icon>
+        <div>
+          <strong>These are fake bars.</strong>
+          <span class="muted">
+            A deterministic random walk from the fake provider. Every result on this screen says
+            nothing about any market.
+          </span>
+        </div>
+      </div>
+    }
+  }
+
+  <p class="muted lede">
+    A backtest is a claim. Every result shows buy and hold beside it, holds the last part of the
+    period out of sample, and lists what to doubt. A saved strategy that is switched on proposes
+    <strong>drafts</strong> on a timer; it never sends an order.
+  </p>
+
+  @if (notice(); as notice) {
+    <p class="state-error-inline" role="alert">{{ notice }}</p>
+  }
+
+  <div class="grid">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title><h2 class="card-title">Run a backtest</h2></mat-card-title>
+        <mat-card-subtitle
+          >Next-bar fills, slippage and commission on, whole shares</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        @if (catalog.error()) {
+          <p class="state-error-inline" role="alert">{{ catalog.error() }}</p>
+        }
+        <form [formGroup]="form" (ngSubmit)="run()" class="stack">
+          <mat-form-field appearance="outline">
+            <mat-label>Strategy</mat-label>
+            <mat-select formControlName="kind">
+              @for (c of catalog.value() ?? []; track c.kind) {
+                <mat-option [value]="c.kind">{{ c.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          @if (current(); as info) {
+            <p class="muted small">{{ info.description }}</p>
+          }
+          <div class="inline-form" [formGroup]="params">
+            @for (p of current()?.params ?? []; track p.name) {
+              <mat-form-field appearance="outline" class="param">
+                <mat-label>{{ p.label }}</mat-label>
+                <input matInput [formControlName]="p.name" inputmode="decimal" />
+                <mat-hint>{{ p.description }}</mat-hint>
+              </mat-form-field>
+            }
+          </div>
+          <div class="inline-form">
+            <mat-form-field appearance="outline" class="symbol">
+              <mat-label>Symbol</mat-label>
+              <input
+                matInput
+                formControlName="symbol"
+                placeholder="AAPL"
+                autocapitalize="characters"
+              />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="timeframe">
+              <mat-label>Bars</mat-label>
+              <mat-select formControlName="timeframe">
+                @for (t of allowedTimeframes(); track t) {
+                  <mat-option [value]="t">{{ t }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="date">
+              <mat-label>From</mat-label>
+              <input matInput type="date" formControlName="start" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="date">
+              <mat-label>To</mat-label>
+              <input matInput type="date" formControlName="end" />
+            </mat-form-field>
+          </div>
+          <div class="inline-form">
+            <mat-form-field appearance="outline" class="cash">
+              <mat-label>Starting cash</mat-label>
+              <input matInput formControlName="initialCash" inputmode="decimal" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="small-field">
+              <mat-label>Slippage (bps)</mat-label>
+              <input matInput formControlName="slippageBps" inputmode="decimal" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="small-field">
+              <mat-label>Commission</mat-label>
+              <input matInput formControlName="commission" inputmode="decimal" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="small-field">
+              <mat-label>Held out</mat-label>
+              <input matInput formControlName="outOfSampleFraction" inputmode="decimal" />
+              <mat-hint>fraction of the period</mat-hint>
+            </mat-form-field>
+          </div>
+          <div>
+            <button
+              mat-flat-button
+              type="submit"
+              [disabled]="form.invalid || params.invalid || running() || off()"
+            >
+              Run backtest
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title><h2 class="card-title">Saved strategies</h2></mat-card-title>
+        <mat-card-subtitle
+          >On means it proposes drafts on a timer; you confirm them</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        @if (outcomes(); as list) {
+          <div class="panel" role="status" aria-label="Evaluation outcome">
+            @if (list.length === 0) {
+              <p class="muted">No strategy is switched on, so nothing was asked.</p>
+            } @else {
+              <ul>
+                @for (o of list; track o.strategyId) {
+                  <li>{{ outcomeText(o) }}</li>
+                }
+              </ul>
+            }
+          </div>
+        }
+        @if (strategies.error()) {
+          <p class="state-error-inline" role="alert">{{ strategies.error() }}</p>
+        } @else if (strategies.isEmpty()) {
+          <p class="muted">No strategies saved yet. Run a backtest, then save its rule.</p>
+        } @else if (strategies.value()) {
+          <div class="table-scroll">
+            <table mat-table [dataSource]="strategies.value()!">
+              <tr mat-header-row *matHeaderRowDef="strategyColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: strategyColumns"></tr>
+
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <td mat-cell *matCellDef="let row">
+                  <strong>{{ row.name }}</strong>
+                  @if (row.notes) {
+                    <div class="muted small">{{ row.notes }}</div>
+                  }
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="rule">
+                <th mat-header-cell *matHeaderCellDef>Rule</th>
+                <td mat-cell *matCellDef="let row">
+                  {{ describeRule(row.kind, row.params) }}
+                  <div class="muted small">{{ row.symbol }} · {{ row.timeframe }} bars</div>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="shares">
+                <th mat-header-cell *matHeaderCellDef class="amount">Shares</th>
+                <td mat-cell *matCellDef="let row" class="amount">{{ row.quantity }}</td>
+              </ng-container>
+              <ng-container matColumnDef="active">
+                <th mat-header-cell *matHeaderCellDef>Live</th>
+                <td mat-cell *matCellDef="let row">
+                  <mat-slide-toggle
+                    [checked]="row.active"
+                    (change)="toggle(row, $event.checked)"
+                    [attr.aria-label]="(row.active ? 'Switch off ' : 'Switch on ') + row.name"
+                  ></mat-slide-toggle>
+                  <span class="muted small">{{ row.active ? 'proposing drafts' : 'off' }}</span>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="last">
+                <th mat-header-cell *matHeaderCellDef>Last</th>
+                <td mat-cell *matCellDef="let row" class="muted small">
+                  @if (row.lastEvaluatedAt) {
+                    {{ row.lastEvaluatedAt | date: 'short' }}: {{ row.lastEvaluation }}
+                  } @else {
+                    never asked
+                  }
+                  @if (row.lastSignal) {
+                    <div>
+                      last signal {{ row.lastSignal }} ({{ row.lastSignalAt | date: 'short' }})
+                    </div>
+                  }
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row">
+                  <button
+                    mat-icon-button
+                    type="button"
+                    (click)="remove(row)"
+                    [attr.aria-label]="'Remove ' + row.name"
+                  >
+                    <mat-icon aria-hidden="true" fontSet="material-symbols-outlined"
+                      >delete</mat-icon
+                    >
+                  </button>
+                </td>
+              </ng-container>
+            </table>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  @if (shown(); as run) {
+    <mat-card class="section result">
+      <mat-card-header>
+        <mat-card-title>
+          <h2 class="card-title">
+            {{ labelOf(run.kind) }} on {{ run.symbol }}, {{ run.timeframe }} bars,
+            {{ run.start }} to {{ run.end }}
+          </h2>
+        </mat-card-title>
+        <mat-card-subtitle>
+          {{ run.bars }} bars from {{ run.provider }} · started with {{ money(run.initialCash) }} ·
+          {{ run.slippageBps }} bps slippage · {{ money(run.commission) }} per order
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (run.warnings.length) {
+          <div class="state-error doubt" role="status" aria-label="What to doubt">
+            <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">fact_check</mat-icon>
+            <div>
+              <strong>Read these before the numbers.</strong>
+              <ul>
+                @for (w of run.warnings; track $index) {
+                  <li>{{ w }}</li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
+
+        <div class="headline">
+          <div>
+            <div class="muted small">Strategy</div>
+            <div class="big" [class]="pctClass(run.totalReturnPct)">
+              {{ pct(run.totalReturnPct) }}
+            </div>
+          </div>
+          <div>
+            <div class="muted small">Buy and hold, same bars</div>
+            <div class="big" [class]="pctClass(run.benchmarkReturnPct)">
+              {{ pct(run.benchmarkReturnPct) }}
+            </div>
+          </div>
+          <div>
+            <div class="muted small">Verdict</div>
+            <div>{{ verdict(run) }}</div>
+          </div>
+          <div>
+            <div class="muted small">Worst drawdown</div>
+            <div>{{ drawdown(run.maxDrawdownPct) }}</div>
+          </div>
+          <div>
+            <div class="muted small">Final equity</div>
+            <div>{{ money(run.finalEquity) }}</div>
+          </div>
+          <div>
+            <div class="muted small">Trades</div>
+            <div>
+              {{ run.trades }}
+              @if (run.dayTrades) {
+                <span class="muted small">({{ run.dayTrades }} same-day)</span>
+              }
+            </div>
+          </div>
+          <div>
+            <div class="muted small">Sharpe</div>
+            <div>{{ run.sharpe === null ? '—' : run.sharpe }}</div>
+          </div>
+        </div>
+
+        @if (run.result; as body) {
+          @if (curvePoints(run); as points) {
+            <figure class="curve">
+              <svg
+                viewBox="0 0 100 40"
+                preserveAspectRatio="none"
+                role="img"
+                aria-labelledby="curve-title"
+              >
+                <title id="curve-title">
+                  Equity from {{ money(run.initialCash) }} to {{ money(run.finalEquity) }}
+                </title>
+                <polyline [attr.points]="points" fill="none" stroke="currentColor" />
+              </svg>
+              <figcaption class="muted small">
+                Equity, {{ body.equity_curve[0].ts | date: 'shortDate' }} to
+                {{ body.equity_curve[body.equity_curve.length - 1].ts | date: 'shortDate' }}
+              </figcaption>
+            </figure>
+          }
+
+          @if (body.in_sample && body.out_of_sample) {
+            <h3 class="sub">In sample, then out of sample</h3>
+            <div class="table-scroll">
+              <table class="plain">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th class="amount">Strategy</th>
+                    <th class="amount">Buy and hold</th>
+                    <th class="amount">Drawdown</th>
+                    <th class="amount">Trades</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>First {{ inSampleShare(run) }} of the period</td>
+                    <td class="amount" [class]="pctClass(body.in_sample.total_return_pct)">
+                      {{ pct(body.in_sample.total_return_pct) }}
+                    </td>
+                    <td class="amount">{{ pct(body.in_sample.benchmark_return_pct) }}</td>
+                    <td class="amount">{{ drawdown(body.in_sample.max_drawdown_pct) }}</td>
+                    <td class="amount">{{ body.in_sample.trades }}</td>
+                  </tr>
+                  <tr>
+                    <td>Last {{ heldOutShare(run) }}, held out</td>
+                    <td class="amount" [class]="pctClass(body.out_of_sample.total_return_pct)">
+                      {{ pct(body.out_of_sample.total_return_pct) }}
+                    </td>
+                    <td class="amount">{{ pct(body.out_of_sample.benchmark_return_pct) }}</td>
+                    <td class="amount">{{ drawdown(body.out_of_sample.max_drawdown_pct) }}</td>
+                    <td class="amount">{{ body.out_of_sample.trades }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <h3 class="sub">Trades</h3>
+          @if (body.trades.length === 0) {
+            <p class="muted">No trade was closed.</p>
+          } @else {
+            <div class="table-scroll">
+              <table mat-table [dataSource]="body.trades">
+                <tr mat-header-row *matHeaderRowDef="tradeColumns"></tr>
+                <tr mat-row *matRowDef="let t; columns: tradeColumns"></tr>
+                <ng-container matColumnDef="in">
+                  <th mat-header-cell *matHeaderCellDef>In</th>
+                  <td mat-cell *matCellDef="let t" class="nowrap muted">
+                    {{ t.entered_at | date: 'short' }}
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="out">
+                  <th mat-header-cell *matHeaderCellDef>Out</th>
+                  <td mat-cell *matCellDef="let t" class="nowrap muted">
+                    {{ t.exited_at ? (t.exited_at | date: 'short') : 'open' }}
+                    @if (t.same_day) {
+                      <span class="muted"> · same day</span>
+                    }
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="quantity">
+                  <th mat-header-cell *matHeaderCellDef class="amount">Shares</th>
+                  <td mat-cell *matCellDef="let t" class="amount">{{ t.quantity }}</td>
+                </ng-container>
+                <ng-container matColumnDef="prices">
+                  <th mat-header-cell *matHeaderCellDef class="amount">Entry → exit</th>
+                  <td mat-cell *matCellDef="let t" class="amount nowrap">
+                    {{ dollars(t.entry_price) }} →
+                    {{ dollars(t.exit_price) }}
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="pnl">
+                  <th mat-header-cell *matHeaderCellDef class="amount">P&L</th>
+                  <td mat-cell *matCellDef="let t" class="amount" [class]="pctClass(t.pnl)">
+                    {{ dollars(t.pnl) }}
+                    <span class="muted small"> {{ pct(t.return_pct) }}</span>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="why">
+                  <th mat-header-cell *matHeaderCellDef>Why</th>
+                  <td mat-cell *matCellDef="let t" class="muted small">
+                    {{ t.reason_in }} → {{ t.reason_out || '—' }}
+                  </td>
+                </ng-container>
+              </table>
+            </div>
+          }
+        }
+
+        <form [formGroup]="saveForm" (ngSubmit)="saveShown()" class="inline-form save">
+          <mat-form-field appearance="outline" class="name">
+            <mat-label>Save this rule as</mat-label>
+            <input matInput formControlName="name" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="small-field">
+            <mat-label>Shares per signal</mat-label>
+            <input matInput formControlName="quantity" inputmode="decimal" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="name">
+            <mat-label>Notes</mat-label>
+            <input matInput formControlName="notes" placeholder="why you might trust it" />
+          </mat-form-field>
+          <button mat-stroked-button type="submit" [disabled]="saveForm.invalid || saving()">
+            Save strategy
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <mat-card class="section">
+    <mat-card-header>
+      <mat-card-title><h2 class="card-title">Past backtests</h2></mat-card-title>
+      <mat-card-subtitle>Kept whole, never recomputed</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (runs.error()) {
+        <p class="state-error-inline" role="alert">{{ runs.error() }}</p>
+      } @else if (runs.isEmpty()) {
+        <p class="muted">No backtests yet.</p>
+      } @else if (runs.value()) {
+        <div class="table-scroll">
+          <table mat-table [dataSource]="runs.value()!">
+            <tr mat-header-row *matHeaderRowDef="runColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: runColumns"></tr>
+
+            <ng-container matColumnDef="when">
+              <th mat-header-cell *matHeaderCellDef>When</th>
+              <td mat-cell *matCellDef="let row" class="muted nowrap">
+                {{ row.createdAt | date: 'short' }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="what">
+              <th mat-header-cell *matHeaderCellDef>What</th>
+              <td mat-cell *matCellDef="let row">
+                <strong>{{ describeRule(row.kind, row.params) }}</strong>
+                <div class="muted small">
+                  {{ row.symbol }} · {{ row.timeframe }} · {{ row.provider }} bars
+                  @if (row.warnings.length) {
+                    · {{ row.warnings.length }} thing(s) to doubt
+                  }
+                </div>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="period">
+              <th mat-header-cell *matHeaderCellDef>Period</th>
+              <td mat-cell *matCellDef="let row" class="muted nowrap">
+                {{ row.start }} → {{ row.end }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="return">
+              <th mat-header-cell *matHeaderCellDef class="amount">Strategy / hold</th>
+              <td mat-cell *matCellDef="let row" class="amount nowrap">
+                <span [class]="pctClass(row.totalReturnPct)">{{ pct(row.totalReturnPct) }}</span>
+                <span class="muted"> / {{ pct(row.benchmarkReturnPct) }}</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="oos">
+              <th mat-header-cell *matHeaderCellDef class="amount">Held out</th>
+              <td
+                mat-cell
+                *matCellDef="let row"
+                class="amount"
+                [class]="pctClass(row.outOfSampleReturnPct)"
+              >
+                {{ pct(row.outOfSampleReturnPct) }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="trades">
+              <th mat-header-cell *matHeaderCellDef class="amount">Trades</th>
+              <td mat-cell *matCellDef="let row" class="amount">{{ row.trades }}</td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let row" class="row-actions">
+                <button
+                  mat-button
+                  type="button"
+                  (click)="show(row)"
+                  [attr.aria-label]="'Show backtest ' + row.id"
+                >
+                  Show
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  (click)="deleteRun(row)"
+                  [attr.aria-label]="'Remove backtest ' + row.id"
+                >
+                  <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

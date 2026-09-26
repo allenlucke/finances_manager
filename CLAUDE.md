@@ -146,6 +146,16 @@ own, and is not part of the compose stack — Claude Code launches it.
   broker this release knows. A fill is never a ledger row — what is owned comes from the next
   positions import. `TradingTest` and `TradingOffTest` pin the gates; the MCP `confirm_order` tool
   is marked destructive so the client asks before calling it.
+- **A backtest is a claim, and a strategy proposes.** (D-19) The backtester fills on the next
+  bar's open, charges slippage and commission, sizes in whole shares, computes buy and hold over
+  the same bars with the same costs, holds the last part of the period out of sample, and returns
+  warnings a person is meant to read first — fake bars, too few trades, buy-and-hold won,
+  in-sample beat out-of-sample, the pattern day trader rule. Never show a strategy's return
+  without the buy-and-hold return beside it. A live strategy turns a signal into a *draft*
+  through the order pipeline and tells the person; it never confirms, sends or fills. The one
+  thing found while building: an intraday exit signalled on a session's last bar filled the next
+  morning under the next-open rule, so the opening-range breakout exits on the second-to-last bar.
+  `test_backtest.py`, `test_strategies.py` and `StrategyTest` pin it.
 - **A price is not money.** Quotes (M7) have no direction, never enter the ledger, and never change
   a balance. A holding at its latest quote is shown beside its snapshot value, labelled as a
   moment; `v_account_balance` and net worth use the snapshot only. A quote from the `fake`

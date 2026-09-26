@@ -104,6 +104,10 @@ public class TradeOrder extends UserOwned {
     @Column(name = "last_error")
     private String lastError;
 
+    /** The strategy that proposed it, when one did (M7c). */
+    @Column(name = "strategy_id")
+    private Long strategyId;
+
     protected TradeOrder() {
     }
 
@@ -281,4 +285,6 @@ public class TradeOrder extends UserOwned {
     public Instant getFilledAt() { return filledAt; }
     public Instant getClosedAt() { return closedAt; }
     public String getLastError() { return lastError; }
+    public Long getStrategyId() { return strategyId; }
+    public void setStrategyId(Long strategyId) { this.strategyId = strategyId; }
 }

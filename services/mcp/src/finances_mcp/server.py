@@ -522,6 +522,145 @@ def order_events(order_id: int) -> Any:
 
 
 # ---------------------------------------------------------------------------------------------
+# Strategies and backtests (M7c, D-19). A backtest is a claim with its doubts attached; a saved
+# strategy that is on proposes drafts on a timer and never trades by itself.
+# ---------------------------------------------------------------------------------------------
+
+
+@mcp.tool(annotations=READS)
+def strategy_catalog() -> Any:
+    """The strategies the system knows — kind, what it does, whether it needs intraday bars, and
+    each parameter with its default and bounds. Read this before running a backtest."""
+    return _guard(lambda: client().get("/api/v1/strategies/catalog"))
+
+
+@mcp.tool(annotations=WRITES)
+def run_backtest(
+    kind: str,
+    symbol: str,
+    timeframe: str,
+    start: str,
+    end: str,
+    params: dict[str, str] | None = None,
+    initial_cash: str = "10000",
+    slippage_bps: str = "5",
+    commission: str = "0",
+    out_of_sample_fraction: str = "0.3",
+) -> Any:
+    """Run a strategy over history and keep the result.
+
+    Args:
+        kind: a kind from ``strategy_catalog``.
+        symbol: the ticker.
+        timeframe: 1Min, 5Min, 15Min, 1Hour or 1Day. Intraday strategies refuse 1Day.
+        start: first day, YYYY-MM-DD.
+        end: last day, YYYY-MM-DD.
+        params: parameter name → value as a string; defaults fill the rest.
+        initial_cash: starting cash, as a string.
+        slippage_bps: basis points paid on every fill. Zero is a lie the result will name.
+        commission: dollars per order.
+        out_of_sample_fraction: the last part of the period held back and scored separately.
+
+    Read ``warnings`` first and repeat them to the person: fake bars, too few trades, buy and
+    hold won, in-sample beat out-of-sample, the pattern day trader rule. A backtest is a claim,
+    not a forecast; never present its return without the buy-and-hold return beside it.
+    """
+    body = {
+        "kind": kind,
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "start": start,
+        "end": end,
+        "params": params or {},
+        "initialCash": initial_cash,
+        "slippageBps": slippage_bps,
+        "commission": commission,
+        "outOfSampleFraction": out_of_sample_fraction,
+    }
+    return _guard(lambda: client().post("/api/v1/backtests", body))
+
+
+@mcp.tool(annotations=READS)
+def list_backtests(size: int = 20) -> Any:
+    """Past backtests, newest first: the rule, the period, the strategy's return beside buy and
+    hold, the held-out return, trades, and how many things there are to doubt."""
+    return _guard(lambda: client().get("/api/v1/backtests", size=size))
+
+
+@mcp.tool(annotations=READS)
+def backtest_detail(backtest_id: int) -> Any:
+    """One backtest whole: metrics, the in-sample and out-of-sample halves, the equity curve, every
+    trade with its reasons, and the warnings."""
+    return _guard(lambda: client().get(f"/api/v1/backtests/{backtest_id}"))
+
+
+@mcp.tool(annotations=REMOVES)
+def delete_backtest(backtest_id: int) -> Any:
+    """Remove a kept backtest."""
+    return _guard(lambda: client().delete(f"/api/v1/backtests/{backtest_id}"))
+
+
+@mcp.tool(annotations=READS)
+def list_strategies() -> Any:
+    """Saved strategies: rule, symbol, bars, shares per signal, whether it is on, and what it said
+    the last time it was asked."""
+    return _guard(lambda: client().get("/api/v1/strategies"))
+
+
+@mcp.tool(annotations=WRITES)
+def save_strategy(
+    name: str,
+    kind: str,
+    symbol: str,
+    timeframe: str,
+    quantity: str,
+    params: dict[str, str] | None = None,
+    notes: str | None = None,
+) -> Any:
+    """Save a rule as a strategy. It is OFF until switched on; on, it proposes DRAFT orders of
+    ``quantity`` shares on a timer, which the person confirms. It never trades by itself.
+
+    Args:
+        quantity: shares per signal, as a string. The size is the person's choice, not yours;
+            ask them unless they have said.
+    """
+    body = {
+        "name": name,
+        "kind": kind,
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "quantity": quantity,
+        "params": params or {},
+        "notes": notes,
+    }
+    return _guard(lambda: client().post("/api/v1/strategies", body))
+
+
+@mcp.tool(annotations=WRITES)
+def set_strategy_active(strategy_id: int, active: bool) -> Any:
+    """Switch a strategy on or off. On means it is asked for its opinion on a timer and a signal
+    becomes a draft order with a notification; confirming the draft is still the person's act.
+    Switch one on only when the person has said to."""
+    return _guard(
+        lambda: client().put(f"/api/v1/strategies/{strategy_id}/active", {"active": active})
+    )
+
+
+@mcp.tool(annotations=REMOVES)
+def delete_strategy(strategy_id: int) -> Any:
+    """Remove a saved strategy. Its past backtests and orders stay."""
+    return _guard(lambda: client().delete(f"/api/v1/strategies/{strategy_id}"))
+
+
+@mcp.tool(annotations=WRITES)
+def evaluate_strategies() -> Any:
+    """Ask every active strategy for its opinion now rather than waiting for the timer. Returns
+    what each one did: no signal, already proposed, waiting on an order, or a new draft's id.
+    Nothing is sent to a broker by this call."""
+    return _guard(lambda: client().post("/api/v1/strategies/evaluate", {}))
+
+
+# ---------------------------------------------------------------------------------------------
 # Writing
 # ---------------------------------------------------------------------------------------------
 

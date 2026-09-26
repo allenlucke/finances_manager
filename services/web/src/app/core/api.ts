@@ -9,8 +9,14 @@ import {
   Holding,
   AlertEvent,
   AlertRule,
+  BacktestRun,
   ConfirmOrder,
   HoldingAtMarket,
+  RunBacktest,
+  SavedStrategy,
+  SaveStrategy,
+  StrategyInfo,
+  StrategyOutcome,
   OrderEvent,
   ProposeOrder,
   TradeOrder,
@@ -334,5 +340,49 @@ export class ApiClient {
 
   orderEvents(id: number): Observable<OrderEvent[]> {
     return this.http.get<OrderEvent[]>(`${this.base}/orders/${id}/events`);
+  }
+
+  // --- strategies and backtests (M7c, D-19) ---
+
+  strategyCatalog(): Observable<StrategyInfo[]> {
+    return this.http.get<StrategyInfo[]>(`${this.base}/strategies/catalog`);
+  }
+
+  strategies(): Observable<SavedStrategy[]> {
+    return this.http.get<SavedStrategy[]>(`${this.base}/strategies`);
+  }
+
+  saveStrategy(body: SaveStrategy): Observable<SavedStrategy> {
+    return this.http.post<SavedStrategy>(`${this.base}/strategies`, body);
+  }
+
+  setStrategyActive(id: number, active: boolean): Observable<SavedStrategy> {
+    return this.http.put<SavedStrategy>(`${this.base}/strategies/${id}/active`, { active });
+  }
+
+  deleteStrategy(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/strategies/${id}`);
+  }
+
+  /** Ask every active strategy now. A signal becomes a draft order, never an order. */
+  evaluateStrategies(): Observable<StrategyOutcome[]> {
+    return this.http.post<StrategyOutcome[]>(`${this.base}/strategies/evaluate`, {});
+  }
+
+  runBacktest(body: RunBacktest): Observable<BacktestRun> {
+    return this.http.post<BacktestRun>(`${this.base}/backtests`, body);
+  }
+
+  backtests(size = 50): Observable<BacktestRun[]> {
+    const params = new HttpParams().set('size', size);
+    return this.http.get<BacktestRun[]>(`${this.base}/backtests`, { params });
+  }
+
+  backtest(id: number): Observable<BacktestRun> {
+    return this.http.get<BacktestRun>(`${this.base}/backtests/${id}`);
+  }
+
+  deleteBacktest(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/backtests/${id}`);
   }
 }
