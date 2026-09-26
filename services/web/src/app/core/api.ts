@@ -43,6 +43,7 @@ import {
   SpendRow,
   Target,
   Transaction,
+  YearReview,
 } from './models';
 
 /**
@@ -446,5 +447,11 @@ export class ApiClient {
 
   snapshotNetWorth(): Observable<NetWorthPoint[]> {
     return this.http.post<NetWorthPoint[]>(`${this.base}/reports/net-worth/snapshot`, {});
+  }
+
+  yearReview(year: number, ledgerEntityId: number | null): Observable<YearReview> {
+    let params = new HttpParams().set('year', year);
+    if (ledgerEntityId !== null) params = params.set('ledgerEntityId', ledgerEntityId);
+    return this.http.get<YearReview>(`${this.base}/reports/year`, { params });
   }
 }

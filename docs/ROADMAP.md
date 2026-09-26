@@ -589,9 +589,13 @@ usual. The needs-a-look list (M8) carries the missing series, the anomalies and 
 summary of the week ahead. A Cash flow screen, a net-worth trend on the dashboard from daily
 snapshots taken by the housekeeping tick, and three MCP tools.
 
+**Also built 2026-09-26:** a year in review (`GET /api/v1/reports/year`, the Year screen, the
+`year_in_review` tool) — income and spending by category for one set of books or all, transfers
+excluded, refunds reducing their category, and the uncategorized amount named before the totals.
+
 **Next:** paydays and inflows as their own series with a cash-runway figure ("enough for the next
-N weeks of recurring outflow"); a way to say "this is not recurring" that sticks; per-entity
-tax-year reports for the LLC.
+N weeks of recurring outflow"); a way to say "this is not recurring" that sticks; a tax-year
+export (CSV) from the year review once the LLC's categories are settled.
 
 ## M6 — Insight layer
 Forecasting, anomaly detection ("this bill is 40% higher than usual"), cashflow projection, and a

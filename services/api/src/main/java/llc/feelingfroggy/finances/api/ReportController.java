@@ -143,6 +143,75 @@ public class ReportController {
     }
 
     /**
+     * A year in review, per set of books or across all of them: what came in and went out by
+     * category, transfers excluded, with what is still uncategorized said out loud — a year total
+     * that quietly omits its review queue is the "cheap month" bug at annual scale.
+     */
+    @GetMapping("/year")
+    public YearReview year(@RequestParam(required = false) Integer year,
+                           @RequestParam(required = false) Long ledgerEntityId) {
+        int y = year == null ? LocalDate.now(clock).getYear() : year;
+        LocalDate from = LocalDate.of(y, 1, 1);
+        LocalDate to = LocalDate.of(y, 12, 31);
+        var args = new java.util.ArrayList<Object>(List.of(currentUser.id(), from, to));
+        String entityClause = "";
+        if (ledgerEntityId != null) {
+            entityClause = " AND r.ledger_entity_id = ?\n";
+            args.add(ledgerEntityId);
+        }
+        List<CategoryYear> rows = jdbc.query("""
+            SELECT c.id AS category_id, c.name, c.kind, SUM(r.signed_amount) AS total, COUNT(*) AS n
+            FROM v_transaction_resolved r LEFT JOIN category c ON c.id = r.category_id
+            WHERE r.user_id = ? AND r.transaction_date BETWEEN ? AND ? AND r.is_transfer = false
+            """ + entityClause + """
+            GROUP BY c.id, c.name, c.kind
+            ORDER BY c.kind NULLS LAST, SUM(r.signed_amount)
+            """,
+            (rs, i) -> new CategoryYear(rs.getObject("category_id", Long.class), rs.getString("name"),
+                rs.getString("kind"), rs.getBigDecimal("total"), rs.getInt("n")),
+            args.toArray());
+        BigDecimal income = BigDecimal.ZERO;
+        BigDecimal expenses = BigDecimal.ZERO;
+        BigDecimal uncategorizedOut = BigDecimal.ZERO;
+        BigDecimal uncategorizedIn = BigDecimal.ZERO;
+        int uncategorizedCount = 0;
+        var categories = new java.util.ArrayList<CategoryYear>();
+        for (CategoryYear row : rows) {
+            if (row.categoryId() == null) {
+                uncategorizedCount += row.count();
+                if (row.amount().signum() < 0) {
+                    uncategorizedOut = uncategorizedOut.add(row.amount().negate());
+                } else {
+                    uncategorizedIn = uncategorizedIn.add(row.amount());
+                }
+                continue;
+            }
+            if ("income".equals(row.kind())) {
+                income = income.add(row.amount());
+                categories.add(row);
+            } else {
+                expenses = expenses.add(row.amount().negate());
+                // Spend is shown as a positive figure; a refund-heavy category can go negative.
+                categories.add(new CategoryYear(row.categoryId(), row.name(), row.kind(), row.amount().negate(), row.count()));
+            }
+        }
+        String entityName = ledgerEntityId == null ? null : jdbc.query(
+            "SELECT name FROM ledger_entity WHERE id = ? AND user_id = ?",
+            (rs, i) -> rs.getString("name"), ledgerEntityId, currentUser.id()).stream().findFirst().orElse(null);
+        return new YearReview(y, ledgerEntityId, entityName, income, expenses, income.subtract(expenses),
+            uncategorizedOut, uncategorizedIn, uncategorizedCount, categories);
+    }
+
+    /** @param amount income as received; for an expense category, spend as a positive figure */
+    public record CategoryYear(Long categoryId, String name, String kind, BigDecimal amount, int count) {
+    }
+
+    public record YearReview(int year, Long ledgerEntityId, String entityName, BigDecimal income,
+                             BigDecimal expenses, BigDecimal net, BigDecimal uncategorizedOut,
+                             BigDecimal uncategorizedIn, int uncategorizedCount, List<CategoryYear> categories) {
+    }
+
+    /**
      * @param snapshotAccounts accounts in this figure valued from a holdings snapshot, not the ledger
      * @param oldestSnapshot the date of the oldest such snapshot; null when there are none
      */

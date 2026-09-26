@@ -458,3 +458,12 @@ def test_recurring_charges_ask_for_a_window_and_history_for_days(api):
     server.net_worth_history(days=30)
     assert api.last.url.path == "/api/v1/reports/net-worth/history"
     assert api.last.url.params["days"] == "30"
+
+
+def test_year_in_review_passes_only_what_was_given(api):
+    server.year_in_review()
+    assert api.last.url.path == "/api/v1/reports/year" and "year" not in api.last.url.params
+
+    server.year_in_review(year=2025, ledger_entity_id=2)
+    assert api.last.url.params["year"] == "2025"
+    assert api.last.url.params["ledgerEntityId"] == "2"

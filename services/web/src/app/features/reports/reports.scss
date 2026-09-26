@@ -1,0 +1,38 @@
+.pickers {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  .pick {
+    width: 120px;
+  }
+  .wide {
+    width: 220px;
+  }
+}
+
+.headline-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.headline {
+  font: var(--mat-sys-headline-small);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+table {
+  width: 100%;
+}
+
+.small {
+  font: var(--mat-sys-body-small);
+}

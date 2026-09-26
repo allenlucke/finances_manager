@@ -1,0 +1,138 @@
+<div class="page">
+  <div class="page-head">
+    <h1 class="page-title">Year in review</h1>
+    <div class="pickers">
+      <mat-form-field appearance="outline" class="pick">
+        <mat-label>Year</mat-label>
+        <mat-select [ngModel]="year()" (ngModelChange)="setYear($event)">
+          @for (y of years(); track y) {
+            <mat-option [value]="y">{{ y }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="pick wide">
+        <mat-label>Set of books</mat-label>
+        <mat-select [ngModel]="entityId()" (ngModelChange)="setEntity($event)">
+          <mat-option [value]="null">All</mat-option>
+          @for (e of entities.value() ?? []; track e.id) {
+            <mat-option [value]="e.id">{{ e.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  @if (entities.error()) {
+    <p class="state-error-inline" role="alert">{{ entities.error() }}</p>
+  }
+
+  @if (review.error()) {
+    <p class="state-error-inline" role="alert">{{ review.error() }}</p>
+  } @else if (review.value(); as r) {
+    @if (r.uncategorizedCount > 0) {
+      <div class="state-error" role="status">
+        <mat-icon aria-hidden="true" fontSet="material-symbols-outlined">rule</mat-icon>
+        <div>
+          <strong>
+            {{ r.uncategorizedCount }} transaction(s) worth {{ money(r.uncategorizedOut) }} out
+            @if (r.uncategorizedIn > 0) {
+              and {{ money(r.uncategorizedIn) }} in
+            }
+            are still uncategorized.
+          </strong>
+          <span class="muted">
+            They are in none of the figures below. The review queue is on the
+            <a routerLink="/import">Import</a> screen.
+          </span>
+        </div>
+      </div>
+    }
+
+    <section class="headline-row">
+      <mat-card>
+        <mat-card-content>
+          <div class="muted">Income, {{ r.year }}, {{ scope() }}</div>
+          <div class="headline amount-positive">{{ money(r.income) }}</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card>
+        <mat-card-content>
+          <div class="muted">Spending</div>
+          <div class="headline amount-negative">{{ money(-r.expenses) }}</div>
+          <div class="muted small">Transfers are not spending and are not here.</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card>
+        <mat-card-content>
+          <div class="muted">Net</div>
+          <div class="headline" [class]="r.net < 0 ? 'amount-negative' : 'amount-positive'">
+            {{ money(r.net) }}
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <div class="grid">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title><h2 class="card-title">Spending by category</h2></mat-card-title>
+          <mat-card-subtitle>Refunds reduce their category</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (expenses().length === 0) {
+            <p class="muted">No categorized spending in {{ r.year }}.</p>
+          } @else {
+            <div class="table-scroll">
+              <table mat-table [dataSource]="expenses()">
+                <tr mat-header-row *matHeaderRowDef="columns"></tr>
+                <tr mat-row *matRowDef="let row; columns: columns"></tr>
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef>Category</th>
+                  <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+                </ng-container>
+                <ng-container matColumnDef="count">
+                  <th mat-header-cell *matHeaderCellDef class="amount">Rows</th>
+                  <td mat-cell *matCellDef="let row" class="amount muted">{{ row.count }}</td>
+                </ng-container>
+                <ng-container matColumnDef="amount">
+                  <th mat-header-cell *matHeaderCellDef class="amount">Spent</th>
+                  <td mat-cell *matCellDef="let row" class="amount">{{ money(row.amount) }}</td>
+                </ng-container>
+              </table>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title><h2 class="card-title">Income by category</h2></mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (income().length === 0) {
+            <p class="muted">No categorized income in {{ r.year }}.</p>
+          } @else {
+            <div class="table-scroll">
+              <table mat-table [dataSource]="income()">
+                <tr mat-header-row *matHeaderRowDef="columns"></tr>
+                <tr mat-row *matRowDef="let row; columns: columns"></tr>
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef>Category</th>
+                  <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+                </ng-container>
+                <ng-container matColumnDef="count">
+                  <th mat-header-cell *matHeaderCellDef class="amount">Rows</th>
+                  <td mat-cell *matCellDef="let row" class="amount muted">{{ row.count }}</td>
+                </ng-container>
+                <ng-container matColumnDef="amount">
+                  <th mat-header-cell *matHeaderCellDef class="amount">Received</th>
+                  <td mat-cell *matCellDef="let row" class="amount">{{ money(row.amount) }}</td>
+                </ng-container>
+              </table>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>

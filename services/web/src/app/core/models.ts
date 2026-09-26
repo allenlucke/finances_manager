@@ -669,3 +669,28 @@ export interface CashflowReport {
   expectedIn: number;
   days: number;
 }
+
+// --- year in review ---
+
+export interface CategoryYear {
+  categoryId: number;
+  name: string;
+  kind: CategoryKind;
+  /** Income as received; for an expense category, spend as a positive figure (refunds reduce it). */
+  amount: number;
+  count: number;
+}
+
+export interface YearReview {
+  year: number;
+  ledgerEntityId: number | null;
+  entityName: string | null;
+  income: number;
+  expenses: number;
+  net: number;
+  /** Still in the review queue: a year total without these is wrong by this much. */
+  uncategorizedOut: number;
+  uncategorizedIn: number;
+  uncategorizedCount: number;
+  categories: CategoryYear[];
+}

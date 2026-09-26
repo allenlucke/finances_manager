@@ -771,6 +771,19 @@ def recurring_charges(days: int = 30) -> Any:
 
 
 @mcp.tool(annotations=READS)
+def year_in_review(year: int | None = None, ledger_entity_id: int | None = None) -> Any:
+    """A year by category, for one set of books or all: income, spending (refunds reduce their
+    category), net, and — say this first — how much is still uncategorized and therefore in none
+    of the figures. Transfers are excluded. Defaults to the current year and all books."""
+    params: dict[str, Any] = {}
+    if year is not None:
+        params["year"] = year
+    if ledger_entity_id is not None:
+        params["ledgerEntityId"] = ledger_entity_id
+    return _guard(lambda: client().get("/api/v1/reports/year", **params))
+
+
+@mcp.tool(annotations=READS)
 def net_worth_history(days: int = 90) -> Any:
     """What net worth was on each day a snapshot exists, combined (ledgerEntityId null) and per set
     of books. Snapshots are taken once a day by the housekeeping tick; history starts when that
