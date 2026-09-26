@@ -478,3 +478,16 @@ def test_suggesting_categories_posts_and_stats_are_read_only(api):
     assert api.last.url.path == "/api/v1/transactions/categorization-stats"
     tools = {t.name: t for t in server.mcp._tool_manager.list_tools()}
     assert tools["categorization_stats"].annotations.read_only_hint is True
+
+
+def test_muting_a_series_sends_its_key_and_the_verdict(api):
+    import json
+
+    server.mute_recurring("1|debit|PLANET FITNESS", muted=True, label="PLANET FITNESS")
+
+    assert api.last.method == "PUT" and api.last.url.path == "/api/v1/cashflow/mute"
+    assert json.loads(api.last.content) == {
+        "key": "1|debit|PLANET FITNESS",
+        "label": "PLANET FITNESS",
+        "muted": True,
+    }

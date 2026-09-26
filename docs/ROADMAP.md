@@ -603,9 +603,12 @@ snapshots taken by the housekeeping tick, and three MCP tools.
 `year_in_review` tool) — income and spending by category for one set of books or all, transfers
 excluded, refunds reducing their category, and the uncategorized amount named before the totals.
 
-**Next:** paydays and inflows as their own series with a cash-runway figure ("enough for the next
-N weeks of recurring outflow"); a way to say "this is not recurring" that sticks; a tax-year
-export (CSV) from the year review once the LLC's categories are settled.
+**Also 2026-09-26:** a runway figure — the positive balances of checking, savings and cash
+against the monthly rate of what recurs, in weeks, with a digest item under four — and "not
+recurring", remembered by series key (`recurring_mute`, V16) and undoable.
+
+**Next:** a tax-year export (CSV) from the year review once the LLC's categories are settled;
+inflow series named as paydays in the forecast.
 
 ## M6 — Insight layer
 Forecasting, anomaly detection ("this bill is 40% higher than usual"), cashflow projection, and a

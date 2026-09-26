@@ -30,6 +30,16 @@ public class CashflowController {
         return recurring.report(currentUser.id(), Math.min(Math.max(days, 1), 365));
     }
 
+    /** "This is not a recurring charge" — or it is after all. Remembered by the series key. */
+    @org.springframework.web.bind.annotation.PutMapping("/cashflow/mute")
+    public RecurringService.Report setMuted(@org.springframework.web.bind.annotation.RequestBody Mute request) {
+        recurring.setMuted(currentUser.id(), request.key(), request.label(), request.muted());
+        return recurring.report(currentUser.id(), 30);
+    }
+
+    public record Mute(String key, String label, boolean muted) {
+    }
+
     @GetMapping("/reports/net-worth/history")
     public List<SnapshotService.Point> netWorthHistory(@RequestParam(defaultValue = "90") int days) {
         return snapshots.history(currentUser.id(), days);

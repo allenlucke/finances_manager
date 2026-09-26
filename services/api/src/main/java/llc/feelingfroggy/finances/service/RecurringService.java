@@ -40,8 +40,20 @@ public class RecurringService {
     public record Anomaly(String kind, String severity, String text, LocalDate date) {
     }
 
+    /** A series the person said is not recurring, kept so it can be unsaid. */
+    public record Muted(String key, String label) {
+    }
+
+    /**
+     * @param monthlyRecurringOut what the found series add up to per month at their cadence,
+     *     missing ones excluded — a rate, independent of the window
+     * @param liquidCash the positive balances of checking, savings and cash accounts
+     * @param runwayWeeks how many weeks that cash covers the monthly rate; null without both
+     */
     public record Report(List<Series> series, List<Expected> upcoming, List<Anomaly> anomalies,
-                         BigDecimal expectedOut, BigDecimal expectedIn, int days) {
+                         BigDecimal expectedOut, BigDecimal expectedIn, int days,
+                         BigDecimal monthlyRecurringOut, BigDecimal liquidCash, BigDecimal runwayWeeks,
+                         List<Muted> muted) {
     }
 
     private record Row(long id, long accountId, String accountName, String description, String merchant,
@@ -95,10 +107,17 @@ public class RecurringService {
             groups.computeIfAbsent(row.accountId() + "|" + row.direction() + "|" + key, k -> new ArrayList<>()).add(row);
         }
 
+        Map<String, String> muted = new LinkedHashMap<>();
+        jdbc.query("SELECT series_key, label FROM recurring_mute WHERE user_id = ? ORDER BY id",
+            rs -> { muted.put(rs.getString("series_key"), rs.getString("label")); }, userId);
+
         var series = new ArrayList<Series>();
         var anomalies = new ArrayList<Anomaly>();
         for (var entry : groups.entrySet()) {
             List<Row> group = entry.getValue();
+            if (muted.containsKey(entry.getKey())) {
+                continue;
+            }
             anomalies.addAll(duplicatesIn(group));
             if (group.size() < 3) {
                 continue;
@@ -136,8 +155,56 @@ public class RecurringService {
         }
         upcoming.sort(Comparator.comparing(Expected::date));
         anomalies.sort(Comparator.comparing(Anomaly::date).reversed());
+
+        // The rate, not the window: what the found outflows add up to per month at their cadence.
+        BigDecimal monthlyOut = BigDecimal.ZERO;
+        for (Series s : series) {
+            if ("debit".equals(s.direction()) && !"missing".equals(s.status())) {
+                monthlyOut = monthlyOut.add(s.typicalAmount().multiply(perMonth(s.cadence())));
+            }
+        }
+        monthlyOut = monthlyOut.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal liquid = jdbc.queryForObject("""
+            SELECT COALESCE(SUM(balance), 0) FROM v_account_balance
+            WHERE user_id = ? AND account_type IN ('checking', 'savings', 'cash') AND balance > 0
+            """, BigDecimal.class, userId);
+        BigDecimal runway = null;
+        if (liquid != null && liquid.signum() > 0 && monthlyOut.signum() > 0) {
+            BigDecimal perDay = monthlyOut.divide(new BigDecimal("30.4375"), 6, RoundingMode.HALF_UP);
+            runway = liquid.divide(perDay, 6, RoundingMode.HALF_UP)
+                .divide(BigDecimal.valueOf(7), 1, RoundingMode.HALF_UP);
+        }
+        var mutedList = muted.entrySet().stream().map(e -> new Muted(e.getKey(), e.getValue())).toList();
         return new Report(series, upcoming, anomalies, out.setScale(2, RoundingMode.HALF_UP),
-            in.setScale(2, RoundingMode.HALF_UP), days);
+            in.setScale(2, RoundingMode.HALF_UP), days, monthlyOut,
+            liquid == null ? BigDecimal.ZERO : liquid.setScale(2, RoundingMode.HALF_UP), runway, mutedList);
+    }
+
+    /** Occurrences per month for a cadence. */
+    static BigDecimal perMonth(String cadence) {
+        return switch (cadence) {
+            case "weekly" -> new BigDecimal("52").divide(BigDecimal.valueOf(12), 6, RoundingMode.HALF_UP);
+            case "biweekly" -> new BigDecimal("26").divide(BigDecimal.valueOf(12), 6, RoundingMode.HALF_UP);
+            case "quarterly" -> BigDecimal.ONE.divide(BigDecimal.valueOf(3), 6, RoundingMode.HALF_UP);
+            case "yearly" -> BigDecimal.ONE.divide(BigDecimal.valueOf(12), 6, RoundingMode.HALF_UP);
+            default -> BigDecimal.ONE;
+        };
+    }
+
+    /** The person's word: this key is (or is again) not a recurring charge. */
+    @org.springframework.transaction.annotation.Transactional
+    public void setMuted(Long userId, String key, String label, boolean muted) {
+        if (key == null || key.isBlank()) {
+            throw new llc.feelingfroggy.finances.domain.DomainRuleViolation("A series key is needed");
+        }
+        if (muted) {
+            jdbc.update("""
+                INSERT INTO recurring_mute (user_id, series_key, label) VALUES (?, ?, ?)
+                ON CONFLICT (user_id, series_key) DO UPDATE SET label = COALESCE(EXCLUDED.label, recurring_mute.label)
+                """, userId, key, label);
+        } else {
+            jdbc.update("DELETE FROM recurring_mute WHERE user_id = ? AND series_key = ?", userId, key);
+        }
     }
 
     private Series seriesOf(String key, List<Row> group, LocalDate today) {

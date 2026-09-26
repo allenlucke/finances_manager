@@ -456,6 +456,11 @@ export class ApiClient {
     return this.http.get<CashflowReport>(`${this.base}/cashflow`, { params });
   }
 
+  /** "This is not a recurring charge", or it is after all. Returns the refreshed report. */
+  muteRecurring(key: string, label: string | null, muted: boolean): Observable<CashflowReport> {
+    return this.http.put<CashflowReport>(`${this.base}/cashflow/mute`, { key, label, muted });
+  }
+
   netWorthHistory(days = 90): Observable<NetWorthPoint[]> {
     const params = new HttpParams().set('days', days);
     return this.http.get<NetWorthPoint[]>(`${this.base}/reports/net-worth/history`, { params });

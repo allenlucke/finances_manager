@@ -30,7 +30,15 @@ export class CashflowComponent {
   protected readonly money = money;
 
   protected readonly upcomingColumns = ['date', 'what', 'account', 'amount'];
-  protected readonly seriesColumns = ['what', 'cadence', 'typical', 'last', 'next', 'status'];
+  protected readonly seriesColumns = [
+    'what',
+    'cadence',
+    'typical',
+    'last',
+    'next',
+    'status',
+    'actions',
+  ];
 
   protected readonly missing = computed(() =>
     (this.report.value()?.series ?? []).filter((s) => s.status === 'missing'),
@@ -51,6 +59,22 @@ export class CashflowComponent {
   protected setDays(days: number): void {
     this.days.set(days);
     this.reload();
+  }
+
+  protected setMuted(key: string, label: string | null, muted: boolean): void {
+    this.api.muteRecurring(key, label, muted).subscribe({
+      next: () => this.reload(),
+      error: () => this.report.error.set('Could not change that series.'),
+    });
+  }
+
+  protected runwayText(r: CashflowReport): string {
+    if (r.runwayWeeks === null) {
+      return r.monthlyRecurringOut > 0
+        ? 'No cash on hand in checking, savings or cash accounts to measure against.'
+        : 'Nothing recurring found yet to measure against.';
+    }
+    return `${money(r.liquidCash)} on hand covers about ${r.runwayWeeks} weeks of recurring charges at ${money(r.monthlyRecurringOut)} a month.`;
   }
 
   protected signed(amount: number, direction: string): number {

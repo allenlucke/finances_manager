@@ -126,6 +126,48 @@ class CashflowTest extends PostgresIntegrationTest {
         assertThat(digest).contains("Possible duplicate");
         boolean dueThisWeek = !api.get("/api/v1/cashflow?days=7").json().get("upcoming").isEmpty();
         assertThat(digest.contains("expected in the next 7 days")).isEqualTo(dueThisWeek);
+
+        // The person says the gym is not recurring: it leaves the series and the digest, and is listed as muted.
+        var muted = api.putJson("/api/v1/cashflow/mute", Map.of("key", gymSeries.get("key").asText(),
+            "label", "PLANET FITNESS CLUB 0412", "muted", true)).json();
+        assertThat(muted.get("series").toString()).doesNotContain("PLANET FITNESS");
+        assertThat(muted.get("muted").get(0).get("label").asText()).isEqualTo("PLANET FITNESS CLUB 0412");
+        assertThat(api.get("/api/v1/digest/preview").json().toString()).doesNotContain("PLANET FITNESS");
+        var unmuted = api.putJson("/api/v1/cashflow/mute", Map.of("key", gymSeries.get("key").asText(), "muted", false)).json();
+        assertThat(unmuted.get("series").toString()).contains("PLANET FITNESS");
+        assertThat(unmuted.get("muted")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("runway is the cash on hand against the monthly rate of what recurs, and the digest says when it is short")
+    void runway() {
+        LocalDate anchor = today.withDayOfMonth(15);
+        if (anchor.isAfter(today)) {
+            anchor = anchor.minusMonths(1);
+        }
+        for (int m = 5; m >= 0; m--) {
+            debit(anchor.minusMonths(m), "15.49", "NETFLIX.COM 866-579-7172 CA");
+        }
+        LocalDate power = today.minusDays(6);
+        for (int m = 5; m >= 0; m--) {
+            debit(power.minusMonths(m), "120.00", "CITY POWER & LIGHT");
+        }
+        // No money in: no runway to speak of.
+        assertThat(api.get("/api/v1/cashflow").json().get("runwayWeeks").isNull()).isTrue();
+
+        // One deposit, leaving 84.56 on hand against 135.49 a month: under three weeks.
+        var deposit = api.postJson("/api/v1/transactions", Map.of("accountId", checking, "transactionDate", today.toString(),
+            "amount", "897.50", "direction", "credit", "description", "Deposit"));
+        assertThat(deposit.status()).as(deposit.body()).isEqualTo(201);
+
+        var report = api.get("/api/v1/cashflow").json();
+        assertThat(new BigDecimal(report.get("monthlyRecurringOut").asText())).isEqualByComparingTo("135.49");
+        assertThat(new BigDecimal(report.get("liquidCash").asText())).isEqualByComparingTo("84.56");
+        BigDecimal weeks = new BigDecimal(report.get("runwayWeeks").asText());
+        assertThat(weeks).isBetween(new BigDecimal("2.5"), new BigDecimal("3.0"));
+        var digest = api.get("/api/v1/digest/preview").json().toString();
+        assertThat(digest).contains("Cash on hand ($84.56) covers about " + weeks.toPlainString()
+            + " weeks of recurring charges at $135.49 a month");
     }
 
     @Test

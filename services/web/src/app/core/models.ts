@@ -703,6 +703,13 @@ export interface CashflowReport {
   expectedOut: number;
   expectedIn: number;
   days: number;
+  /** What the found outflows add up to per month at their cadence; a rate, not a window. */
+  monthlyRecurringOut: number;
+  /** Positive balances of checking, savings and cash accounts. */
+  liquidCash: number;
+  /** Weeks that cash covers the monthly rate; null without both. */
+  runwayWeeks: number | null;
+  muted: { key: string; label: string | null }[];
 }
 
 // --- year in review ---

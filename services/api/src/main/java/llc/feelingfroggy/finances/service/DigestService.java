@@ -130,6 +130,11 @@ public class DigestService {
                     + s.nextExpected(), "/cashflow"));
             }
         }
+        if (report.runwayWeeks() != null && report.runwayWeeks().compareTo(new BigDecimal("4")) < 0) {
+            items.add(new Item("runway", report.runwayWeeks().compareTo(new BigDecimal("2")) < 0 ? "high" : "medium",
+                "Cash on hand (" + dollars(report.liquidCash()) + ") covers about " + report.runwayWeeks().toPlainString()
+                    + " weeks of recurring charges at " + dollars(report.monthlyRecurringOut()) + " a month", "/cashflow"));
+        }
         if (!report.upcoming().isEmpty()) {
             long debits = report.upcoming().stream().filter(e -> "debit".equals(e.direction())).count();
             if (debits > 0) {

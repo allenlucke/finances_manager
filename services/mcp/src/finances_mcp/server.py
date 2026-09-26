@@ -765,8 +765,9 @@ def recurring_charges(days: int = 30) -> Any:
     """Recurring charges found in the ledger (three or more occurrences at a steady interval),
     each with its evidence — cadence, typical amount, how many times, last seen, next expected —
     and a status: upcoming, on track, or missing. Also what is expected in the next ``days`` with
-    totals in and out, and anomalies: possible double charges and amounts far from usual. Nothing
-    is declared by hand; transfers are left out."""
+    totals in and out; the monthly rate of what recurs, the liquid cash on hand and the runway in
+    weeks; anomalies (possible double charges, amounts far from usual); and the series the person
+    has muted. Nothing is declared by hand; transfers are left out."""
     return _guard(lambda: client().get("/api/v1/cashflow", days=days))
 
 
@@ -781,6 +782,16 @@ def year_in_review(year: int | None = None, ledger_entity_id: int | None = None)
     if ledger_entity_id is not None:
         params["ledgerEntityId"] = ledger_entity_id
     return _guard(lambda: client().get("/api/v1/reports/year", **params))
+
+
+@mcp.tool(annotations=WRITES)
+def mute_recurring(key: str, muted: bool = True, label: str | None = None) -> Any:
+    """Say that a found series is not a recurring charge (or is after all). ``key`` is the
+    series' key from ``recurring_charges``. Remembered, so the same coincidence does not come
+    back; listed under ``muted`` in the report. Returns the refreshed report."""
+    return _guard(
+        lambda: client().put("/api/v1/cashflow/mute", {"key": key, "label": label, "muted": muted})
+    )
 
 
 @mcp.tool(annotations=READS)

@@ -17,6 +17,10 @@ describe('CashflowComponent', () => {
     days: 30,
     expectedOut: 135.49,
     expectedIn: 0,
+    monthlyRecurringOut: 135.49,
+    liquidCash: 84.56,
+    runwayWeeks: 2.7,
+    muted: [{ key: 'z', label: 'CORNER COFFEE' }],
     series: [
       {
         key: 'a',
@@ -120,10 +124,52 @@ describe('CashflowComponent', () => {
     expect(text()).toContain('CITY POWER was $310.00 on 2026-09-20, usually about $120.00');
     expect(text()).toContain('-$135.49');
     expect(text()).toContain('1 missing');
+    expect(text()).toContain('2.7 weeks');
+    expect(text()).toContain(
+      '$84.56 on hand covers about 2.7 weeks of recurring charges at $135.49 a month.',
+    );
+    expect(text()).toContain('Not recurring, you said: CORNER COFFEE');
+  });
+
+  it('"not recurring" is remembered by key, and undo sends it back', () => {
+    flush(report);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+
+    (
+      element.querySelector(
+        'button[aria-label="Not recurring: PLANET FITNESS"]',
+      ) as HTMLButtonElement
+    ).click();
+    const mute = backend.expectOne('/api/v1/cashflow/mute');
+    expect(mute.request.method).toBe('PUT');
+    expect(mute.request.body).toEqual({ key: 'b', label: 'PLANET FITNESS', muted: true });
+    mute.flush(report);
+    flush(report);
+    fixture.detectChanges();
+
+    (
+      element.querySelector(
+        'button[aria-label="It is recurring after all: CORNER COFFEE"]',
+      ) as HTMLButtonElement
+    ).click();
+    const unmute = backend.expectOne('/api/v1/cashflow/mute');
+    expect(unmute.request.body).toEqual({ key: 'z', label: 'CORNER COFFEE', muted: false });
+    unmute.flush(report);
+    flush(report);
   });
 
   it('says when nothing recurring has been found, and why', () => {
-    flush({ ...report, series: [], upcoming: [], anomalies: [], expectedOut: 0 });
+    flush({
+      ...report,
+      series: [],
+      upcoming: [],
+      anomalies: [],
+      expectedOut: 0,
+      monthlyRecurringOut: 0,
+      runwayWeeks: null,
+      muted: [],
+    });
     fixture.detectChanges();
 
     expect(text()).toContain('No recurring charges found yet');

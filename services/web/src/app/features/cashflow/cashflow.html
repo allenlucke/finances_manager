@@ -37,6 +37,18 @@
       </mat-card>
       <mat-card>
         <mat-card-content>
+          <div class="muted">Runway</div>
+          <div
+            class="headline"
+            [class]="r.runwayWeeks !== null && r.runwayWeeks < 4 ? 'amount-negative' : ''"
+          >
+            {{ r.runwayWeeks === null ? '—' : r.runwayWeeks + ' weeks' }}
+          </div>
+          <div class="muted small">{{ runwayText(r) }}</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card>
+        <mat-card-content>
           <div class="muted">Net of the two</div>
           <div class="headline" [class]="(net() ?? 0) < 0 ? 'amount-negative' : 'amount-positive'">
             {{ money(net()) }}
@@ -175,8 +187,39 @@
                     {{ statusWords(row) }}
                   </td>
                 </ng-container>
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef></th>
+                  <td mat-cell *matCellDef="let row">
+                    <button
+                      mat-button
+                      type="button"
+                      (click)="setMuted(row.key, row.label, true)"
+                      [attr.aria-label]="'Not recurring: ' + row.label"
+                    >
+                      Not recurring
+                    </button>
+                  </td>
+                </ng-container>
               </table>
             </div>
+          }
+          @if (r.muted.length) {
+            <p class="muted small muted-list">
+              Not recurring, you said:
+              @for (m of r.muted; track m.key) {
+                <span class="chip">
+                  {{ m.label || m.key }}
+                  <button
+                    mat-button
+                    type="button"
+                    (click)="setMuted(m.key, m.label, false)"
+                    [attr.aria-label]="'It is recurring after all: ' + (m.label || m.key)"
+                  >
+                    Undo
+                  </button>
+                </span>
+              }
+            </p>
           }
         </mat-card-content>
       </mat-card>
