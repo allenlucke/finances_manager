@@ -113,7 +113,21 @@ public class DigestService {
         items.addAll(undeliveredAlerts(userId, now));
         items.addAll(strategiesInTrouble(userId));
         items.addAll(cashflow(userId));
+        items.addAll(waitingForACategory(userId));
         return items;
+    }
+
+    /** The review queue's size: rows in none of the spend figures until someone decides. */
+    private List<Item> waitingForACategory(Long userId) {
+        Integer n = jdbc.queryForObject("""
+            SELECT count(*) FROM transaction
+            WHERE user_id = ? AND deleted_at IS NULL AND category_id IS NULL AND is_transfer = false
+            """, Integer.class, userId);
+        if (n == null || n == 0) {
+            return List.of();
+        }
+        return List.of(new Item("review", "low",
+            n == 1 ? "1 transaction needs a category" : n + " transactions need a category", "/import"));
     }
 
     /** What the ledger's rhythm says: a charge that stopped, a duplicate, a spike, the week ahead. */

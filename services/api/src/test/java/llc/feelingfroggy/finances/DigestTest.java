@@ -136,6 +136,24 @@ class DigestTest extends PostgresIntegrationTest {
     }
 
     @Test
+    @DisplayName("rows waiting for a category are counted, and point at the review queue")
+    void reviewQueueIsAnItem() {
+        long checking = account("Everyday checking");
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("America/Chicago"));
+        api.postJson("/api/v1/transactions", Map.of("accountId", checking, "transactionDate", today.toString(),
+            "amount", "12.00", "direction", "debit", "description", "Mystery one"));
+        api.postJson("/api/v1/transactions", Map.of("accountId", checking, "transactionDate", today.toString(),
+            "amount", "13.00", "direction", "debit", "description", "Mystery two"));
+
+        var items = api.get("/api/v1/digest/preview").json();
+
+        assertThat(items).extracting(i -> i.get("text").asText()).contains("2 transactions need a category");
+        var item = items.get(items.size() - 1);
+        assertThat(item.get("link").asText()).isEqualTo("/import");
+        assertThat(item.get("severity").asText()).isEqualTo("low");
+    }
+
+    @Test
     @DisplayName("with no channel, the run says so instead of pretending")
     void noChannel() {
         when(notifier.configured()).thenReturn(false);
