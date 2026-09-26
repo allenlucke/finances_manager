@@ -8,7 +8,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
+import { ApiClient } from '../../core/api';
 import { Passkeys, RegisteredPasskey, passkeyFailureMessage } from '../../core/passkeys';
+import { NotificationSettingsComponent } from './notification-settings';
 
 /**
  * Passkey management.
@@ -21,6 +23,7 @@ import { Passkeys, RegisteredPasskey, passkeyFailureMessage } from '../../core/p
 @Component({
   selector: 'app-security',
   imports: [
+    NotificationSettingsComponent,
     DatePipe,
     ReactiveFormsModule,
     MatCardModule,
@@ -35,6 +38,7 @@ import { Passkeys, RegisteredPasskey, passkeyFailureMessage } from '../../core/p
 })
 export class SecurityComponent {
   private readonly passkeys = inject(Passkeys);
+  private readonly api = inject(ApiClient);
   private readonly forms = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -48,6 +52,38 @@ export class SecurityComponent {
   protected readonly items = signal<RegisteredPasskey[] | null>(null);
   protected readonly loadError = signal<string | null>(null);
   protected readonly busy = signal(false);
+  protected readonly changingPassphrase = signal(false);
+  /** Shown under the passphrase form: a mismatch, or the server's refusal. Cleared on success. */
+  protected readonly passphraseError = signal<string | null>(null);
+  protected readonly passphraseForm = this.forms.nonNullable.group({
+    current: ['', Validators.required],
+    next: ['', [Validators.required, Validators.minLength(12), Validators.maxLength(200)]],
+    confirm: ['', Validators.required],
+  });
+
+  protected changePassphrase(): void {
+    if (this.passphraseForm.invalid || this.changingPassphrase()) return;
+    const v = this.passphraseForm.getRawValue();
+    if (v.next !== v.confirm) {
+      this.passphraseError.set('The two new passphrases do not match.');
+      return;
+    }
+    this.changingPassphrase.set(true);
+    this.api.changePassword(v.current, v.next).subscribe({
+      next: () => {
+        this.changingPassphrase.set(false);
+        this.passphraseError.set(null);
+        this.passphraseForm.reset({ current: '', next: '', confirm: '' });
+        this.snackBar.open('Passphrase changed. Let your browser save the new one.', undefined, {
+          duration: 6000,
+        });
+      },
+      error: (error: { error?: { detail?: string | null } | null }) => {
+        this.changingPassphrase.set(false);
+        this.passphraseError.set(error?.error?.detail || 'The passphrase could not be changed.');
+      },
+    });
+  }
   protected readonly supported = Passkeys.supported();
 
   protected readonly columns = ['label', 'created', 'lastUsed', 'backedUp', 'actions'];

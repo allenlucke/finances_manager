@@ -141,7 +141,12 @@ export class TransactionsComponent {
   );
 
   constructor() {
+    // An empty picker is not a picker. Until the accounts have arrived the control is disabled,
+    // so nobody (and no browser test on a slow runner) opens a list with nothing in it and waits
+    // for options that were added after the panel opened.
+    this.form.controls.accountId.disable({ emitEvent: false });
     this.accounts.run(this.api.accounts(), (accounts) => {
+      this.form.controls.accountId.enable({ emitEvent: false });
       if (accounts.length) {
         this.form.patchValue({ accountId: accounts[0].id });
       }

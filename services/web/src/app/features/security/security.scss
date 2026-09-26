@@ -32,3 +32,15 @@ form mat-form-field {
   gap: 8px;
   color: var(--mat-sys-error);
 }
+
+.passphrase {
+  margin-top: 16px;
+}
+
+.passphrase-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 420px;
+  margin-top: 8px;
+}

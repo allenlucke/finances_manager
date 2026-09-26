@@ -1,0 +1,52 @@
+<mat-card class="notifications">
+  <mat-card-header>
+    <mat-card-title><h2 class="card-title">Notifications</h2></mat-card-title>
+    <mat-card-subtitle>
+      The daily digest of what needs a look goes to your phone through ntfy, once a day
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    @if (settings.error()) {
+      <p class="state-error-inline" role="alert">{{ settings.error() }}</p>
+    } @else if (settings.value()) {
+      <form [formGroup]="form" (ngSubmit)="save()" class="stack">
+        <mat-slide-toggle formControlName="digestEnabled">Send the daily digest</mat-slide-toggle>
+        <div class="inline-form">
+          <mat-form-field appearance="outline" class="short">
+            <mat-label>At</mat-label>
+            <input matInput type="time" formControlName="digestTime" />
+            <mat-hint>in the app's time zone</mat-hint>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="short">
+            <mat-label>Account is stale after</mat-label>
+            <input matInput formControlName="staleAfterDays" inputmode="numeric" />
+            <mat-hint>days without an import</mat-hint>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="short">
+            <mat-label>Nudge about a draft after</mat-label>
+            <input matInput formControlName="draftWaitHours" inputmode="numeric" />
+            <mat-hint>hours waiting</mat-hint>
+          </mat-form-field>
+        </div>
+        <mat-slide-toggle formControlName="quietWhenEmpty">
+          Stay quiet on a day when nothing needs a look
+        </mat-slide-toggle>
+        @if (notice(); as notice) {
+          <p class="state-error-inline" role="alert">{{ notice }}</p>
+        }
+        <div class="actions">
+          <button mat-flat-button type="submit" [disabled]="form.invalid || saving()">Save</button>
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="sendTest()"
+            [disabled]="sending()"
+            aria-label="Send the digest now, as a test of the channel"
+          >
+            Send a test now
+          </button>
+        </div>
+      </form>
+    }
+  </mat-card-content>
+</mat-card>

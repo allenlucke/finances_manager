@@ -33,12 +33,46 @@ public class AuthController {
     private final CurrentUser currentUser;
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
+    private final llc.feelingfroggy.finances.repo.AppUserRepository users;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public AuthController(CurrentUser currentUser, AuthenticationManager authenticationManager,
-                          SecurityContextRepository securityContextRepository) {
+                          SecurityContextRepository securityContextRepository,
+                          llc.feelingfroggy.finances.repo.AppUserRepository users,
+                          org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
         this.currentUser = currentUser;
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
+        this.users = users;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    /**
+     * Change the passphrase, signed in, by proving the current one. There is no reset path and
+     * no email; this is the only way the passphrase changes short of a database update
+     * (docs/RUNBOOK.md §4). The same twelve-character floor as setup.
+     */
+    @org.springframework.web.bind.annotation.PutMapping("/password")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody PasswordChange change) {
+        var user = users.findById(currentUser.id())
+            .orElseThrow(() -> new llc.feelingfroggy.finances.domain.DomainRuleViolation("No such user"));
+        if (!passwordEncoder.matches(change.currentPassword(), user.getPasswordHash())) {
+            throw new llc.feelingfroggy.finances.domain.DomainRuleViolation(
+                "The current passphrase was not accepted.");
+        }
+        if (change.currentPassword().equals(change.newPassword())) {
+            throw new llc.feelingfroggy.finances.domain.DomainRuleViolation(
+                "The new passphrase is the same as the current one.");
+        }
+        user.setPasswordHash(passwordEncoder.encode(change.newPassword()));
+        users.save(user);
+        return ResponseEntity.noContent().build();
+    }
+
+    public record PasswordChange(@jakarta.validation.constraints.NotBlank String currentPassword,
+                                 @jakarta.validation.constraints.NotBlank
+                                 @jakarta.validation.constraints.Size(min = 12, max = 200) String newPassword) {
     }
 
     /**

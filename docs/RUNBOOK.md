@@ -38,9 +38,10 @@ stacks are up.
      `TRADING_DAILY_CAP` at a figure you would not mind losing to a mistake. With the switch off,
      drafts and confirmations still work and are kept; nothing is sent.
    * **The daily digest (M8):** on by default (`DIGEST_SCHEDULED=true`) and pushed to `NTFY_URL`
-     once a day at the time set in the app — the dashboard's Needs-a-look card and its settings,
-     or the MCP `digest_settings` tools. Without `NTFY_URL` the run is recorded as not delivered
-     and the card still shows the list.
+     once a day at the time set in the app — Sign-in security → Notifications, which also has a
+     "Send a test now" button that says in words when there is no channel; or the MCP
+     `digest_settings` tools. Without `NTFY_URL` the run is recorded as not delivered and the
+     dashboard card still shows the list.
    * **Strategies (M7c):** nothing to configure beyond market data. Backtests fetch bars from the
      configured provider on demand (a year of minute bars is a few seconds). A strategy switched
      on is asked every `STRATEGY_EVALUATE_EVERY` (one minute) while `MARKET_REFRESH_SCHEDULED` is
@@ -103,8 +104,9 @@ is left running; `make e2e-down` removes it.
   `make up`. Blank disables the filter entirely — revoking is deleting the line and restarting.
 * **A passkey.** Sign-in security → Remove. Removing the last one returns the account to
   passphrase only, which is the recovery path when every authenticator is lost.
-* **The passphrase.** There is no reset. Change it only while signed in, once that screen exists;
-  until then it is a database update of `app_user.password_hash` with a bcrypt hash.
+* **The passphrase.** There is no reset and no email. Change it while signed in, on Sign-in
+  security → Passphrase, by proving the current one (`PUT /api/v1/auth/password`). If the current
+  one is lost, it is a database update of `app_user.password_hash` with a bcrypt hash.
 * **`ACCOUNT_KEY_SECRET` — do not rotate it.** Every import link was keyed under it, and an
   account linked under one secret is not found under another. See §5 for the loss case.
 

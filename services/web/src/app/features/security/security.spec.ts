@@ -28,7 +28,13 @@ describe('SecurityComponent', () => {
     backend = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => backend.verify());
+  afterEach(() => {
+    // The notification card is a child; its one request is not this spec's concern.
+    backend
+      .match((r) => r.url.startsWith('/api/v1/digest'))
+      .forEach((r) => r.flush(null, { status: 500, statusText: 'Error' }));
+    backend.verify();
+  });
 
   it('does not claim "passphrase only" before the list has arrived', () => {
     fixture.detectChanges();
@@ -74,5 +80,59 @@ describe('SecurityComponent', () => {
     // As text, not a tooltip: the answer to "will I lose this" must reach keyboard and
     // screen-reader users too.
     expect(text()).toContain('bound to this device');
+  });
+
+  it('a mismatched new passphrase is said in text, and nothing is sent', () => {
+    backend.expectOne('/api/v1/passkeys').flush([]);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as unknown as Record<string, any>;
+    component['passphraseForm'].setValue({
+      current: 'the-current-passphrase',
+      next: 'a-new-passphrase-that-is-long',
+      confirm: 'a-different-one-entirely',
+    });
+    fixture.detectChanges();
+
+    component['changePassphrase']();
+    fixture.detectChanges();
+
+    expect(text()).toContain('The two new passphrases do not match.');
+    backend.expectNone('/api/v1/auth/password');
+  });
+
+  it('a refused change shows the server’s sentence; a good one clears it', () => {
+    backend.expectOne('/api/v1/passkeys').flush([]);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as unknown as Record<string, any>;
+    component['passphraseForm'].setValue({
+      current: 'wrong-current-passphrase',
+      next: 'a-new-passphrase-that-is-long',
+      confirm: 'a-new-passphrase-that-is-long',
+    });
+
+    component['changePassphrase']();
+    backend
+      .expectOne('/api/v1/auth/password')
+      .flush(
+        { detail: 'The current passphrase was not accepted.' },
+        { status: 422, statusText: 'Unprocessable' },
+      );
+    fixture.detectChanges();
+    expect(text()).toContain('The current passphrase was not accepted.');
+
+    component['passphraseForm'].setValue({
+      current: 'the-right-current-one',
+      next: 'a-new-passphrase-that-is-long',
+      confirm: 'a-new-passphrase-that-is-long',
+    });
+    component['changePassphrase']();
+    const request = backend.expectOne('/api/v1/auth/password');
+    expect(request.request.body).toEqual({
+      currentPassword: 'the-right-current-one',
+      newPassword: 'a-new-passphrase-that-is-long',
+    });
+    request.flush(null, { status: 204, statusText: 'No Content' });
+    fixture.detectChanges();
+    expect(text()).not.toContain('was not accepted');
   });
 });

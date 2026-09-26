@@ -81,6 +81,11 @@ export class ApiClient {
     return this.http.post<void>(`${this.base}/auth/login`, { username, password });
   }
 
+  /** Signed in, proving the current passphrase. The only way it changes. */
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.put<void>(`${this.base}/auth/password`, { currentPassword, newPassword });
+  }
+
   logout(): Observable<void> {
     return this.http.post<void>(`${this.base}/auth/logout`, {});
   }
